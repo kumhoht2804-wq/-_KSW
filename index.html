@@ -1075,7 +1075,21 @@ const route = () => { const h = location.hash.slice(1); return ROUTES.includes(h
 window.addEventListener('hashchange', () => { render(); window.scrollTo(0, 0); });
 
 // ---------- render ----------
+// 다시 그려도 같은 화면이면 스크롤 위치(창, 표 안쪽 가로·세로) 유지
+let lastViewKey = '';
 function render() {
+  const key = route() + '|' + ui.assessMode + '|' + ui.part + '|' + ui.eduMode + '|' + ui.eduDept + '|' + ui.setPart + '|' + !!auth;
+  const same = key === lastViewKey;
+  const winY = window.scrollY, winX = window.scrollX;
+  const boxes = same ? [...document.querySelectorAll('#view .tw')].map(e => [e.scrollTop, e.scrollLeft]) : null;
+  renderInner();
+  lastViewKey = key;
+  if (same) {
+    document.querySelectorAll('#view .tw').forEach((e, i) => { if (boxes[i]) { e.scrollTop = boxes[i][0]; e.scrollLeft = boxes[i][1]; } });
+    window.scrollTo(winX, winY);
+  }
+}
+function renderInner() {
   document.querySelectorAll('#tabs a').forEach(a => a.toggleAttribute('aria-current', a.dataset.route === route()) || (a.dataset.route === route() && a.setAttribute('aria-current', 'page')));
   document.querySelectorAll('#tabs a').forEach(a => a.dataset.route === route() ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current'));
   const v = $('#view');
