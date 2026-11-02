@@ -313,7 +313,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 연구소 역량·교육 관리 · v2026.11.02 19:40</footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 연구소 역량·교육 관리 · v2026.11.02 19:43</footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -485,8 +485,10 @@ function makeCalc(S){
   function applies(c,p){ const f=eduField(p)||''; return c.dept==='공통'||(c.dept&&f.includes(c.dept)); }
   function cell(c,p){ // '◎' '●' '' and isTarget
     const ps=rs[p.rank], cs=cStage(c), r0=(S.edu[p.id]||{})[c.id];
-    const ex=!!(r0&&r0.x), rec=ex?null:r0;          // x: 관리자가 '미이수 처리'한 기록 (자동 인정 해제)
-    const req=c.type==='필수'&&cs!=null, ap=req&&applies(c,p), auto=ap&&ps>cs;
+    // autoFrozen 전(예전 데이터)에만 상위 직급 자동 인정. 굳힌 뒤에는 기록된 것만 이수
+    const legacy=!(S.config&&S.config.autoFrozen);
+    const ex=legacy&&!!(r0&&r0.x), rec=(r0&&r0.x)?null:r0;
+    const req=c.type==='필수'&&cs!=null, ap=req&&applies(c,p), auto=legacy&&ap&&ps>cs;
     const mark=(auto&&!ex)?'◎':(rec?'●':'');
     return {mark,target:ap&&cs<=ps,rec,ex,auto};
   }
@@ -903,6 +905,7 @@ const XlsxRead = (() => {
         for (const r of rowsFrom(hs, 17)) { const ver = str(cell(hs, r, 'B')); if (!ver) continue; out.history.push({ id: 'h' + String(out.history.length + 1).padStart(2, '0'), ver, rev: +cell(hs, r, 'C') || 0, date: date(cell(hs, r, 'D')), author: str(cell(hs, r, 'E')), change: str(cell(hs, r, 'F')), note: str(cell(hs, r, 'G')) }); }
       }
       notes.push(`교육: 교육 ${out.courses.length}건 · 이수 기록 ${n}건 · 교육 대상 ${out.people.filter(p => p.edu).length}명`);
+      cfg.autoFrozen = false;   // 원본 엑셀은 상위 직급 자동 인정 방식 → 관리자 접속 시 다시 기록으로 굳힘
     }
     for (const k of ['grades', 'levels', 'teamOrder', 'partOrder', 'rankOrder', 'eduDeptMap', 'rankStage', 'guideStage', 'courseDeptOrder']) if (!cfg[k]) cfg[k] = [];
     return { data: out, notes, comp: !!comp, edu: !!edu };
@@ -985,6 +988,7 @@ async function reload(manual) {
     // 받아오는 사이에 수정이 있었으면 이 응답은 예전 값이라 버리고 잠시 뒤 다시 받음
     if (seq !== writeSeq || busy || Date.now() - lastWrite < 3000) { loading = false; syncUI(); setTimeout(() => reload(), 4000); return; }
     applyDocs(d.docs);
+    if (admin && !busy) freezeAuto();
     if (admin) for (const [pid, m] of Object.entries(S.edu)) if (Object.values(m).some(r => r && r.date)) { const m2 = {}; for (const [k, r] of Object.entries(m)) m2[k] = { note: r.note || '' }; S.edu[pid] = m2; put('edu/' + pid, { r: m2 }); } loadedOnce = true; offline = false; if (admin) loadUsers(true); if (manual) toast('최신 데이터로 새로 고쳤습니다'); }
   catch (e) { if (!e.auth) { offline = true; toast('서버에서 데이터를 받지 못했습니다: ' + e.message, true); } }
   loading = false; syncUI(); schedule();
@@ -1015,6 +1019,20 @@ async function pump(path) {
     }
   }
   running.delete(path); busy--; syncUI();
+}
+// 상위 직급 자동 인정을 지금 상태 그대로 실제 이수 기록으로 한 번 저장하고 끔 (관리자 접속 시 1회)
+function freezeAuto() {
+  if (!S.config || S.config.autoFrozen || !C) return;
+  let n = 0, ppl = 0;
+  for (const p of S.people) {
+    const m = { ...(S.edu[p.id] || {}) }; let ch = false;
+    for (const c of S.courses) { const x = C.cell(c, p); if (x.mark === '◎' && !x.rec) { m[c.id] = { note: '이수 완료' }; ch = true; n++; } }
+    for (const [k, r] of Object.entries(m)) if (r && r.x) { delete m[k]; ch = true; }
+    if (ch) { S.edu[p.id] = m; put('edu/' + p.id, { r: m }); ppl++; }
+  }
+  S.config.autoFrozen = true; const { id, ...body } = S.config; put('config/main', body);
+  rebuild(); render();
+  if (n) toast(`상위 직급 자동 인정 ${n}건(${ppl}명)을 이수 기록으로 저장했습니다. 이제부터는 기록된 것만 이수로 집계됩니다`);
 }
 function flush(manual) {
   const ks = Object.keys(unsaved);
@@ -1301,7 +1319,7 @@ function vDash() {
       <div class="dleg">${lvls.filter(l => c[l]).map(l => `<span><i style="background:${LVSOLID[l]}"></i>${l === '미달' ? '미달' : l} ${c[l]}</span>`).join('')}</div></figure>`; }).join('')}</div>`;
   h += `</section>`;
   // edu by team
-  h += `<section class="card"><div class="head"><h2>팀별 필수 교육 이수율</h2><span class="sub">상위 직급 자동 인정 포함</span></div><div class="hbars">`;
+  h += `<section class="card"><div class="head"><h2>팀별 필수 교육 이수율</h2><span class="sub">필수 대상 교육 중 이수 기록 기준</span></div><div class="hbars">`;
   for (const t of teams) {
     const a = es.withT.filter(x => x.p.team === t); if (!a.length) continue;
     const tot = a.reduce((s, x) => s + x.e.target, 0), dn = a.reduce((s, x) => s + x.e.done, 0), r = tot ? dn / tot : 0;
@@ -1378,7 +1396,7 @@ function vEdu() {
     const opts = deptOptions();
     if (!opts.includes(ui.eduDept)) { const mine = leader && S.people.find(p => p.edu && p.team === myTeam); ui.eduDept = (mine && opts.includes(mine.eduDept)) ? mine.eduDept : (LS.get('lab_edudept') && opts.includes(LS.get('lab_edudept')) ? LS.get('lab_edudept') : opts[0]); }
     h += `<label class="field"><span>부서 선택</span><select class="ci" data-act="f-dept">${deptOptions().map(d => `<option${d === ui.eduDept ? ' selected' : ''}>${esc(d)}</option>`).join('')}</select></label>
-    <span class="legend-inline"><span class="pill ok">이수</span><span class="pill miss">미이수</span><span class="pill pre">선이수</span><span class="muted small">선이수 = 아직 대상 구간이 아닌데 미리 들은 교육 (대상이 되면 자동으로 이수 처리)${editor ? ' · 빈칸의 + 를 누르면 선이수 등록' : ''}</span></span></div>`;
+    <span class="legend-inline"><span class="pill ok">이수</span><span class="pill miss">미이수</span><span class="pill pre">선이수</span><span class="muted small">선이수 = 아직 대상 구간이 아닌데 미리 들은 교육 (대상이 되면 이수로 집계)${editor ? ' · 빈칸의 + 를 누르면 선이수 등록' : ''}</span></span></div>`;
     const v = C.eduView(ui.eduDept);
     const invalid = S.people.filter(p => p.edu && !C.eduValid(p));
     if (invalid.length) h += `<div class="notice warn small">직급 또는 상세부서가 교육 설정에 없어 표시되지 않는 인원 ${invalid.length}명: ${invalid.map(p => esc(p.name)).join(', ')}</div>`;
@@ -1693,7 +1711,7 @@ document.addEventListener('click', e => {
       openDlg(`<h2>파트 추가</h2><form class="form" data-form="part" style="grid-template-columns:1fr"><label class="field">파트명 (인원의 평가 파트와 같은 이름)<input name="name" required list="partNames"></label><datalist id="partNames">${S.config.partOrder.filter(n => !S.parts.find(p => p.name === n)).map(n => `<option value="${esc(n)}">`).join('')}</datalist><div class="actions"><button type="button" class="btn" data-act="close">취소</button><button class="btn primary" type="submit">추가</button></div></form>`); break;
     case 'cfg-reset': delete ui.drafts.cfg; render(); break;
     case 'cfg-save': { if (!need()) break; const c = ui.drafts.cfg; if (!c) { toast('바뀐 내용이 없습니다'); break; }
-      S.config = JSON.parse(JSON.stringify(c)); const { id, ...body } = S.config; put('config/main', body); delete ui.drafts.cfg; rebuild(); render(); toast('기준을 저장했습니다'); break; }
+      S.config = { ...JSON.parse(JSON.stringify(c)), autoFrozen: S.config.autoFrozen }; const { id, ...body } = S.config; put('config/main', body); delete ui.drafts.cfg; rebuild(); render(); toast('기준을 저장했습니다'); break; }
     case 'hist-del': if (!need()) break; S.history = S.history.filter(x => x.id !== d.id); put('history/' + d.id, null); render(); break;
     case 'export-comp': m.classList.remove('open'); exportXlsx('comp'); break;
     case 'export-edu': m.classList.remove('open'); exportXlsx('edu'); break;
