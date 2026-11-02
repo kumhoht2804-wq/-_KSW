@@ -6,9 +6,8 @@
 <title>연구소 역량·교육 관리</title>
 <meta name="author" content="KSW">
 <meta name="copyright" content="© KSW">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <style>
 /* Layout: sticky header with tabs, full-width work area of dense tables; summary first, detail below. */
 :root{
@@ -16,8 +15,9 @@
   --accent-soft:#E3EDF6; --sunk:#EEF1F5; --input:#FFF8DC;
   --ok:#2E7D4F; --ok-soft:#DDF1E4; --warn:#A86A00; --warn-soft:#FFF0CC; --bad:#B83A3A; --bad-soft:#F8DADA;
   --lvA:#D6E8FB; --lvAi:#1B4F82; --lvB:#D9F0E1; --lvBi:#22643C; --lvC:#FFEFC7; --lvCi:#7A5300; --lvD:#FCE1CF; --lvDi:#8A4413; --lvX:#F6D2D2; --lvXi:#952B2B;
-  --font-body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
-  --font-num:"IBM Plex Mono","SFMono-Regular",Consolas,monospace;
+  --font-body:"Pretendard Variable",Pretendard,"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --font-num:var(--font-body);
+  --h:34px; --h-sm:28px;
   --r:8px; color-scheme:light;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
@@ -157,6 +157,58 @@ dialog::backdrop{background:rgba(10,16,22,.45)}
 footer.foot{padding:16px 20px 24px;text-align:center;font-size:12px;color:var(--muted)}
 footer.foot b{color:var(--ink);font-weight:600}
 @media (max-width:640px){main{padding:12px}.bar{padding:10px 12px}.g2{grid-template-columns:1fr}.hbar{grid-template-columns:80px 1fr 48px}}
+/* ---- 정렬·통일 ---- */
+body{font-size:14px;letter-spacing:-0.01em}
+.num,td,th{font-variant-numeric:tabular-nums}
+.card p{margin:0}
+.btn{height:var(--h);padding:0 14px;font-size:13px;justify-content:center}
+.btn.sm{height:var(--h-sm);padding:0 10px;font-size:12px}
+.btn.wide{width:100%}
+.seg{height:var(--h);align-items:stretch}
+.seg button{padding:0 14px;font-size:13px}
+input.ci,select.ci,.field input,.field select,.field textarea{height:var(--h);padding:0 10px;font-size:13px}
+.field textarea{height:auto;padding:8px 10px}
+td input.ci,td select.ci{height:30px}
+.toolbar{gap:12px;min-height:var(--h)}
+.toolbar .field{font-size:13px;gap:8px}
+.toolbar .field span{white-space:nowrap}
+.pchip{height:32px;padding:0 14px}
+.chip{height:26px;padding:0 10px}
+.who-name{font-weight:600;font-size:13px}
+#who{display:flex;align-items:center;gap:6px}
+.sync{gap:8px}
+.kpi .v{font:700 26px/1.2 var(--font-body)}
+.kpi .v small{font-size:13px}
+th,td{padding:8px 10px}
+thead th{font-size:12px;letter-spacing:0}
+.head{min-height:28px}
+.card .sub{font-size:12.5px}
+.notice.ok{background:var(--ok-soft);color:var(--ok)}
+.badge{display:inline-flex;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--bad);color:#fff;font-size:11px;font-weight:700;align-items:center;justify-content:center;margin-left:4px}
+.card.auth{max-width:420px;margin:56px auto;gap:16px}
+.card.auth h2{font-size:18px}
+.form.one{grid-template-columns:1fr}
+.form.two{grid-template-columns:1fr 1fr;display:grid;gap:10px}
+.form .actions,.dlg .actions{display:flex;justify-content:flex-end;gap:8px}
+.auth-foot{display:flex;align-items:center;gap:6px;border-top:1px solid var(--line);padding-top:12px}
+/* 이수/미이수 표시 */
+.pill{display:inline-flex;align-items:center;justify-content:center;height:24px;min-width:52px;padding:0 8px;border-radius:12px;font-size:12px;font-weight:600;border:1px solid transparent;white-space:nowrap;line-height:1}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}
+.pill.miss{background:var(--bad-soft);color:var(--bad)}
+button.pill{cursor:pointer;font-family:inherit}
+button.pill:hover{border-color:currentColor}
+.legend-inline{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap}
+/* 교육명 열 제목: 가로 글씨 */
+th.course{writing-mode:horizontal-tb;height:auto;width:84px;min-width:84px;max-width:84px;padding:8px 6px;white-space:normal;vertical-align:bottom;text-align:center;font-size:11.5px;line-height:1.3;font-weight:600;color:var(--ink);word-break:keep-all;overflow-wrap:anywhere}
+th.course .cn{display:block}
+th.course .cd{display:block;margin-top:4px;font-size:10.5px;font-weight:500;color:var(--muted)}
+th.item{text-align:center;min-width:96px;max-width:120px;font-size:11.5px;color:var(--ink);word-break:keep-all;overflow-wrap:anywhere}
+.g{width:32px;height:26px}
+select.gsel{width:44px;height:28px}
+.lv{min-width:38px;height:22px;align-items:center}
+.hbar{grid-template-columns:96px 1fr 48px}
+.hbar .num.r{text-align:right}
+footer.foot{border-top:1px solid var(--line);margin-top:8px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
@@ -170,6 +222,7 @@ footer.foot b{color:var(--ink);font-weight:600}
       <a href="#education" data-route="education">교육 수료</a>
       <a href="#people" data-route="people">인원</a>
       <a href="#settings" data-route="settings">기준 정보</a>
+      <a href="#accounts" data-route="accounts" hidden>계정 관리</a>
     </nav>
     <div class="spacer"></div>
     <div class="sync" id="sync"><span class="dot busy"></span><span>불러오는 중</span></div>
@@ -177,7 +230,7 @@ footer.foot b{color:var(--ink);font-weight:600}
       <button class="btn" id="expBtn" type="button" aria-haspopup="true">엑셀 내보내기 ▾</button>
       <div class="pop" role="menu">
         <button type="button" data-act="export-comp" role="menuitem">역량평가 현황 (.xlsx)<small>종합·평가현황·파트별 시트, 등급 칸만 입력 가능</small></button>
-        <button type="button" data-act="export-edu" role="menuitem">교육 수료 현황 (.xlsx)<small>현재 선택한 부서 기준, 전체 시트 잠금</small></button>
+        <button type="button" data-act="export-edu" role="menuitem">교육 수료 현황 (.xlsx)<small>교육 탭에서 고른 부서 기준, 전체 시트 잠금</small></button>
         <button type="button" data-act="export-json" role="menuitem">전체 데이터 백업 (.json)<small>복원용 원본 데이터</small></button>
       </div>
     </div>
@@ -536,12 +589,12 @@ const Export = (() => {
     // matrix
     const m = new Sheet('부서별 교육 수료 현황');
     m.set(0, 0, '부서별 교육 수료 현황', T);
-    m.set(0, 6, '부서: ' + (dept || '전체') + '   표시 ' + view.people.length + '명 / 필수 교육 ' + view.courses.length + '건   (● 이수  ◎ 상위 직급 인정)', { color: '5B6573' });
+    m.set(0, 6, '부서: ' + (dept || '전체') + '   표시 ' + view.people.length + '명 / 필수 교육 ' + view.courses.length + '건   (이수 / 미이수)', { color: '5B6573' });
     const fixed = ['No', '이름', '직급', '소속', '상세부서', '교육분야', '교육 단계', '필수 대상', '필수 이수', '필수 이수율', '선택 이수'];
     const c0 = fixed.length;
     fixed.forEach((h, i) => { for (let k = 2; k <= 5; k++) m.set(k, i, k === 2 ? h : '', H); m.merge(2, i, 5, i); });
     view.courses.forEach((c, j) => {
-      m.set(2, c0 + j, c.type, H2); m.set(3, c0 + j, c.dept, H2); m.set(4, c0 + j, C.cStage(c), H2); m.set(5, c0 + j, c.name, { ...H2, wrap: true }); m.width(c0 + j, 6.5);
+      m.set(2, c0 + j, c.type, H2); m.set(3, c0 + j, c.dept, H2); m.set(4, c0 + j, C.cStage(c), H2); m.set(5, c0 + j, c.name, { ...H2, wrap: true }); m.width(c0 + j, 9);
     });
     m.heights[5] = 120;
     view.people.forEach((p, i) => {
@@ -549,7 +602,7 @@ const Export = (() => {
       [i + 1, p.name, p.rank, p.team, p.eduDept, e.field || '', e.stage ?? '', e.target, e.done].forEach((v, j) => m.set(rr, j, v, j === 1 || j === 3 ? B : BC));
       m.set(rr, 9, e.rate ?? '-', { ...BC, fmt: '0%', bold: true, fill: e.rate == null ? undefined : e.rate >= 1 ? 'DDF3E4' : e.rate < 0.5 ? 'F9D0D0' : 'FFF1CC' });
       m.set(rr, 10, e.elective, BC);
-      view.courses.forEach((c, j) => { const x = C.cell(c, p); m.set(rr, c0 + j, x.mark, { ...BC, color: x.mark === '◎' ? '2F6FB3' : '1F2A37', fill: x.target && !x.mark ? 'FBEAEA' : undefined }); });
+      view.courses.forEach((c, j) => { const x = C.cell(c, p); m.set(rr, c0 + j, x.mark ? '이수' : x.target ? '미이수' : '', x.mark ? { ...BC, color: '22643C', fill: 'E3F3E8' } : x.target ? { ...BC, color: '952B2B', fill: 'FBEAEA' } : BC); });
     });
     m.freeze = { row: 6, col: 2 };
     [5, 9, 11, 11, 9, 9, 7, 7, 7, 8, 7].forEach((w, i) => m.width(i, w));
@@ -799,7 +852,7 @@ let API_URL = DEFAULT_API || LS.get('lab_api') || '';
 // ---------- state ----------
 const S = { config: null, parts: [], people: [], grades: {}, courses: [], edu: {}, history: [], items: {} };
 let C = null, admin = false, editor = false, offline = false, loadedOnce = false, auth = null;
-const ui = { assessMode: 'part', part: null, eduMode: 'matrix', eduDept: '전체', q: '', team: '', lv: '', guideDept: '', guideType: '', setPart: null, drafts: {}, users: [], lockSet: false, setup: false };
+const ui = { assessMode: 'part', part: null, eduMode: 'matrix', eduDept: '전체', q: '', team: '', lv: '', guideDept: '', guideType: '', setPart: null, drafts: {}, users: [], lockSet: false, setup: false, signup: false, signupDone: '' };
 try { auth = JSON.parse(LS.get('lab_auth') || 'null'); } catch { auth = null; }
 
 function rebuild() {
@@ -840,7 +893,7 @@ let loading = false;
 async function reload(manual) {
   if (!auth || loading || busy) return;
   loading = true; syncUI();
-  try { const d = await api('load'); applyDocs(d.docs); loadedOnce = true; offline = false; if (manual) toast('최신 데이터로 새로 고쳤습니다'); }
+  try { const d = await api('load'); applyDocs(d.docs); loadedOnce = true; offline = false; if (admin) loadUsers(true); if (manual) toast('최신 데이터로 새로 고쳤습니다'); }
   catch (e) { if (!e.auth) { offline = true; toast('서버에서 데이터를 받지 못했습니다: ' + e.message, true); } }
   loading = false; syncUI(); schedule();
 }
@@ -876,31 +929,40 @@ function toast(msg, bad) { const d = document.createElement('div'); if (bad) d.c
 function whoUI() {
   const u = auth?.user;
   $('#who').innerHTML = u
-    ? `<span class="chip ${u.role === '관리자' ? 'admin' : ''}">${esc(u.name)} · ${esc(u.role)}</span> <button class="btn sm" data-act="chpw" type="button">비밀번호 변경</button> <button class="btn sm" data-act="logout" type="button">로그아웃</button>`
+    ? `<span class="who-name">${esc(u.name)}</span><span class="chip ${u.role === '관리자' ? 'admin' : ''}">${esc(u.role)}</span><button class="btn sm" data-act="chpw" type="button">비밀번호 변경</button><button class="btn sm" data-act="logout" type="button">로그아웃</button>`
     : '';
   const acc = document.querySelector('#tabs a[data-route="accounts"]');
-  if (acc) acc.hidden = !admin;
+  if (acc) { acc.hidden = !admin; const n = ui.users.filter(x => x.role === '대기').length; acc.innerHTML = '계정 관리' + (n ? ` <span class="badge" title="승인 대기">${n}</span>` : ''); }
   $('#expMenu').hidden = !u;
 }
 function vServer() {
-  return `<section class="card" style="max-width:560px;margin:40px auto"><h2>서버 연결</h2><p class="muted" style="margin:0">구글 Apps Script에 배포한 웹 앱 주소를 넣어 주세요. 이 브라우저에 기억됩니다.</p>
-  <form class="form" data-form="server" style="grid-template-columns:1fr"><label class="field">웹 앱 URL<input name="url" placeholder="https://script.google.com/macros/s/…/exec" required></label><div class="err" id="ferr"></div><div class="actions" style="display:flex;justify-content:flex-end"><button class="btn primary" type="submit">연결</button></div></form></section>`;
+  return `<section class="card auth"><h2>서버 연결</h2><p class="muted small">구글 Apps Script에 배포한 웹 앱 주소를 넣어 주세요. 이 브라우저에 기억됩니다.</p>
+  <form class="form one" data-form="server"><label class="field">웹 앱 URL (…/exec 로 끝나는 주소)<input name="url" placeholder="https://script.google.com/macros/s/…/exec" required></label><div class="err"></div><div class="actions"><button class="btn primary wide" type="submit">연결</button></div></form></section>`;
 }
 function vLogin() {
-  if (ui.setup) return `<section class="card" style="max-width:460px;margin:40px auto"><h2>최초 관리자 만들기</h2><p class="muted small" style="margin:0">아직 계정이 없습니다. 지금 만드는 계정이 관리자가 되고, 다른 사람 계정은 로그인 후 '계정 관리'에서 추가합니다.</p>
-    <form class="form" data-form="setup" style="grid-template-columns:1fr"><label class="field">아이디 (영문·숫자)<input name="id" autocomplete="username" required></label><label class="field">이름<input name="name" required></label><label class="field">비밀번호 (6자 이상)<input name="pw" type="password" autocomplete="new-password" required></label><div class="err" id="ferr"></div><div style="display:flex;justify-content:flex-end"><button class="btn primary" type="submit">관리자 만들기</button></div></form></section>`;
-  return `<section class="card" style="max-width:420px;margin:48px auto"><h2>로그인</h2><p class="muted small" style="margin:0">연구소 역량·교육 관리 · 계정은 관리자에게 받으세요.</p>
-    <form class="form" data-form="login" style="grid-template-columns:1fr"><label class="field">아이디<input name="id" autocomplete="username" required></label><label class="field">비밀번호<input name="pw" type="password" autocomplete="current-password" required></label><div class="err" id="ferr"></div><div style="display:flex;justify-content:flex-end"><button class="btn primary" type="submit">로그인</button></div></form>
-    <button type="button" class="link small muted" data-act="set-server" style="align-self:flex-start">서버 주소 바꾸기</button></section>`;
+  if (ui.setup) return `<section class="card auth"><h2>최초 관리자 만들기</h2><p class="muted small">아직 계정이 없습니다. 지금 만드는 계정이 관리자가 되고, 다른 사람은 회원가입 후 승인하면 됩니다.</p>
+    <form class="form one" data-form="setup"><label class="field">아이디 (영문·숫자)<input name="id" autocomplete="username" required></label><label class="field">이름<input name="name" required></label><label class="field">비밀번호 (6자 이상)<input name="pw" type="password" autocomplete="new-password" required></label><div class="err"></div><div class="actions"><button class="btn primary wide" type="submit">관리자 만들기</button></div></form></section>`;
+  if (ui.signup) return `<section class="card auth"><h2>회원가입</h2><p class="muted small">가입 신청 후 관리자가 승인하면 로그인할 수 있습니다.</p>
+    <form class="form one" data-form="signup">
+      <label class="field">아이디 (영문·숫자 2자 이상)<input name="id" autocomplete="username" required></label>
+      <div class="form two"><label class="field">이름<input name="name" required></label><label class="field">소속<input name="team" placeholder="예: 개발지원팀"></label></div>
+      <label class="field">비밀번호 (6자 이상)<input name="pw" type="password" autocomplete="new-password" required></label>
+      <label class="field">비밀번호 확인<input name="pw2" type="password" autocomplete="new-password" required></label>
+      <div class="err"></div>
+      <div class="actions"><button type="button" class="btn" data-act="to-login">로그인으로</button><button class="btn primary" type="submit">가입 신청</button></div></form></section>`;
+  return `<section class="card auth"><h2>로그인</h2><p class="muted small">연구소 역량·교육 관리</p>
+    ${ui.signupDone ? `<div class="notice ok">${esc(ui.signupDone)}</div>` : ''}
+    <form class="form one" data-form="login"><label class="field">아이디<input name="id" autocomplete="username" required></label><label class="field">비밀번호<input name="pw" type="password" autocomplete="current-password" required></label><div class="err"></div><div class="actions"><button class="btn primary wide" type="submit">로그인</button></div></form>
+    <div class="auth-foot"><span class="muted small">계정이 없나요?</span> <button type="button" class="link small" data-act="to-signup">회원가입</button><span class="spacer"></span><button type="button" class="link small muted" data-act="set-server">서버 주소 변경</button></div></section>`;
 }
 function setServer() { API_URL = ''; LS.set('lab_api', null); logout(true); }
 function startSession(d) {
-  auth = { token: d.token, user: d.user }; LS.set('lab_auth', JSON.stringify(auth)); setRole(); whoUI(); syncUI();
+  auth = { token: d.token, user: d.user }; LS.set('lab_auth', JSON.stringify(auth)); setRole(); whoUI(); syncUI(); if (admin) loadUsers(true);
   loadedOnce = false; render(); reload();
 }
 function logout(silent) {
   if (auth && !silent) api('logout').catch(() => { });
-  auth = null; LS.set('lab_auth', null); setRole(); ui.drafts = {};
+  auth = null; LS.set('lab_auth', null); setRole(); ui.drafts = {}; ui.users = []; usersLoaded = false;
   Object.assign(S, { config: null, parts: [], people: [], grades: {}, courses: [], edu: {}, history: [] }); C = null; loadedOnce = false;
   whoUI(); syncUI(); checkSetup(); render();
 }
@@ -920,11 +982,16 @@ async function formAuth(f) {
       const d = await r.json(); if (!d.ok) throw new Error('서버 응답이 올바르지 않습니다');
       LS.set('lab_api', url); ui.setup = !!d.setup; render(); return;
     }
-    if (f.dataset.form === 'login') { startSession(await api('login', { id: v.id.trim(), pw: v.pw })); toast('로그인했습니다'); return; }
+    if (f.dataset.form === 'signup') {
+      if (v.pw !== v.pw2) throw new Error('비밀번호 확인이 다릅니다');
+      await api('signup', { id: v.id.trim(), name: v.name.trim(), team: v.team.trim(), pw: v.pw });
+      ui.signup = false; ui.signupDone = `가입 신청을 보냈습니다 (${v.id.trim()}). 관리자가 승인하면 로그인할 수 있습니다.`; render(); return;
+    }
+    if (f.dataset.form === 'login') { ui.signupDone = ''; startSession(await api('login', { id: v.id.trim(), pw: v.pw })); toast('로그인했습니다'); return; }
     if (f.dataset.form === 'setup') { const d = await api('setup', { id: v.id.trim(), name: v.name.trim(), pw: v.pw }); ui.setup = false; startSession(d); toast('관리자 계정을 만들었습니다'); return; }
     if (f.dataset.form === 'chpw') { if (v.pw !== v.pw2) throw new Error('새 비밀번호가 서로 다릅니다'); await api('changePw', { old: v.old, pw: v.pw }); closeDlg(); toast('비밀번호를 바꿨습니다'); return; }
     if (f.dataset.form === 'acct') {
-      const user = { id: v.id.trim(), name: v.name.trim(), role: v.role, active: true, pw: v.pw || undefined };
+      const user = { id: v.id.trim(), name: v.name.trim(), team: (v.team || '').trim(), role: v.role, active: true, pw: v.pw || undefined };
       const old = ui.users.find(u => u.id === user.id);
       if (f.dataset.id && old) user.active = old.active;
       if (!f.dataset.id && old) throw new Error('이미 있는 아이디입니다');
@@ -947,6 +1014,7 @@ function acctDialog(id) {
   openDlg(`<h2>${id ? '계정 수정' : '계정 추가'}</h2><form class="form" data-form="acct" data-id="${esc(id || '')}" style="grid-template-columns:1fr 1fr">
     <label class="field">아이디 (영문·숫자)<input name="id" value="${esc(u.id)}" ${id ? 'readonly' : ''} required></label>
     <label class="field">이름<input name="name" value="${esc(u.name)}" required></label>
+    <label class="field" style="grid-column:1/-1">소속<input name="team" value="${esc(u.team || '')}"></label>
     <label class="field" style="grid-column:1/-1">역할<select name="role">${Object.entries(ROLE_DESC).map(([r, dsc]) => `<option value="${r}"${r === u.role ? ' selected' : ''}>${r} — ${dsc}</option>`).join('')}</select></label>
     <label class="field" style="grid-column:1/-1">${id ? '새 비밀번호 (바꿀 때만 입력)' : '처음 비밀번호 (6자 이상, 본인에게 전달 후 변경 안내)'}<input name="pw" type="text" autocomplete="off" ${id ? '' : 'required'}></label>
     <div class="err" style="grid-column:1/-1"></div><div class="actions" style="grid-column:1/-1"><button type="button" class="btn" data-act="close">취소</button><button class="btn primary" type="submit">저장</button></div></form>`);
@@ -955,20 +1023,29 @@ function lockDialog() {
   openDlg(`<h2>엑셀 잠금 비밀번호</h2><p class="small muted" style="margin:0">내보내는 엑셀의 시트·통합문서 보호에 쓰입니다. 서버에만 저장되고 화면이나 코드에는 나타나지 않습니다.</p>
     <form class="form" data-form="lock" style="grid-template-columns:1fr"><label class="field">잠금 비밀번호<input name="pw" type="password" autocomplete="off" required></label><div class="err"></div><div class="actions"><button type="button" class="btn" data-act="close">취소</button><button class="btn primary" type="submit">저장</button></div></form>`);
 }
-async function acctCall(action, payload, msg) { try { const d = await api(action, payload); ui.users = d.users; render(); toast(msg); } catch (e) { toast(e.message, true); } }
+async function acctCall(action, payload, msg) { try { const d = await api(action, payload); ui.users = d.users; whoUI(); render(); toast(msg); } catch (e) { toast(e.message, true); } }
 let usersLoaded = false;
-async function loadUsers() { try { const d = await api('users'); ui.users = d.users; ui.lockSet = d.lockSet; usersLoaded = true; render(); } catch (e) { toast(e.message, true); } }
+async function loadUsers(quiet) { try { const d = await api('users'); ui.users = d.users; ui.lockSet = d.lockSet; usersLoaded = true; whoUI(); if (!quiet || route() === 'accounts') schedule(); } catch (e) { if (!quiet) toast(e.message, true); } }
 function vAccounts() {
   if (!usersLoaded) { loadUsers(); return '<div class="empty">계정 목록을 불러오는 중…</div>'; }
-  const cnt = r => ui.users.filter(u => u.role === r && u.active).length;
-  return `<section class="card"><div class="head"><h2>계정 관리</h2><span class="sub">관리자 ${cnt('관리자')} · 편집 ${cnt('편집')} · 보기 ${cnt('보기')}</span><span class="spacer"></span><button type="button" class="btn primary" data-act="acct-edit">계정 추가</button></div>
-    <div class="chk small">${Object.entries(ROLE_DESC).map(([r, d]) => `<span class="tag">${r}: ${d}</span>`).join('')}</div>
-    <div class="tw free"><table><thead><tr><th>아이디</th><th>이름</th><th>역할</th><th>상태</th><th>만든 날</th><th>마지막 로그인</th><th></th></tr></thead><tbody>
-    ${ui.users.map(u => `<tr><td class="num">${esc(u.id)}${u.id === auth.user.id ? ' <span class="tag">나</span>' : ''}</td><td>${esc(u.name)}</td><td><span class="tag ${u.role === '관리자' ? 'ok' : ''}">${esc(u.role)}</span></td><td>${u.active ? '<span class="tag ok">사용</span>' : '<span class="tag bad">중지</span>'}</td><td class="num muted">${esc(String(u.created).slice(0, 10))}</td><td class="num muted">${esc(u.lastLogin || '–')}</td>
-      <td>${u.id === auth.user.id ? '' : `<button type="button" class="btn sm" data-act="acct-edit" data-id="${esc(u.id)}">수정</button> <button type="button" class="btn sm" data-act="acct-toggle" data-id="${esc(u.id)}">${u.active ? '중지' : '사용'}</button> <button type="button" class="btn sm danger" data-act="acct-del" data-id="${esc(u.id)}">삭제</button>`}</td></tr>`).join('')}
-    </tbody></table></div><p class="small muted" style="margin:0">비밀번호를 잊은 사람은 '수정'에서 새 비밀번호를 정해 전달하세요. 접속 기록은 구글 시트의 log 탭에 남습니다.</p></section>
+  const act = ui.users.filter(u => u.role !== '대기'), wait = ui.users.filter(u => u.role === '대기');
+  const cnt = r => act.filter(u => u.role === r && u.active).length;
+  let h = '';
+  h += `<section class="card"><div class="head"><h2>가입 승인 대기</h2><span class="sub">${wait.length}명</span></div>
+    ${wait.length ? `<div class="tw free"><table><thead><tr><th>아이디</th><th>이름</th><th>소속</th><th>신청일</th><th style="width:220px">부여할 역할</th><th style="width:150px"></th></tr></thead><tbody>
+    ${wait.map(u => `<tr><td class="num">${esc(u.id)}</td><td><b>${esc(u.name)}</b></td><td>${esc(u.team || '–')}</td><td class="num muted">${esc(String(u.created).slice(0, 16))}</td>
+      <td><select class="ci" id="role-${esc(u.id)}">${Object.keys(ROLE_DESC).map(r => `<option${r === '보기' ? ' selected' : ''}>${r}</option>`).join('')}</select></td>
+      <td class="r"><button type="button" class="btn sm primary" data-act="acct-approve" data-id="${esc(u.id)}">승인</button> <button type="button" class="btn sm danger" data-act="acct-reject" data-id="${esc(u.id)}">거절</button></td></tr>`).join('')}
+    </tbody></table></div>` : '<p class="muted small">대기 중인 가입 신청이 없습니다. 사이트 주소를 알려 주면 로그인 화면의 회원가입으로 신청할 수 있습니다.</p>'}</section>`;
+  h += `<section class="card"><div class="head"><h2>계정 관리</h2><span class="sub">관리자 ${cnt('관리자')} · 편집 ${cnt('편집')} · 보기 ${cnt('보기')}</span><span class="spacer"></span><button type="button" class="btn primary" data-act="acct-edit">계정 직접 추가</button></div>
+    <div class="chk">${Object.entries(ROLE_DESC).map(([r, d]) => `<span class="tag">${r} · ${d}</span>`).join('')}</div>
+    <div class="tw free"><table><thead><tr><th>아이디</th><th>이름</th><th>소속</th><th>역할</th><th>상태</th><th>가입일</th><th>마지막 로그인</th><th style="width:190px"></th></tr></thead><tbody>
+    ${act.map(u => `<tr><td class="num">${esc(u.id)}${u.id === auth.user.id ? ' <span class="tag">나</span>' : ''}</td><td><b>${esc(u.name)}</b></td><td>${esc(u.team || '–')}</td><td><span class="tag ${u.role === '관리자' ? 'ok' : ''}">${esc(u.role)}</span></td><td>${u.active ? '<span class="tag ok">사용</span>' : '<span class="tag bad">중지</span>'}</td><td class="num muted">${esc(String(u.created).slice(0, 10))}</td><td class="num muted">${esc(u.lastLogin || '–')}</td>
+      <td class="r">${u.id === auth.user.id ? '' : `<button type="button" class="btn sm" data-act="acct-edit" data-id="${esc(u.id)}">수정</button> <button type="button" class="btn sm" data-act="acct-toggle" data-id="${esc(u.id)}">${u.active ? '중지' : '사용'}</button> <button type="button" class="btn sm danger" data-act="acct-del" data-id="${esc(u.id)}">삭제</button>`}</td></tr>`).join('')}
+    </tbody></table></div><p class="muted small">비밀번호를 잊은 사람은 '수정'에서 새 비밀번호를 정해 전달하세요. 접속·수정 기록은 구글 시트의 log 탭에 남습니다.</p></section>
     <section class="card"><div class="head"><h2>엑셀 잠금 비밀번호</h2><span class="tag ${ui.lockSet ? 'ok' : 'bad'}">${ui.lockSet ? '설정됨' : '미설정 · 잠금 없이 내보내짐'}</span><span class="spacer"></span><button type="button" class="btn" data-act="lockpw">${ui.lockSet ? '변경' : '설정'}</button></div>
-    <p class="small muted" style="margin:0">누가 내보내도 같은 비밀번호로 잠긴 엑셀이 나옵니다. 비밀번호 자체는 관리자도 다시 볼 수 없으니 따로 기록해 두세요.</p></section>`;
+    <p class="muted small">누가 내보내도 같은 비밀번호로 잠긴 엑셀이 나옵니다. 비밀번호 자체는 관리자도 다시 볼 수 없으니 따로 기록해 두세요.</p></section>`;
+  return h;
 }
 
 let rq = false, deferred = false;
@@ -1004,6 +1081,7 @@ function render() {
   const v = $('#view');
   if (!API_URL) { v.innerHTML = vServer(); return; }
   if (!auth) { v.innerHTML = vLogin(); setTimeout(() => { const f = document.querySelector('#view input'); if (f && !dlg().open) f.focus(); }, 0); return; }
+  if (route() === 'accounts' && admin) { v.innerHTML = vAccounts(); return; }
   if (!C) {
     v.innerHTML = !loadedOnce && !offline
       ? `<div class="empty">데이터를 불러오는 중입니다…</div>`
@@ -1070,7 +1148,7 @@ function vDash() {
   if (excl.length) h += `<div class="notice warn small">평가항목이 없는 파트(${[...new Set(excl.map(p => p.cat))].map(esc).join(', ')}) ${excl.length}명은 집계에서 빠집니다. 기준 정보에서 항목을 추가하면 자동으로 포함됩니다.</div>`;
   h += `</section>`;
   // edu by team
-  h += `<section class="card"><div class="head"><h2>팀별 필수 교육 이수율</h2><span class="sub">◎ 상위 직급 인정 포함</span></div><div style="display:flex;flex-direction:column;gap:8px">`;
+  h += `<section class="card"><div class="head"><h2>팀별 필수 교육 이수율</h2><span class="sub">상위 직급 자동 인정 포함</span></div><div style="display:flex;flex-direction:column;gap:8px">`;
   for (const t of teams) {
     const a = es.withT.filter(x => x.p.team === t); if (!a.length) continue;
     const tot = a.reduce((s, x) => s + x.e.target, 0), dn = a.reduce((s, x) => s + x.e.done, 0), r = tot ? dn / tot : 0;
@@ -1138,22 +1216,24 @@ function vEdu() {
     <button type="button" data-act="emode" data-v="guide" aria-pressed="${ui.eduMode === 'guide'}">교육 가이드</button></div>`;
   if (ui.eduMode === 'matrix') {
     h += `<label class="field"><span>부서 선택</span><select class="ci" data-act="f-dept">${deptOptions().map(d => `<option${d === ui.eduDept ? ' selected' : ''}>${esc(d)}</option>`).join('')}</select></label>
-    <span class="small muted">● 이수 · ◎ 상위 직급 인정 · <span class="mk miss" style="width:16px;height:12px;vertical-align:middle"></span> 필수 대상 미이수${editor ? ' · 칸을 누르면 이수 등록/취소' : ''}</span></div>`;
+    <span class="legend-inline"><span class="pill ok">이수</span><span class="pill miss">미이수</span>${editor ? '<span class="muted small">칸을 누르면 이수 ↔ 미이수가 바뀌고 이수 기록에 바로 반영됩니다</span>' : ''}</span></div>`;
     const v = C.eduView(ui.eduDept);
     const invalid = S.people.filter(p => p.edu && !C.eduValid(p));
     if (invalid.length) h += `<div class="notice warn small">직급 또는 상세부서가 교육 설정에 없어 표시되지 않는 인원 ${invalid.length}명: ${invalid.map(p => esc(p.name)).join(', ')}</div>`;
     h += `<section class="card"><div class="head"><h2>부서별 교육 수료 현황</h2><span class="sub">표시 ${v.people.length}명 / 필수 교육 ${v.courses.length}건</span></div>
     <div class="tw" style="--s2:38px"><table><thead><tr><th class="sticky c" style="min-width:38px">No</th><th class="sticky2">이름</th><th>직급</th><th>소속</th><th>상세부서</th><th class="c">단계</th><th class="r">대상</th><th class="r">이수</th><th>이수율</th><th class="r">선택</th>
-    ${v.courses.map(c => `<th class="course" title="${esc(c.name)} · ${esc(c.dept)} · ${esc(c.rank)} (${C.cStage(c)}단계)">${esc(c.name)}</th>`).join('')}</tr></thead><tbody>`;
+    ${v.courses.map(c => `<th class="course" title="${esc(c.name)} · ${esc(c.dept)} · ${esc(c.rank)} (${C.cStage(c)}단계)"><span class="cn">${esc(c.name)}</span><span class="cd">${esc(c.dept)} · ${C.cStage(c)}단계</span></th>`).join('')}</tr></thead><tbody>`;
     v.people.forEach((p, i) => {
       const e = C.edu(p);
       h += `<tr><td class="sticky c num muted">${i + 1}</td><td class="sticky2"><button class="link" data-act="person-edu" data-id="${p.id}" type="button">${esc(p.name)}</button></td><td class="muted">${esc(p.rank)}</td><td>${esc(p.team)}</td><td>${esc(p.eduDept)}</td><td class="c num">${e.stage}</td><td class="r num">${e.target}</td><td class="r num">${e.done}</td><td>${meter(e.rate)}</td><td class="r num">${e.elective}</td>`;
       for (const c of v.courses) {
-        const x = C.cell(c, p), cls = x.mark === '◎' ? 'up' : x.mark ? 'done' : x.target ? 'miss' : '';
-        const tt = `${p.name} · ${c.name}${x.rec && x.rec.date ? ' · ' + x.rec.date : ''}`;
-        h += (editor && x.mark !== '◎')
-          ? `<td class="c"><button type="button" class="mk ${cls}" data-act="toggle-rec" data-p="${p.id}" data-c="${c.id}" title="${esc(tt)}" aria-label="${esc(tt)} ${x.mark ? '이수 취소' : '이수 등록'}">${x.mark}</button></td>`
-          : `<td class="c"><span class="mk ${cls}" title="${esc(tt)}">${x.mark}</span></td>`;
+        const x = C.cell(c, p), auto = x.mark === '◎', done = !!x.mark;
+        if (!done && !x.target) { h += '<td class="c"></td>'; continue; }
+        const tt = `${p.name} · ${c.name} · ${done ? '이수' + (auto ? ' (상위 직급 자동 인정)' : x.rec?.date ? ' ' + x.rec.date : '') : '미이수'}`;
+        const label = done ? '이수' : '미이수', cls = done ? 'ok' : 'miss';
+        h += (editor && !auto)
+          ? `<td class="c"><button type="button" class="pill ${cls} click" data-act="toggle-rec" data-p="${p.id}" data-c="${c.id}" title="${esc(tt)} · 눌러서 ${done ? '미이수로' : '이수로'}">${label}</button></td>`
+          : `<td class="c"><span class="pill ${cls}" title="${esc(tt)}">${label}</span></td>`;
       }
       h += '</tr>';
     });
@@ -1165,8 +1245,9 @@ function vEdu() {
     if (editor) h += recForm();
     const cmap = Object.fromEntries(S.courses.map(c => [c.id, c]));
     const rows = [];
-    for (const p of C.sortEdu(S.people)) for (const [cid, r] of Object.entries(S.edu[p.id] || {})) { const c = cmap[cid]; if (c && (!ui.q || p.name.includes(ui.q) || c.name.includes(ui.q))) rows.push({ p, c, r }); }
-    h += `<section class="card"><div class="head"><h2>교육 이수 기록</h2><span class="sub">${rows.length.toLocaleString()}건</span></div><div class="tw"><table><thead><tr><th class="c">No</th><th>이름</th><th>소속</th><th>교육명</th><th>구분</th><th>부서</th><th>이수일</th><th>비고</th>${editor ? '<th></th>' : ''}</tr></thead><tbody>
+    C.sortEdu(S.people).forEach((p, pi) => { for (const [cid, r] of Object.entries(S.edu[p.id] || {})) { const c = cmap[cid]; if (c && (!ui.q || p.name.includes(ui.q) || c.name.includes(ui.q))) rows.push({ p, c, r, pi }); } });
+    rows.sort((x, y) => (y.r.date || '').localeCompare(x.r.date || '') || x.pi - y.pi);
+    h += `<section class="card"><div class="head"><h2>교육 이수 기록</h2><span class="sub">${rows.length.toLocaleString()}건 · 최근 이수일 순 · 수료 현황표에서 누른 내용도 여기에 자동으로 들어옵니다</span></div><div class="tw"><table><thead><tr><th class="c">No</th><th>이름</th><th>소속</th><th>교육명</th><th>구분</th><th>부서</th><th>이수일</th><th>비고</th>${editor ? '<th></th>' : ''}</tr></thead><tbody>
     ${rows.map((x, i) => `<tr><td class="c num muted">${i + 1}</td><td><button class="link" data-act="person-edu" data-id="${x.p.id}" type="button">${esc(x.p.name)}</button></td><td>${esc(x.p.team)}</td><td>${esc(x.c.name)}</td><td><span class="tag ${x.c.type === '필수' ? 'ok' : ''}">${esc(x.c.type)}</span></td><td>${esc(x.c.dept)}</td><td class="num">${esc(x.r.date) || '<span class="muted">–</span>'}</td><td>${esc(x.r.note)}</td>${editor ? `<td><button type="button" class="btn sm danger" data-act="del-rec" data-p="${x.p.id}" data-c="${x.c.id}">삭제</button></td>` : ''}</tr>`).join('')}
     </tbody></table></div></section>`;
     return h;
@@ -1203,7 +1284,7 @@ function personEdu(pid) {
   const p = S.people.find(x => x.id === pid); if (!p) return;
   const e = C.edu(p), cmap = S.courses;
   const req = cmap.filter(c => C.cell(c, p).target), el = cmap.filter(c => c.type === '선택' && (S.edu[p.id] || {})[c.id]);
-  const rows = req.map(c => { const x = C.cell(c, p); return `<tr><td>${esc(c.name)}</td><td>${esc(c.dept)}</td><td class="c num">${C.cStage(c)}</td><td class="c">${x.mark === '◎' ? '<span class="tag">상위 직급 인정</span>' : x.mark ? '<span class="tag ok">이수</span>' : '<span class="tag bad">미이수</span>'}</td><td class="num">${esc(x.rec?.date || '')}</td>${editor ? `<td>${x.mark === '◎' ? '' : x.rec ? `<button type="button" class="btn sm danger" data-act="dlg-del-rec" data-p="${p.id}" data-c="${c.id}">취소</button>` : `<button type="button" class="btn sm" data-act="dlg-add-rec" data-p="${p.id}" data-c="${c.id}">이수</button>`}</td>` : ''}</tr>`; }).join('');
+  const rows = req.map(c => { const x = C.cell(c, p); return `<tr><td>${esc(c.name)}</td><td>${esc(c.dept)}</td><td class="c num">${C.cStage(c)}</td><td class="c">${x.mark ? `<span class="pill ok">이수</span>${x.mark === '◎' ? ' <span class="muted small">상위 직급</span>' : ''}` : '<span class="pill miss">미이수</span>'}</td><td class="num">${esc(x.rec?.date || '')}</td>${editor ? `<td>${x.mark === '◎' ? '' : x.rec ? `<button type="button" class="btn sm danger" data-act="dlg-del-rec" data-p="${p.id}" data-c="${c.id}">취소</button>` : `<button type="button" class="btn sm" data-act="dlg-add-rec" data-p="${p.id}" data-c="${c.id}">이수</button>`}</td>` : ''}</tr>`; }).join('');
   openDlg(`<div class="head"><h2>${esc(p.name)}</h2><span class="sub">${esc(p.team)} · ${esc(p.rank)} · ${esc(p.eduDept)} (교육분야 ${esc(e.field || '-')}, ${e.stage ?? '-'}단계)</span><span class="spacer"></span><button type="button" class="btn sm" data-act="close">닫기</button></div>
    <div class="kpis"><div class="kpi edu"><span class="k">필수 대상</span><span class="v">${e.target}</span></div><div class="kpi edu"><span class="k">필수 이수</span><span class="v">${e.done}</span></div><div class="kpi edu"><span class="k">이수율</span><span class="v">${pct(e.rate)}</span></div><div class="kpi edu"><span class="k">선택 이수</span><span class="v">${e.elective}</span></div></div>
    <h3 style="font-size:14px">필수 교육</h3><div class="tw free"><table><thead><tr><th>교육명</th><th>부서</th><th class="c">단계</th><th class="c">상태</th><th>이수일</th>${editor ? '<th></th>' : ''}</tr></thead><tbody>${rows || '<tr><td colspan="6" class="muted">필수 대상 교육이 없습니다</td></tr>'}</tbody></table></div>
@@ -1329,6 +1410,10 @@ document.addEventListener('click', e => {
   const needE = () => { if (!editor) { toast('편집 권한이 필요합니다', true); return false; } return true; };
   switch (a) {
     case 'logout': logout(); break;
+    case 'to-signup': ui.signup = true; ui.signupDone = ''; render(); break;
+    case 'to-login': ui.signup = false; render(); break;
+    case 'acct-approve': if (!need()) break; { const u = ui.users.find(x => x.id === d.id), role = document.getElementById('role-' + d.id)?.value || '보기'; acctCall('userSave', { user: { id: u.id, name: u.name, team: u.team, role, active: true } }, `${u.name} 님을 '${role}' 권한으로 승인했습니다`); } break;
+    case 'acct-reject': if (!need()) break; { const u = ui.users.find(x => x.id === d.id); confirmDlg(`${esc(u.name)} (${esc(u.id)}) 님의 가입 신청을 거절할까요? 신청 내용이 삭제됩니다.`, '거절', () => acctCall('userDelete', { id: d.id }, '가입 신청을 거절했습니다')); } break;
     case 'chpw': pwDialog(); break;
     case 'set-server': setServer(); break;
     case 'acct-edit': if (!need()) break; acctDialog(d.id); break;
@@ -1342,7 +1427,9 @@ document.addEventListener('click', e => {
     case 'goto-part': { const p = S.parts.find(x => x.name === d.v); if (p) { ui.part = p.id; ui.assessMode = 'part'; render(); } break; }
     case 'emode': ui.eduMode = d.v; ui.q = ''; render(); break;
     case 'person-edu': personEdu(d.id); break;
-    case 'toggle-rec': if (!needE()) break; { const has = (S.edu[d.p] || {})[d.c]; setRec(d.p, d.c, has ? null : { date: today(), note: '이수 완료' }); } break;
+    case 'toggle-rec': if (!needE()) break; { const has = (S.edu[d.p] || {})[d.c]; const p = S.people.find(x => x.id === d.p), c = S.courses.find(x => x.id === d.c);
+      setRec(d.p, d.c, has ? null : { date: today(), note: '이수 완료' });
+      toast(has ? `${p?.name} · ${c?.name}: 미이수로 바꾸고 이수 기록에서 지웠습니다` : `${p?.name} · ${c?.name}: 이수 기록에 추가했습니다 (${today()})`); } break;
     case 'del-rec': if (!needE()) break; { const p = S.people.find(x => x.id === d.p), c = S.courses.find(x => x.id === d.c); confirmDlg(`${esc(p?.name)} · ${esc(c?.name)} 이수 기록을 삭제할까요?`, '삭제', () => setRec(d.p, d.c, null)); } break;
     case 'dlg-del-rec': if (!needE()) break; setRec(d.p, d.c, null); personEdu(d.p); break;
     case 'dlg-add-rec': if (!needE()) break; setRec(d.p, d.c, { date: today(), note: '이수 완료' }); personEdu(d.p); break;
@@ -1414,7 +1501,7 @@ document.addEventListener('input', e => {
 document.addEventListener('submit', e => {
   const f = e.target; if (!f.dataset.form) return;
   e.preventDefault();
-  if (['login', 'setup', 'server', 'chpw', 'acct', 'lock'].includes(f.dataset.form)) { formAuth(f); return; }
+  if (['login', 'setup', 'server', 'chpw', 'acct', 'lock', 'signup'].includes(f.dataset.form)) { formAuth(f); return; }
   if (f.dataset.form === 'rec' ? !editor : !admin) { toast('권한이 없습니다', true); return; }
   const v = Object.fromEntries(new FormData(f).entries());
   if (f.dataset.form === 'rec') {
