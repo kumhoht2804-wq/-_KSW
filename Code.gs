@@ -1,5 +1,6 @@
 /**
  * 연구소 역량·교육 관리 서버 (Google Apps Script)
+ * 제작자 KSW · © KSW. All rights reserved.
  *
  * 1) 새 구글 시트를 만들고 [확장 프로그램 → Apps Script]에 이 코드를 그대로 붙여넣기
  * 2) [배포 → 새 배포 → 유형: 웹 앱]

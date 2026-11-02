@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>연구소 역량·교육 관리</title>
+<meta name="author" content="KSW">
+<meta name="copyright" content="© KSW">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
@@ -152,6 +154,8 @@ dialog::backdrop{background:rgba(10,16,22,.45)}
 .chk{display:flex;gap:8px;flex-wrap:wrap}
 .sumrow td{background:var(--sunk);font-weight:600}
 .ro{background:transparent!important;border-color:transparent!important}
+footer.foot{padding:16px 20px 24px;text-align:center;font-size:12px;color:var(--muted)}
+footer.foot b{color:var(--ink);font-weight:600}
 @media (max-width:640px){main{padding:12px}.bar{padding:10px 12px}.g2{grid-template-columns:1fr}.hbar{grid-template-columns:80px 1fr 48px}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
@@ -166,7 +170,6 @@ dialog::backdrop{background:rgba(10,16,22,.45)}
       <a href="#education" data-route="education">교육 수료</a>
       <a href="#people" data-route="people">인원</a>
       <a href="#settings" data-route="settings">기준 정보</a>
-      <a href="#accounts" data-route="accounts" hidden>계정 관리</a>
     </nav>
     <div class="spacer"></div>
     <div class="sync" id="sync"><span class="dot busy"></span><span>불러오는 중</span></div>
@@ -174,7 +177,7 @@ dialog::backdrop{background:rgba(10,16,22,.45)}
       <button class="btn" id="expBtn" type="button" aria-haspopup="true">엑셀 내보내기 ▾</button>
       <div class="pop" role="menu">
         <button type="button" data-act="export-comp" role="menuitem">역량평가 현황 (.xlsx)<small>종합·평가현황·파트별 시트, 등급 칸만 입력 가능</small></button>
-        <button type="button" data-act="export-edu" role="menuitem">교육 수료 현황 (.xlsx)<small>교육 탭에서 고른 부서 기준, 전체 시트 잠금</small></button>
+        <button type="button" data-act="export-edu" role="menuitem">교육 수료 현황 (.xlsx)<small>현재 선택한 부서 기준, 전체 시트 잠금</small></button>
         <button type="button" data-act="export-json" role="menuitem">전체 데이터 백업 (.json)<small>복원용 원본 데이터</small></button>
       </div>
     </div>
@@ -182,6 +185,7 @@ dialog::backdrop{background:rgba(10,16,22,.45)}
   </div>
 </header>
 <main id="view"></main>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 연구소 역량·교육 관리</footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -313,8 +317,10 @@ const XLSX = (() => {
     const sb = styleBook();
     const files = [];
     const sx = sheets.map(s => sheetXml(s, sb, prot));
-    files.push({ name: '[Content_Types].xml', data: enc.encode(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${sheets.map((_, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')}</Types>`) });
-    files.push({ name: '_rels/.rels', data: enc.encode('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>') });
+    files.push({ name: '[Content_Types].xml', data: enc.encode(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${sheets.map((_, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')}</Types>`) });
+    files.push({ name: '_rels/.rels', data: enc.encode('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/></Relationships>') });
+    const ts = new Date().toISOString().slice(0, 19) + 'Z';
+    files.push({ name: 'docProps/core.xml', data: enc.encode(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><dc:creator>KSW</dc:creator><cp:lastModifiedBy>KSW</cp:lastModifiedBy><dc:rights>© KSW</dc:rights><dcterms:created xsi:type="dcterms:W3CDTF">${ts}</dcterms:created><dcterms:modified xsi:type="dcterms:W3CDTF">${ts}</dcterms:modified></cp:coreProperties>`) });
     const wp = prot ? `<workbookProtection workbookAlgorithmName="SHA-512" workbookHashValue="${prot.hash}" workbookSaltValue="${prot.salt}" workbookSpinCount="${prot.spin}" lockStructure="1"/>` : '';
     files.push({ name: 'xl/workbook.xml', data: enc.encode(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><workbookPr/>${wp}<bookViews><workbookView/></bookViews><sheets>${sheets.map((s, i) => `<sheet name="${esc(s.name)}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join('')}</sheets><calcPr calcId="191029" fullCalcOnLoad="1"/></workbook>`) });
     files.push({ name: 'xl/_rels/workbook.xml.rels', data: enc.encode(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${sheets.map((_, i) => `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join('')}<Relationship Id="rId${sheets.length + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`) });
@@ -583,6 +589,198 @@ const Export = (() => {
 })();
 if (typeof module !== 'undefined') module.exports = Export;
 
+// 원본 엑셀(.xlsx) 읽기 + 사이트 데이터로 변환. 외부 라이브러리 없이 브라우저 기능만 사용.
+const XlsxRead = (() => {
+  const td = new TextDecoder();
+  async function unzip(buf) {
+    const u8 = new Uint8Array(buf), dv = new DataView(buf);
+    let e = u8.length - 22; while (e >= 0 && dv.getUint32(e, true) !== 0x06054b50) e--;
+    if (e < 0) throw new Error('엑셀(.xlsx) 파일이 아닙니다');
+    const n = dv.getUint16(e + 10, true); let p = dv.getUint32(e + 16, true); const files = {};
+    for (let i = 0; i < n; i++) {
+      const method = dv.getUint16(p + 10, true), csize = dv.getUint32(p + 20, true), nl = dv.getUint16(p + 28, true), xl = dv.getUint16(p + 30, true), cl = dv.getUint16(p + 32, true), off = dv.getUint32(p + 42, true);
+      const name = td.decode(u8.subarray(p + 46, p + 46 + nl));
+      files[name] = { method, csize, off };
+      p += 46 + nl + xl + cl;
+    }
+    return async name => {
+      const f = files[name]; if (!f) return null;
+      const lnl = dv.getUint16(f.off + 26, true), lxl = dv.getUint16(f.off + 28, true), start = f.off + 30 + lnl + lxl;
+      const data = u8.slice(start, start + f.csize);
+      if (f.method === 0) return td.decode(data);
+      const ds = new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+      return td.decode(await new Response(ds).arrayBuffer());
+    };
+  }
+  const xml = s => new DOMParser().parseFromString(s, 'application/xml');
+  const kids = (el, tag) => Array.from(el.getElementsByTagName(tag));
+  const colNum = s => { let n = 0; for (const ch of s) n = n * 26 + ch.charCodeAt(0) - 64; return n - 1; };
+  async function readBook(file) {
+    const get = await unzip(await file.arrayBuffer());
+    const wb = xml(await get('xl/workbook.xml')), rels = xml(await get('xl/_rels/workbook.xml.rels'));
+    const relMap = {}; kids(rels, 'Relationship').forEach(r => relMap[r.getAttribute('Id')] = r.getAttribute('Target'));
+    const ssx = await get('xl/sharedStrings.xml');
+    const ss = ssx ? kids(xml(ssx), 'si').map(si => kids(si, 't').map(t => t.textContent).join('')) : [];
+    const sheets = {};
+    for (const s of kids(wb, 'sheet')) {
+      const rid = s.getAttribute('r:id') || s.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships', 'id');
+      let tgt = relMap[rid]; if (!tgt) continue;
+      tgt = tgt.startsWith('/') ? tgt.slice(1) : 'xl/' + tgt.replace(/^\.\//, '');
+      const sx = await get(tgt); if (!sx) continue;
+      const cells = {};
+      for (const c of kids(xml(sx), 'c')) {
+        const r = c.getAttribute('r'), t = c.getAttribute('t'), v = c.getElementsByTagName('v')[0];
+        let val = null;
+        if (t === 's') val = v ? ss[+v.textContent] : null;
+        else if (t === 'inlineStr') val = kids(c, 't').map(x => x.textContent).join('');
+        else if (t === 'str' || t === 'e') val = v ? v.textContent : null;
+        else if (t === 'b') val = v ? v.textContent === '1' : null;
+        else if (v) val = Number(v.textContent);
+        if (val === '' || val == null) continue;
+        const m = /^([A-Z]+)(\d+)$/.exec(r); if (!m) continue;
+        (cells[+m[2]] ||= {})[colNum(m[1])] = val;
+      }
+      sheets[s.getAttribute('name')] = cells;
+    }
+    return sheets;
+  }
+  const C_ = L => colNum(L);
+  const cell = (sh, row, col) => (sh[row] || {})[typeof col === 'string' ? C_(col) : col];
+  const str = v => v == null ? '' : String(v).trim();
+  const norm = v => str(v).replace(/\s+/g, '');
+  const date = v => { if (v == null || v === '') return ''; if (typeof v === 'number') { const d = new Date(Math.round((v - 25569) * 864e5)); return d.toISOString().slice(0, 10); } const s = str(v).replace(/\./g, '-'); return /^\d{4}-\d{1,2}-\d{1,2}/.test(s) ? s.slice(0, 10) : s; };
+  const rowsFrom = (sh, start) => Object.keys(sh).map(Number).filter(r => r >= start).sort((a, b) => a - b);
+  const range = (sh, r1, r2, col) => { const o = []; for (let r = r1; r <= r2; r++) { const v = cell(sh, r, col); if (v != null && str(v) !== '') o.push(str(v)); } return o; };
+
+  // 두 원본 파일(역량평가 / 교육 현황) 중 들어온 것만 반영해서 새 데이터 세트를 만든다.
+  async function toData(files, cur) {
+    let comp = null, edu = null;
+    for (const f of files) {
+      const b = await readBook(f);
+      if (b['인원현황'] && b['평가항목']) comp = b;
+      else if (b['연구소 교육 가이드'] && b['교육 이수 현황']) edu = b;
+      else throw new Error(`'${f.name}'은(는) 역량평가 또는 교육 현황 원본 파일이 아닙니다`);
+    }
+    if (!comp && !edu) throw new Error('불러올 파일이 없습니다');
+    const out = JSON.parse(JSON.stringify(cur || { config: null, parts: [], people: [], grades: {}, courses: [], edu: {}, history: [] }));
+    out.config = out.config || {};
+    const cfg = out.config, notes = [];
+    const pByName = new Map((out.people || []).map(p => [norm(p.name), p]));
+    let maxOrder = Math.max(0, ...out.people.map(p => p.order || 0));
+    const newId = (pre, used) => { let i = 1, id; do { id = pre + String(i++).padStart(3, '0'); } while (used.has(id)); used.add(id); return id; };
+    const pIds = new Set(out.people.map(p => p.id));
+
+    if (comp) {
+      const g = comp['기준'];
+      if (g) {
+        cfg.grades = []; for (let r = 5; r <= 9; r++) { const k = str(cell(g, r, 'B')), st = cell(g, r, 'C'); if (k && typeof st === 'number') cfg.grades.push({ g: k, step: st }); }
+        cfg.levels = []; for (let r = 16; r <= 19; r++) { const lv = str(cell(g, r, 'B')); if (lv) cfg.levels.push({ lv, label: str(cell(g, r, 'C')), min: +cell(g, r, 'D') || 0, ref: str(cell(g, r, 'E')), desc: str(cell(g, r, 'F')) }); }
+        cfg.teamOrder = range(g, 5, 14, 'H'); cfg.partOrder = range(g, 5, 14, 'I'); cfg.rankOrder = range(g, 5, 14, 'J');
+      }
+      // 인원
+      const sh = comp['인원현황'], seen = new Set();
+      for (const r of rowsFrom(sh, 3)) {
+        const name = str(cell(sh, r, 'D')); if (!name) continue;
+        seen.add(norm(name));
+        let p = pByName.get(norm(name));
+        const doc = { team: str(cell(sh, r, 'C')), name, rank: str(cell(sh, r, 'E')), cat: str(cell(sh, r, 'F')), join: date(cell(sh, r, 'G')), note: str(cell(sh, r, 'H')) };
+        if (p) Object.assign(p, doc);
+        else { p = { id: newId('p', pIds), ...doc, eduDept: { HW1: 'HW', HW2: 'HW' }[doc.cat] || doc.cat, edu: !edu, order: ++maxOrder }; out.people.push(p); pByName.set(norm(name), p); }
+        p.order = r;
+      }
+      const gone = out.people.filter(p => !seen.has(norm(p.name)));
+      if (gone.length) { notes.push(`역량평가 명단에 없는 ${gone.length}명 삭제: ${gone.map(p => p.name).join(', ')}`); out.people = out.people.filter(p => seen.has(norm(p.name))); gone.forEach(p => { delete out.grades[p.id]; delete out.edu[p.id]; }); }
+      // 평가항목
+      const it = comp['평가항목'], byPart = {};
+      for (const r of rowsFrom(it, 5)) {
+        const part = str(cell(it, r, 'B')), area = str(cell(it, r, 'C')), name = str(cell(it, r, 'D'));
+        if (!part || !area || !name) continue;
+        (byPart[part] ||= []).push({ area, name, ratio: +cell(it, r, 'F') || 0, basis: str(cell(it, r, 'H')) });
+      }
+      const oldParts = new Map(out.parts.map(p => [p.name, p]));
+      const partIds = new Set(out.parts.map(p => p.id));
+      out.parts = Object.entries(byPart).map(([name, items]) => {
+        const old = oldParts.get(name), oldItems = new Map((old?.items || []).map(i => [i.area + '|' + i.name, i.id]));
+        const used = new Set();
+        const L = [...items.filter(i => i.area === 'Knowledge'), ...items.filter(i => i.area === 'Skill')].map((i, k) => {
+          let id = oldItems.get(i.area + '|' + i.name) || name + '-' + (k + 1);
+          while (used.has(id)) id += 'b'; used.add(id); return { id, ...i };
+        });
+        return { id: old?.id || newId('pt', partIds), name, order: (cfg.partOrder || []).indexOf(name) < 0 ? 99 : cfg.partOrder.indexOf(name), items: L };
+      });
+      // 파트별 등급
+      out.grades = {};
+      let gcount = 0;
+      for (const part of out.parts) {
+        const ps = comp[part.name]; if (!ps) continue;
+        for (const r of rowsFrom(ps, 6)) {
+          const name = str(cell(ps, r, 'C')); if (!name) continue;
+          const p = pByName.get(norm(name)); if (!p) { notes.push(`${part.name} 시트의 '${name}'이 명단에 없어 건너뜀`); continue; }
+          const g = {};
+          part.items.forEach((itm, j) => { const v = str(cell(ps, r, 9 + j)); if (v) { g[itm.id] = v; gcount++; } });
+          out.grades[p.id] = g;
+        }
+      }
+      notes.push(`역량평가: 인원 ${out.people.length}명 · 파트 ${out.parts.length}개 · 등급 ${gcount}칸`);
+    }
+
+    if (edu) {
+      const st = edu['설정'];
+      if (st) {
+        cfg.eduDeptMap = []; for (let r = 5; r <= 24; r++) { const d = str(cell(st, r, 'A')); if (d) cfg.eduDeptMap.push({ dept: d, edu: str(cell(st, r, 'B')) }); }
+        cfg.rankStage = []; for (let r = 5; r <= 19; r++) { const k = str(cell(st, r, 'D')), s = cell(st, r, 'F'); if (k && typeof s === 'number') cfg.rankStage.push({ rank: k, stage: s }); }
+        cfg.guideStage = []; for (let r = 5; r <= 14; r++) { const k = str(cell(st, r, 'H')), s = cell(st, r, 'I'); if (k && typeof s === 'number') cfg.guideStage.push({ label: k, stage: s }); }
+        cfg.courseDeptOrder = range(st, 5, 19, 'K');
+        if (!cfg.teamOrder || !cfg.teamOrder.length) cfg.teamOrder = range(st, 5, 24, 'O');
+      }
+      // 교육 대상 인원
+      const ps = edu['연구소 인원'], eduNames = new Set();
+      for (const r of rowsFrom(ps, 3)) {
+        const name = str(cell(ps, r, 'B')); if (!name) continue;
+        eduNames.add(norm(name));
+        let p = pByName.get(norm(name));
+        if (!p) {
+          const dept = str(cell(ps, r, 'E'));
+          p = { id: newId('p', pIds), team: str(cell(ps, r, 'D')), name, rank: str(cell(ps, r, 'C')), cat: dept, join: date(cell(ps, r, 'G')), note: '', order: ++maxOrder };
+          out.people.push(p); pByName.set(norm(name), p);
+        }
+        p.eduDept = str(cell(ps, r, 'E')) || p.eduDept; p.edu = true;
+        if (!comp) { p.rank = str(cell(ps, r, 'C')) || p.rank; p.team = str(cell(ps, r, 'D')) || p.team; }
+      }
+      for (const p of out.people) if (!eduNames.has(norm(p.name))) p.edu = false;
+      // 교육 가이드
+      const gd = edu['연구소 교육 가이드'], oldC = new Map(out.courses.map(c => [c.name, c.id])), cIds = new Set(out.courses.map(c => c.id));
+      out.courses = [];
+      for (const r of rowsFrom(gd, 4)) {
+        const name = str(cell(gd, r, 'B')); if (!name) continue;
+        const type = str(cell(gd, r, 'F')) === '●' ? '필수' : str(cell(gd, r, 'G')) === '●' ? '선택' : '';
+        if (out.courses.some(c => c.name === name)) { notes.push(`교육명 중복 '${name}' 한 건만 반영`); continue; }
+        out.courses.push({ id: oldC.get(name) || newId('c', cIds), name, purpose: str(cell(gd, r, 'C')), dept: str(cell(gd, r, 'D')), rank: str(cell(gd, r, 'E')), type, order: out.courses.length + 1 });
+      }
+      const cByName = new Map(out.courses.map(c => [c.name, c.id]));
+      // 이수 기록
+      const rc = edu['교육 이수 현황']; out.edu = {}; let n = 0, skip = 0;
+      for (const r of rowsFrom(rc, 5)) {
+        const name = str(cell(rc, r, 'A')), cname = str(cell(rc, r, 'B')); if (!name || !cname) continue;
+        const p = pByName.get(norm(name)), cid = cByName.get(cname);
+        if (!p || !cid) { skip++; continue; }
+        (out.edu[p.id] ||= {})[cid] = { date: date(cell(rc, r, 'C')), note: str(cell(rc, r, 'D')) }; n++;
+      }
+      if (skip) notes.push(`이름·교육명이 맞지 않는 이수 기록 ${skip}건 건너뜀`);
+      // 제개정 이력
+      const hs = edu['제개정 이력'];
+      if (hs) {
+        out.history = [];
+        for (const r of rowsFrom(hs, 17)) { const ver = str(cell(hs, r, 'B')); if (!ver) continue; out.history.push({ id: 'h' + String(out.history.length + 1).padStart(2, '0'), ver, rev: +cell(hs, r, 'C') || 0, date: date(cell(hs, r, 'D')), author: str(cell(hs, r, 'E')), change: str(cell(hs, r, 'F')), note: str(cell(hs, r, 'G')) }); }
+      }
+      notes.push(`교육: 교육 ${out.courses.length}건 · 이수 기록 ${n}건 · 교육 대상 ${out.people.filter(p => p.edu).length}명`);
+    }
+    for (const k of ['grades', 'levels', 'teamOrder', 'partOrder', 'rankOrder', 'eduDeptMap', 'rankStage', 'guideStage', 'courseDeptOrder']) if (!cfg[k]) cfg[k] = [];
+    return { data: out, notes, comp: !!comp, edu: !!edu };
+  }
+  return { toData };
+})();
+
 (() => {
 'use strict';
 const $ = s => document.querySelector(s);
@@ -809,7 +1007,7 @@ function render() {
   if (!C) {
     v.innerHTML = !loadedOnce && !offline
       ? `<div class="empty">데이터를 불러오는 중입니다…</div>`
-      : `<div class="card"><h2>저장된 데이터가 없습니다</h2><p class="muted" style="margin:0">${admin ? '백업 파일(.json)을 불러오면 시작할 수 있습니다.' : '관리자가 데이터를 불러오면 볼 수 있습니다.'}</p>${admin ? `<div><label class="btn primary">백업 파일 불러오기<input type="file" accept=".json" data-act="import-json" hidden></label></div>` : ''}</div>`;
+      : `<div class="card"><h2>저장된 데이터가 없습니다</h2><p class="muted" style="margin:0">${admin ? '백업 파일(.json)을 불러오면 시작할 수 있습니다.' : '관리자가 데이터를 불러오면 볼 수 있습니다.'}</p>${admin ? `<div class="toolbar"><label class="btn primary">원본 엑셀 불러오기 (두 파일 함께 선택)<input type="file" accept=".xlsx" multiple data-act="import-xlsx" hidden></label><label class="btn">백업 파일(.json) 불러오기<input type="file" accept=".json" data-act="import-json" hidden></label></div>` : ''}</div>`;
     return;
   }
   const r = route();
@@ -1115,7 +1313,7 @@ function vSettings() {
   h += `<section class="card"><div class="head"><h2>제/개정 이력</h2></div><div class="tw free"><table><thead><tr><th>Ver</th><th class="r">Rev</th><th>날짜</th><th>작성자 부서/성명</th><th>제/개정사항</th><th>비고</th>${admin ? '<th></th>' : ''}</tr></thead><tbody>
     ${hist.map(x => `<tr><td>${esc(x.ver)}</td><td class="r num">${esc(x.rev)}</td><td class="num">${esc(x.date)}</td><td>${esc(x.author)}</td><td>${esc(x.change)}</td><td>${esc(x.note)}</td>${admin ? `<td><button type="button" class="btn sm danger" data-act="hist-del" data-id="${x.id}">삭제</button></td>` : ''}</tr>`).join('')}</tbody></table></div>
     ${admin ? `<form class="form" data-form="hist"><label class="field">Ver<input name="ver" value="${esc(hist.at(-1)?.ver || 'V1.0')}"></label><label class="field">Rev<input name="rev" type="number" value="${(+(hist.at(-1)?.rev ?? -1)) + 1}"></label><label class="field">날짜<input name="date" type="date" value="${today()}"></label><label class="field">작성자<input name="author" placeholder="부서/성명"></label><label class="field" style="grid-column:span 2">제/개정사항<input name="change" required></label><div><button class="btn primary" type="submit">이력 추가</button></div></form>` : ''}</section>`;
-  if (admin) h += `<section class="card"><div class="head"><h2>데이터 백업 · 복원</h2></div><p class="small muted" style="margin:0">백업 파일을 불러오면 현재 저장된 모든 데이터가 파일 내용으로 바뀝니다.</p><div class="toolbar"><button type="button" class="btn" data-act="export-json">백업 내려받기 (.json)</button><label class="btn">백업 파일 불러오기<input type="file" accept=".json" data-act="import-json" hidden></label></div></section>`;
+  if (admin) h += `<section class="card"><div class="head"><h2>데이터 불러오기 · 백업</h2></div><p class="small muted" style="margin:0">원본 엑셀(역량평가 현황, 교육 현황)을 하나 또는 둘 다 선택하면 그 파일 내용으로 바뀝니다. 한 파일만 넣으면 나머지 데이터는 유지됩니다. 이름이 같은 사람은 같은 사람으로 이어집니다.</p><div class="toolbar"><label class="btn primary">원본 엑셀 불러오기 (.xlsx)<input type="file" accept=".xlsx" multiple data-act="import-xlsx" hidden></label><button type="button" class="btn" data-act="export-json">백업 내려받기 (.json)</button><label class="btn">백업 파일 불러오기 (.json)<input type="file" accept=".json" data-act="import-json" hidden></label></div></section>`;
   return h;
 }
 
@@ -1207,6 +1405,7 @@ document.addEventListener('change', e => {
     render();
   }
   else if (a === 'import-json') importJson(t.files[0]);
+  else if (a === 'import-xlsx') { importExcel(t.files); t.value = ''; }
 });
 let qTimer;
 document.addEventListener('input', e => {
@@ -1276,23 +1475,39 @@ async function importJson(file) {
   let data; try { data = JSON.parse(await file.text()); } catch { toast('JSON 파일을 읽지 못했습니다', true); return; }
   if (!data.config || !Array.isArray(data.people) || !Array.isArray(data.courses)) { toast('이 사이트의 백업 파일이 아닙니다', true); return; }
   confirmDlg(`인원 ${data.people.length}명, 교육 ${data.courses.length}건 데이터로 현재 내용을 모두 바꿉니다. 계속할까요?`, '불러오기', async () => {
-    const strip = ({ id, ...r }) => r, docs = { 'config/main': strip({ id: 0, ...data.config }) };
-    for (const p of data.parts || []) docs['parts/' + p.id] = strip(p);
-    for (const p of data.people) docs['people/' + p.id] = strip(p);
-    for (const [k, g] of Object.entries(data.grades || {})) docs['grades/' + k] = { g };
-    for (const c of data.courses) docs['courses/' + c.id] = strip(c);
-    for (const [k, r] of Object.entries(data.edu || {})) docs['edu/' + k] = { r };
-    for (const h of data.history || []) docs['history/' + h.id] = strip(h);
-    toast(`${Object.keys(docs).length}건을 서버에 저장하는 중입니다…`);
-    try { const d = await api('import', { docs }); toast(`${d.count}건을 불러왔습니다`); await reload(); }
-    catch (e) { toast('불러오지 못했습니다: ' + e.message, true); }
+    await sendAll(data);
   });
+}
+function docsFromData(data) {
+  const strip = ({ id, ...r }) => r, docs = { 'config/main': strip({ id: 0, ...data.config }) };
+  for (const p of data.parts || []) docs['parts/' + p.id] = strip(p);
+  for (const p of data.people) docs['people/' + p.id] = strip(p);
+  for (const [k, g] of Object.entries(data.grades || {})) docs['grades/' + k] = { g };
+  for (const c of data.courses) docs['courses/' + c.id] = strip(c);
+  for (const [k, r] of Object.entries(data.edu || {})) docs['edu/' + k] = { r };
+  for (const h of data.history || []) docs['history/' + h.id] = strip(h);
+  return docs;
+}
+async function sendAll(data) {
+  const docs = docsFromData(data);
+  toast(`${Object.keys(docs).length}건을 서버에 저장하는 중입니다…`);
+  try { const d = await api('import', { docs }); toast(`${d.count}건을 불러왔습니다`); await reload(); }
+  catch (e) { toast('불러오지 못했습니다: ' + e.message, true); }
+}
+async function importExcel(files) {
+  if (!files || !files.length || !admin) return;
+  let r;
+  try { r = await XlsxRead.toData([...files], C ? snapshotData() : null); }
+  catch (e) { toast('엑셀을 읽지 못했습니다: ' + e.message, true); return; }
+  const what = [r.comp && '역량평가', r.edu && '교육 현황'].filter(Boolean).join(' · ');
+  const keep = !r.comp ? '역량평가 데이터는 지금 것을 유지합니다.' : !r.edu ? '교육 데이터는 지금 것을 유지합니다.' : '';
+  confirmDlg(`<b>${what}</b> 엑셀 내용으로 사이트 데이터를 바꿉니다. ${keep}<ul style="margin:8px 0 0;padding-left:18px">${r.notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul>`, '엑셀로 바꾸기', () => sendAll(r.data));
 }
 
 // ---------- boot ----------
+try { document.getElementById('cy').textContent = new Date().getFullYear(); } catch { }
 whoUI(); syncUI(); render();
 if (auth) reload(); else checkSetup();
-
 })();
 
 </script>
