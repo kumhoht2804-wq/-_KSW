@@ -215,6 +215,7 @@ select.gsel{width:44px;height:28px}
 .hbar{grid-template-columns:96px 1fr 48px}
 .hbar .num.r{text-align:right}
 footer.foot{border-top:1px solid var(--line);margin-top:8px}
+.unit{font-size:11px;color:var(--muted);margin-left:1px}
 /* ---- 팀별 도넛 ---- */
 .hbars{display:flex;flex-direction:column;gap:8px;flex:1;justify-content:space-evenly}
 :root{--track:#EDF0F4}
@@ -318,7 +319,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 연구소 역량·교육 관리 · v2026.11.02 19:46</footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 연구소 역량·교육 관리 · v2026.11.02 19:51</footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -1281,6 +1282,7 @@ function ring(segs, big, small, opt = {}) {
   const arcs = segs.filter(x => x.v).map(x => { const L = Math.max(x.v / tot * CIR - gap, 0.6); const el = `<circle class="seg" r="${R}" cx="50" cy="50" fill="none" stroke="${x.color}" stroke-width="${W}" stroke-linecap="${opt.round ? 'round' : 'butt'}" stroke-dasharray="${L.toFixed(2)} ${(CIR - L).toFixed(2)}" stroke-dashoffset="${(-off - gap / 2).toFixed(2)}" transform="rotate(-90 50 50)"><title>${esc(x.title || '')}</title></circle>`; off += x.v / tot * CIR; return el; }).join('');
   return `<svg viewBox="0 0 100 100" role="img"><circle r="${R}" cx="50" cy="50" fill="none" stroke="var(--track)" stroke-width="${W}"/>${arcs}<text x="50" y="${small ? 50 : 55}" text-anchor="middle" class="dv">${big}</text>${small ? `<text x="50" y="63" text-anchor="middle" class="dl">${small}</text>` : ''}</svg>`;
 }
+const career = j => { const y = C.years(j); return y == null ? '<span class="muted">–</span>' : `${fmt1(y)}<span class="unit">년</span>`; };
 function eduStats() {
   const ppl = C.sortEdu(S.people.filter(p => eduActive(p))).map(p => ({ p, e: C.edu(p) }));
   const withT = ppl.filter(x => x.e.target > 0);
@@ -1367,11 +1369,11 @@ function vAssess() {
     const ppl = C.sortComp(S.people.filter(p => p.cat === part.name));
     const N = S.config.grades.length, opts = S.config.grades.slice().reverse().map(g => g.g);
     h += `<section class="card"><div class="head"><h2>${esc(part.name)} 역량평가</h2><span class="sub">${ppl.length}명 · Knowledge ${K.length}항목 · Skill ${Sk.length}항목 · 등급 ${S.config.grades.slice().reverse().map(g => `${g.g}=${Math.round(g.step / N * 100)}%`).join(' ')}</span><span class="spacer"></span>${editor ? '<span class="small muted">칸을 고르면 바로 저장됩니다</span>' : ''}</div>
-    <div class="tw" style="--s2:38px"><table><thead><tr><th class="sticky c" style="min-width:38px">No</th><th class="sticky2">성명</th><th>직급</th><th class="c">Level</th><th class="r">Total</th><th class="r">K</th><th class="r">S</th><th class="c opt">입력</th>
+    <div class="tw" style="--s2:38px"><table><thead><tr><th class="sticky c" style="min-width:38px">No</th><th class="sticky2">성명</th><th>직급</th><th class="c">Level</th><th class="r">Total</th><th class="r">K</th><th class="r">S</th>
     ${all.map(it => `<th class="item ${it.area[0]}" title="${esc(it.name)}${it.basis ? ' · 근거: ' + esc(it.basis) : ''}">${esc(it.name)}<span class="w">${it.area === 'Knowledge' ? 'K' : 'S'} ${fmt1(it.ratio * 50)}점</span></th>`).join('')}</tr></thead><tbody>`;
     ppl.forEach((p, i) => {
       const c = C.comp(p), g = S.grades[p.id] || {};
-      h += `<tr><td class="sticky c num muted">${i + 1}</td><td class="sticky2">${esc(p.name)}</td><td class="muted">${esc(p.rank)}</td><td class="c">${lvTag(c.lv)}</td><td class="r num"><b>${fmt1(c.T)}</b></td><td class="r num">${fmt1(c.K)}</td><td class="r num">${fmt1(c.S)}</td><td class="c num opt ${c.filled < c.total ? '' : 'muted'}">${c.filled}/${c.total}</td>`;
+      h += `<tr><td class="sticky c num muted">${i + 1}</td><td class="sticky2">${esc(p.name)}</td><td class="muted">${esc(p.rank)}</td><td class="c">${lvTag(c.lv)}</td><td class="r num"><b>${fmt1(c.T)}</b></td><td class="r num">${fmt1(c.K)}</td><td class="r num">${fmt1(c.S)}</td>`;
       for (const it of all) {
         const v = g[it.id] || '';
         h += canP(p)
@@ -1391,8 +1393,8 @@ function vAssess() {
   <label class="field"><span>Level</span><select class="ci" data-act="f-lv"><option value="">전체</option>${lvls.map(t => `<option${t === ui.lv ? ' selected' : ''}>${esc(t)}</option>`).join('')}</select></label>
   <label class="field"><span>검색</span><input class="ci" data-act="f-q" value="${esc(ui.q)}" placeholder="이름"></label></div>`;
   const rows = cs.tg.filter(x => (!ui.team || x.p.team === ui.team) && (!ui.lv || x.c.lv === ui.lv) && (!ui.q || x.p.name.includes(ui.q)));
-  h += `<section class="card"><div class="head"><h2>인원별 평가 현황</h2><span class="sub">${rows.length}명</span></div><div class="tw"><table><thead><tr><th class="c">No</th><th>소속</th><th>성명</th><th>직급</th><th>파트</th><th class="c">Level</th><th class="r">Total</th><th class="r">Knowledge</th><th class="r">Skill</th><th class="c">입력</th><th>입사일</th><th class="r">경력(년)</th></tr></thead><tbody>
-  ${rows.map((x, i) => `<tr><td class="c num muted">${i + 1}</td><td>${esc(x.p.team)}</td><td><b>${esc(x.p.name)}</b></td><td>${esc(x.p.rank)}</td><td><button class="link" data-act="goto-part" data-v="${esc(x.p.cat)}" type="button">${esc(x.p.cat)}</button></td><td class="c">${lvTag(x.c.lv)}</td><td class="r num"><b>${fmt1(x.c.T)}</b></td><td class="r num">${fmt1(x.c.K)}</td><td class="r num">${fmt1(x.c.S)}</td><td class="c num">${x.c.filled}/${x.c.total}</td><td class="num">${esc(x.p.join)}</td><td class="r num">${fmt1(C.years(x.p.join))}</td></tr>`).join('')}
+  h += `<section class="card"><div class="head"><h2>인원별 평가 현황</h2><span class="sub">${rows.length}명</span></div><div class="tw"><table><thead><tr><th class="c">No</th><th>소속</th><th>성명</th><th>직급</th><th>파트</th><th class="c">Level</th><th class="c">Total</th><th class="c">Knowledge</th><th class="c">Skill</th><th class="c">입사일</th><th class="c">경력</th></tr></thead><tbody>
+  ${rows.map((x, i) => `<tr><td class="c num muted">${i + 1}</td><td>${esc(x.p.team)}</td><td><b>${esc(x.p.name)}</b></td><td>${esc(x.p.rank)}</td><td><button class="link" data-act="goto-part" data-v="${esc(x.p.cat)}" type="button">${esc(x.p.cat)}</button></td><td class="c">${lvTag(x.c.lv)}</td><td class="c num"><b>${fmt1(x.c.T)}</b></td><td class="c num">${fmt1(x.c.K)}</td><td class="c num">${fmt1(x.c.S)}</td><td class="c num">${esc(x.p.join) || '–'}</td><td class="c num">${career(x.p.join)}</td></tr>`).join('')}
   </tbody></table></div></section>`;
   return h;
 }
@@ -1564,8 +1566,8 @@ function vPeople() {
   const mm = eduMismatch();
   if (mm.length) h += `<div class="notice warn">평가 파트와 교육 상세부서가 맞지 않는 인원 ${mm.length}명: ${mm.map(p => `<b>${esc(p.name)}</b> (평가 ${esc(p.cat)} → 교육 ${esc(p.eduDept)})`).join(', ')}${admin ? ` <button type="button" class="btn sm primary" data-act="fix-edudept">평가 파트에 맞추기</button>` : ''}</div>`;
   const rows = C.sortComp(S.people).filter(p => !ui.q || p.name.includes(ui.q) || p.team.includes(ui.q));
-  h += `<section class="card"><div class="head"><h2>연구소 인원</h2><span class="sub">${S.people.length}명 · 역량평가와 교육 현황이 같은 명단을 씁니다</span></div><div class="tw"><table><thead><tr><th class="c">No</th><th>소속</th><th>성명</th><th>직급</th><th>평가 파트</th><th>교육 상세부서</th><th class="c">교육 대상</th><th>입사일</th><th class="r">경력(년)</th><th>비고</th><th>점검</th>${admin ? '<th></th>' : ''}</tr></thead><tbody>
-  ${rows.map((p, i) => `<tr><td class="c num muted">${i + 1}</td><td>${esc(p.team)}</td><td><b>${esc(p.name)}</b></td><td>${esc(p.rank)}</td><td>${esc(p.cat)}</td><td>${esc(p.eduDept)}</td><td class="c">${p.edu ? '●' : '<span class="muted">–</span>'}</td><td class="num">${esc(p.join)}</td><td class="r num">${fmt1(C.years(p.join))}</td><td class="muted">${esc(p.note)}</td><td>${personIssues(p).map(([c, t]) => `<span class="tag ${c}">${t}</span>`).join(' ')}</td>${admin ? `<td><button type="button" class="btn sm" data-act="person-edit" data-id="${p.id}">수정</button></td>` : ''}</tr>`).join('')}
+  h += `<section class="card"><div class="head"><h2>연구소 인원</h2><span class="sub">${S.people.length}명 · 역량평가와 교육 현황이 같은 명단을 씁니다</span></div><div class="tw"><table><thead><tr><th class="c">No</th><th>소속</th><th>성명</th><th>직급</th><th>평가 파트</th><th>교육 상세부서</th><th class="c">교육 대상</th><th class="c">입사일</th><th class="c">경력</th><th>비고</th><th>점검</th>${admin ? '<th></th>' : ''}</tr></thead><tbody>
+  ${rows.map((p, i) => `<tr><td class="c num muted">${i + 1}</td><td>${esc(p.team)}</td><td><b>${esc(p.name)}</b></td><td>${esc(p.rank)}</td><td>${esc(p.cat)}</td><td>${esc(p.eduDept)}</td><td class="c">${p.edu ? '●' : '<span class="muted">–</span>'}</td><td class="c num">${esc(p.join) || '–'}</td><td class="c num">${career(p.join)}</td><td class="muted">${esc(p.note)}</td><td>${personIssues(p).map(([c, t]) => `<span class="tag ${c}">${t}</span>`).join(' ')}</td>${admin ? `<td><button type="button" class="btn sm" data-act="person-edit" data-id="${p.id}">수정</button></td>` : ''}</tr>`).join('')}
   </tbody></table></div></section>`;
   return h;
 }
