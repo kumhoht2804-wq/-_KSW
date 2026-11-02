@@ -18,7 +18,11 @@ const SHEETS = {
   users: ['id', 'name', 'role', 'hash', 'salt', 'active', 'created', 'lastLogin', 'team', 'rank'],
   log:   ['time', 'user', 'action', 'detail'],
 };
-const ROLES = ['관리자', '팀장', '편집', '보기'];   // 팀장: 자기 팀(소속) 인원과 그 팀이 쓰는 파트만 수정 / 편집: 연구소장·개발실장 등 부서 전체 역량·교육 수정
+// 역할: 연구소장·개발실장 = 부서 전체 역량평가·교육 이수 수정 / 팀장 = 자기 팀(소속) 인원과 그 팀이 쓰는 파트만 / 보기 = 조회만
+const ROLES = ['관리자', '연구소장', '개발실장', '팀장', '보기'];
+const LEVEL = { '관리자': 4, '연구소장': 3, '개발실장': 3, '편집': 3, '팀장': 2, '보기': 1 };   // '편집'은 예전 이름(연구소장·개발실장과 같음)
+const NEED = { '관리자': 4, '편집': 2, '보기': 1 };
+const DIRECTOR = ['연구소장', '개발실장', '편집'];
 const TOKEN_TTL = 21600;           // 6시간 (CacheService 최대치)
 const LOCK_SPIN = 10000;           // 엑셀 잠금 해시 반복 횟수
 
@@ -122,7 +126,7 @@ function auth_(b, need) {
   const u = users_().filter(x => x.id === info.id)[0];
   if (!u || !u.active) throw new Error('AUTH:사용이 중지된 계정입니다');
   info.role = u.role; info.name = u.name; info.team = u.team;
-  if (ROLES.indexOf(info.role) < 0 || ROLES.indexOf(info.role) > ROLES.indexOf(need)) throw new Error('권한이 없습니다 (' + need + ' 이상 필요)');
+  if (!LEVEL[info.role] || LEVEL[info.role] < NEED[need]) throw new Error(need === '관리자' ? '권한이 없습니다 (관리자만 가능)' : '권한이 없습니다');
   return info;
 }
 function listUsers_() {
@@ -156,7 +160,7 @@ function userSave_(b) {
   const me = auth_(b, '관리자');
   const u = b.user || {};
   checkId_(u.id);
-  if (ROLES.indexOf(u.role) < 0) throw new Error('역할이 올바르지 않습니다');
+  if (ROLES.indexOf(u.role) < 0 && u.role !== '편집') throw new Error('역할이 올바르지 않습니다');
   if (u.role === '팀장' && !String(u.team || '').trim()) throw new Error('팀장은 소속 팀을 정해야 합니다');
   const s = sheet_('users'), all = users_(), ex = all.filter(x => x.id === u.id)[0];
   if (ex) {
@@ -213,7 +217,7 @@ function put_(b) {
   let docs = null;
   ops.forEach(op => {
     if (!PATH_OK.test(op.path)) throw new Error('잘못된 경로: ' + op.path);
-    if (me.role === '편집' && !EDIT_PATHS.test(op.path)) throw new Error('권한이 없습니다 (관리자만 수정 가능)');
+    if (DIRECTOR.indexOf(me.role) >= 0 && !EDIT_PATHS.test(op.path)) throw new Error('권한이 없습니다 (관리자만 수정 가능)');
     if (me.role === '팀장') {
       if (!LEADER_PATHS.test(op.path)) throw new Error('권한이 없습니다 (관리자만 수정 가능)');
       docs = docs || loadDocs_();
