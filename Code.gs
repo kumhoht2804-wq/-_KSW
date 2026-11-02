@@ -15,7 +15,7 @@
 
 const SHEETS = {
   docs:  ['path', 'data', 'updated', 'by'],
-  users: ['id', 'name', 'role', 'hash', 'salt', 'active', 'created', 'lastLogin', 'team'],
+  users: ['id', 'name', 'role', 'hash', 'salt', 'active', 'created', 'lastLogin', 'team', 'rank'],
   log:   ['time', 'user', 'action', 'detail'],
 };
 const ROLES = ['관리자', '팀장', '편집', '보기'];   // 팀장: 자기 팀(소속) 인원과 그 팀이 쓰는 파트만 수정 / 편집: 연구소장·개발실장 등 부서 전체 역량·교육 수정
@@ -52,6 +52,7 @@ function doPost(e) {
   try {
     switch (b.action) {
       case 'ping':       return out_({ ok: true, setup: needsSetup_() });
+      case 'options':    return out_(options_());
       case 'setup':      return out_(setup_(b));
       case 'login':      return out_(login_(b));
       case 'signup':     return out_(signup_(b));
@@ -83,7 +84,7 @@ function hash_(pw, salt) {
 function users_() {
   const s = sheet_('users'), v = s.getDataRange().getValues();
   const out = [];
-  for (let i = 1; i < v.length; i++) if (v[i][0] !== '') out.push({ row: i + 1, id: String(v[i][0]), name: String(v[i][1]), role: String(v[i][2]), hash: String(v[i][3]), salt: String(v[i][4]), active: v[i][5] === true || v[i][5] === 'TRUE', created: String(v[i][6]), lastLogin: String(v[i][7]), team: String(v[i][8] || '') });
+  for (let i = 1; i < v.length; i++) if (v[i][0] !== '') out.push({ row: i + 1, id: String(v[i][0]), name: String(v[i][1]), role: String(v[i][2]), hash: String(v[i][3]), salt: String(v[i][4]), active: v[i][5] === true || v[i][5] === 'TRUE', created: String(v[i][6]), lastLogin: String(v[i][7]), team: String(v[i][8] || ''), rank: String(v[i][9] || '') });
   return out;
 }
 function needsSetup_() { return users_().filter(u => u.role === '관리자' && u.active).length === 0; }
@@ -125,20 +126,30 @@ function auth_(b, need) {
   return info;
 }
 function listUsers_() {
-  return users_().map(u => ({ id: u.id, name: u.name, team: u.team, role: u.role, active: u.active, created: u.created, lastLogin: u.lastLogin }));
+  return users_().map(u => ({ id: u.id, name: u.name, team: u.team, rank: u.rank, role: u.role, active: u.active, created: u.created, lastLogin: u.lastLogin }));
 }
 // 회원가입: '대기' 상태로만 만들어지고, 관리자가 역할을 정해 승인해야 로그인 가능
+// 회원가입 화면에 보여 줄 부서·직급 목록 (로그인 전에도 볼 수 있는 이름 목록만)
+function options_() {
+  const v = sheet_('docs').getDataRange().getValues();
+  for (let i = 1; i < v.length; i++) if (v[i][0] === 'config/main') {
+    try { const c = JSON.parse(v[i][1]); return { ok: true, teams: c.teamOrder || [], ranks: c.rankOrder || [] }; } catch (x) { }
+  }
+  return { ok: true, teams: [], ranks: [] };
+}
 function signup_(b) {
   if (needsSetup_()) throw new Error('먼저 관리자 계정을 만들어야 합니다');
   checkId_(b.id); checkPw_(b.pw);
-  const name = String(b.name || '').trim(), team = String(b.team || '').trim();
+  const name = String(b.name || '').trim(), team = String(b.team || '').trim(), rank = String(b.rank || '').trim();
+  if (!team) throw new Error('부서를 선택하세요');
+  if (!rank) throw new Error('직급을 선택하세요');
   if (!name) throw new Error('이름을 입력하세요');
   const all = users_();
   if (all.some(u => u.id === b.id)) throw new Error('이미 있는 아이디입니다. 다른 아이디를 정해 주세요');
   if (all.filter(u => u.role === '대기').length >= 30) throw new Error('승인 대기 중인 신청이 너무 많습니다. 관리자에게 문의하세요');
   const salt = Utilities.getUuid();
-  sheet_('users').appendRow([b.id, name.slice(0, 30), '대기', hash_(b.pw, salt), salt, false, now_(), '', team.slice(0, 30)]);
-  log_(b.id, 'signup', name + ' ' + team);
+  sheet_('users').appendRow([b.id, name.slice(0, 30), '대기', hash_(b.pw, salt), salt, false, now_(), '', team.slice(0, 30), rank.slice(0, 30)]);
+  log_(b.id, 'signup', name + ' ' + team + ' ' + rank);
   return { ok: true };
 }
 function userSave_(b) {
@@ -154,13 +165,14 @@ function userSave_(b) {
     s.getRange(ex.row, 3, 1, 1).setValue(u.role);
     s.getRange(ex.row, 6, 1, 1).setValue(u.active !== false);
     if (u.team !== undefined) s.getRange(ex.row, 9, 1, 1).setValue(String(u.team || ''));
+    if (u.rank !== undefined) s.getRange(ex.row, 10, 1, 1).setValue(String(u.rank || ''));
     if (ex.role === '대기') log_(me.id, 'approve', u.id + ' → ' + u.role);
     if (u.pw) { checkPw_(u.pw); const salt = Utilities.getUuid(); s.getRange(ex.row, 4, 1, 2).setValues([[hash_(u.pw, salt), salt]]); }
     log_(me.id, 'user-update', u.id + ' ' + u.role + (u.pw ? ' 비밀번호 재설정' : '') + (u.active === false ? ' 중지' : ''));
   } else {
     checkPw_(u.pw);
     const salt = Utilities.getUuid();
-    s.appendRow([u.id, u.name || u.id, u.role, hash_(u.pw, salt), salt, u.active !== false, now_(), '', String(u.team || '')]);
+    s.appendRow([u.id, u.name || u.id, u.role, hash_(u.pw, salt), salt, u.active !== false, now_(), '', String(u.team || ''), String(u.rank || '')]);
     log_(me.id, 'user-add', u.id + ' ' + u.role);
   }
   return { ok: true, users: listUsers_() };

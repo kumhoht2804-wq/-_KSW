@@ -281,7 +281,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 연구소 역량·교육 관리 · v2026.11.02 18:50</footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 연구소 역량·교육 관리 · v2026.11.02 19:12</footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -1000,7 +1000,9 @@ function vLogin() {
   if (ui.signup) return `<section class="card auth"><h2>회원가입</h2><p class="muted small">가입 신청 후 관리자가 승인하면 로그인할 수 있습니다.</p>
     <form class="form one" data-form="signup">
       <label class="field">아이디 (영문·숫자 2자 이상)<input name="id" autocomplete="username" required></label>
-      <div class="form two"><label class="field">이름<input name="name" required></label><label class="field">소속<input name="team" placeholder="예: 개발지원팀"></label></div>
+      <label class="field">이름<input name="name" required></label>
+      <div class="form two"><label class="field">부서${ui.opts?.teams?.length ? `<select name="team" required><option value="">선택</option>${ui.opts.teams.map(t => `<option>${esc(t)}</option>`).join('')}</select>` : '<input name="team" required placeholder="예: 개발지원팀">'}</label>
+        <label class="field">직급${ui.opts?.ranks?.length ? `<select name="rank" required><option value="">선택</option>${ui.opts.ranks.map(t => `<option>${esc(t)}</option>`).join('')}</select>` : '<input name="rank" required placeholder="예: 연구원">'}</label></div>
       <label class="field">비밀번호 (6자 이상)<input name="pw" type="password" autocomplete="new-password" required></label>
       <label class="field">비밀번호 확인<input name="pw2" type="password" autocomplete="new-password" required></label>
       <div class="err"></div>
@@ -1039,14 +1041,14 @@ async function formAuth(f) {
     }
     if (f.dataset.form === 'signup') {
       if (v.pw !== v.pw2) throw new Error('비밀번호 확인이 다릅니다');
-      await api('signup', { id: v.id.trim(), name: v.name.trim(), team: v.team.trim(), pw: v.pw });
+      await api('signup', { id: v.id.trim(), name: v.name.trim(), team: (v.team || '').trim(), rank: (v.rank || '').trim(), pw: v.pw });
       ui.signup = false; ui.signupDone = `가입 신청을 보냈습니다 (${v.id.trim()}). 관리자가 승인하면 로그인할 수 있습니다.`; render(); return;
     }
     if (f.dataset.form === 'login') { ui.signupDone = ''; startSession(await api('login', { id: v.id.trim(), pw: v.pw })); toast('로그인했습니다'); return; }
     if (f.dataset.form === 'setup') { const d = await api('setup', { id: v.id.trim(), name: v.name.trim(), pw: v.pw }); ui.setup = false; startSession(d); toast('관리자 계정을 만들었습니다'); return; }
     if (f.dataset.form === 'chpw') { if (v.pw !== v.pw2) throw new Error('새 비밀번호가 서로 다릅니다'); await api('changePw', { old: v.old, pw: v.pw }); closeDlg(); toast('비밀번호를 바꿨습니다'); return; }
     if (f.dataset.form === 'acct') {
-      const user = { id: v.id.trim(), name: v.name.trim(), team: (v.team || '').trim(), role: v.role, active: true, pw: v.pw || undefined };
+      const user = { id: v.id.trim(), name: v.name.trim(), team: (v.team || '').trim(), rank: (v.rank || '').trim(), role: v.role, active: true, pw: v.pw || undefined };
       const old = ui.users.find(u => u.id === user.id);
       if (f.dataset.id && old) user.active = old.active;
       if (!f.dataset.id && old) throw new Error('이미 있는 아이디입니다');
@@ -1070,7 +1072,8 @@ function acctDialog(id) {
   openDlg(`<h2>${id ? '계정 수정' : '계정 추가'}</h2><form class="form" data-form="acct" data-id="${esc(id || '')}" style="grid-template-columns:1fr 1fr">
     <label class="field">아이디 (영문·숫자)<input name="id" value="${esc(u.id)}" ${id ? 'readonly' : ''} required></label>
     <label class="field">이름<input name="name" value="${esc(u.name)}" required></label>
-    <label class="field" style="grid-column:1/-1">소속 (팀장은 인원 명단의 소속과 똑같이)<input name="team" list="teamlist" value="${esc(u.team || '')}">${teamList()}</label>
+    <label class="field">부서 (팀장은 명단의 소속과 똑같이)<input name="team" list="teamlist" value="${esc(u.team || '')}">${teamList()}</label>
+    <label class="field">직급<input name="rank" list="ranklist" value="${esc(u.rank || '')}"><datalist id="ranklist">${(S.config?.rankOrder || []).map(r => `<option value="${esc(r)}">`).join('')}</datalist></label>
     <label class="field" style="grid-column:1/-1">역할<select name="role">${Object.entries(ROLE_DESC).map(([r, dsc]) => `<option value="${r}"${r === u.role ? ' selected' : ''}>${r} — ${dsc}</option>`).join('')}</select></label>
     <label class="field" style="grid-column:1/-1">${id ? '새 비밀번호 (바꿀 때만 입력)' : '처음 비밀번호 (6자 이상, 본인에게 전달 후 변경 안내)'}<input name="pw" type="text" autocomplete="off" ${id ? '' : 'required'}></label>
     <div class="err" style="grid-column:1/-1"></div><div class="actions" style="grid-column:1/-1"><button type="button" class="btn" data-act="close">취소</button><button class="btn primary" type="submit">저장</button></div></form>`);
@@ -1082,21 +1085,29 @@ function lockDialog() {
 async function acctCall(action, payload, msg) { try { const d = await api(action, payload); ui.users = d.users; whoUI(); render(); toast(msg); } catch (e) { toast(e.message, true); } }
 let usersLoaded = false;
 async function loadUsers(quiet) { try { const d = await api('users'); ui.users = d.users; ui.lockSet = d.lockSet; usersLoaded = true; whoUI(); if (!quiet || route() === 'accounts') schedule(); } catch (e) { if (!quiet) toast(e.message, true); } }
+// 가입자가 인원 명단의 누구와 맞는지 (이름·부서·직급 비교)
+function rosterTag(u) {
+  const n = s => String(s || '').replace(/\s+/g, '');
+  const m = S.people.filter(p => n(p.name) === n(u.name));
+  if (!m.length) return '<span class="tag warn">명단에 없음</span>';
+  const ok = m.find(p => p.team === u.team && (!u.rank || p.rank === u.rank));
+  return ok ? '<span class="tag ok">명단 일치</span>' : `<span class="tag warn" title="명단: ${esc(m.map(p => p.team + ' ' + p.rank).join(', '))}">부서·직급 다름</span>`;
+}
 function vAccounts() {
   if (!usersLoaded) { loadUsers(); return '<div class="empty">계정 목록을 불러오는 중…</div>'; }
   const act = ui.users.filter(u => u.role !== '대기'), wait = ui.users.filter(u => u.role === '대기');
   const cnt = r => act.filter(u => u.role === r && u.active).length;
   let h = '';
   h += `<section class="card"><div class="head"><h2>가입 승인 대기</h2><span class="sub">${wait.length}명</span></div>
-    ${wait.length ? `<div class="tw free"><table><thead><tr><th>아이디</th><th>이름</th><th>소속</th><th>신청일</th><th style="width:220px">부여할 역할</th><th style="width:150px"></th></tr></thead><tbody>
-    ${wait.map(u => `<tr><td class="num">${esc(u.id)}</td><td><b>${esc(u.name)}</b></td><td><input class="ci" id="team-${esc(u.id)}" list="teamlist" value="${esc(u.team || '')}" style="width:130px"></td><td class="num muted">${esc(String(u.created).slice(0, 16))}</td>
+    ${wait.length ? `<div class="tw free"><table><thead><tr><th>아이디</th><th>이름</th><th>부서</th><th>직급</th><th>인원 명단</th><th>신청일</th><th style="width:200px">부여할 역할</th><th style="width:150px"></th></tr></thead><tbody>
+    ${wait.map(u => `<tr><td class="num">${esc(u.id)}</td><td><b>${esc(u.name)}</b></td><td><input class="ci" id="team-${esc(u.id)}" list="teamlist" value="${esc(u.team || '')}" style="width:130px"></td><td>${esc(u.rank || '–')}</td><td>${rosterTag(u)}</td><td class="num muted">${esc(String(u.created).slice(0, 16))}</td>
       <td><select class="ci" id="role-${esc(u.id)}">${Object.keys(ROLE_DESC).map(r => `<option${r === '보기' ? ' selected' : ''}>${r}</option>`).join('')}</select></td>
       <td class="r"><button type="button" class="btn sm primary" data-act="acct-approve" data-id="${esc(u.id)}">승인</button> <button type="button" class="btn sm danger" data-act="acct-reject" data-id="${esc(u.id)}">거절</button></td></tr>`).join('')}
     </tbody></table></div>${teamList()}<p class="muted small">팀장으로 승인할 때는 소속을 인원 명단의 소속(예: 기구개발팀)과 똑같이 맞춰 주세요. 그 팀 인원만 수정할 수 있게 됩니다.</p>` : '<p class="muted small">대기 중인 가입 신청이 없습니다. 사이트 주소를 알려 주면 로그인 화면의 회원가입으로 신청할 수 있습니다.</p>'}</section>`;
   h += `<section class="card"><div class="head"><h2>계정 관리</h2><span class="sub">관리자 ${cnt('관리자')} · 편집 ${cnt('편집')} · 보기 ${cnt('보기')}</span><span class="spacer"></span><button type="button" class="btn primary" data-act="acct-edit">계정 직접 추가</button></div>
     <div class="chk">${Object.entries(ROLE_DESC).map(([r, d]) => `<span class="tag">${r} · ${d}</span>`).join('')}</div>
-    <div class="tw free"><table><thead><tr><th>아이디</th><th>이름</th><th>소속</th><th>역할</th><th>상태</th><th>가입일</th><th>마지막 로그인</th><th style="width:190px"></th></tr></thead><tbody>
-    ${act.map(u => `<tr><td class="num">${esc(u.id)}${u.id === auth.user.id ? ' <span class="tag">나</span>' : ''}</td><td><b>${esc(u.name)}</b></td><td>${esc(u.team || '–')}</td><td><span class="tag ${u.role === '관리자' ? 'ok' : ''}">${esc(u.role)}</span></td><td>${u.active ? '<span class="tag ok">사용</span>' : '<span class="tag bad">중지</span>'}</td><td class="num muted">${esc(String(u.created).slice(0, 10))}</td><td class="num muted">${esc(u.lastLogin || '–')}</td>
+    <div class="tw free"><table><thead><tr><th>아이디</th><th>이름</th><th>부서</th><th>직급</th><th>역할</th><th>상태</th><th>가입일</th><th>마지막 로그인</th><th style="width:190px"></th></tr></thead><tbody>
+    ${act.map(u => `<tr><td class="num">${esc(u.id)}${u.id === auth.user.id ? ' <span class="tag">나</span>' : ''}</td><td><b>${esc(u.name)}</b></td><td>${esc(u.team || '–')}</td><td>${esc(u.rank || '–')}</td><td><span class="tag ${u.role === '관리자' ? 'ok' : ''}">${esc(u.role)}</span></td><td>${u.active ? '<span class="tag ok">사용</span>' : '<span class="tag bad">중지</span>'}</td><td class="num muted">${esc(String(u.created).slice(0, 10))}</td><td class="num muted">${esc(u.lastLogin || '–')}</td>
       <td class="r">${u.id === auth.user.id ? '' : `<button type="button" class="btn sm" data-act="acct-edit" data-id="${esc(u.id)}">수정</button> <button type="button" class="btn sm" data-act="acct-toggle" data-id="${esc(u.id)}">${u.active ? '중지' : '사용'}</button> <button type="button" class="btn sm danger" data-act="acct-del" data-id="${esc(u.id)}">삭제</button>`}</td></tr>`).join('')}
     </tbody></table></div><p class="muted small">비밀번호를 잊은 사람은 '수정'에서 새 비밀번호를 정해 전달하세요. 접속·수정 기록은 구글 시트의 log 탭에 남습니다.</p></section>
     <section class="card"><div class="head"><h2>엑셀 잠금 비밀번호</h2><span class="tag ${ui.lockSet ? 'ok' : 'bad'}">${ui.lockSet ? '설정됨' : '미설정 · 잠금 없이 내보내짐'}</span><span class="spacer"></span><button type="button" class="btn" data-act="lockpw">${ui.lockSet ? '변경' : '설정'}</button></div>
@@ -1413,8 +1424,12 @@ function courseDialog(id) {
 }
 
 // ===== 인원 =====
+// 평가 파트로 본 교육 상세부서 (HW1·HW2 → HW). 교육 설정에 있는 부서일 때만
+function expEduDept(p) { const d = /^HW\d*$/.test(p.cat) ? 'HW' : p.cat; return S.config.eduDeptMap.some(x => x.dept === d) ? d : null; }
+function eduMismatch() { return S.people.filter(p => p.edu && expEduDept(p) && expEduDept(p) !== p.eduDept); }
 function personIssues(p) {
   const out = [];
+  if (p.edu && expEduDept(p) && expEduDept(p) !== p.eduDept) out.push(['warn', `교육부서 확인 (평가 ${p.cat} / 교육 ${p.eduDept})`]);
   if (S.people.filter(x => x.name.replace(/\s+/g, '') === p.name.replace(/\s+/g, '')).length > 1) out.push(['bad', '성명 중복']);
   if (!(S.items[p.cat] || []).length) out.push(['warn', '평가항목 없음']);
   if (p.edu && C.rs[p.rank] == null) out.push(['bad', '직급 단계 미등록']);
@@ -1423,6 +1438,8 @@ function personIssues(p) {
 }
 function vPeople() {
   let h = `<div class="toolbar"><label class="field"><span>검색</span><input class="ci" data-act="f-q" value="${esc(ui.q)}" placeholder="이름·소속"></label><span class="spacer"></span>${admin ? '<button type="button" class="btn primary" data-act="person-edit">인원 추가</button>' : ''}</div>`;
+  const mm = eduMismatch();
+  if (mm.length) h += `<div class="notice warn">평가 파트와 교육 상세부서가 맞지 않는 인원 ${mm.length}명: ${mm.map(p => `<b>${esc(p.name)}</b> (평가 ${esc(p.cat)} → 교육 ${esc(p.eduDept)})`).join(', ')}${admin ? ` <button type="button" class="btn sm primary" data-act="fix-edudept">평가 파트에 맞추기</button>` : ''}</div>`;
   const rows = C.sortComp(S.people).filter(p => !ui.q || p.name.includes(ui.q) || p.team.includes(ui.q));
   h += `<section class="card"><div class="head"><h2>연구소 인원</h2><span class="sub">${S.people.length}명 · 역량평가와 교육 현황이 같은 명단을 씁니다</span></div><div class="tw"><table><thead><tr><th class="c">No</th><th>소속</th><th>성명</th><th>직급</th><th>평가 파트</th><th>교육 상세부서</th><th class="c">교육 대상</th><th>입사일</th><th class="r">경력(년)</th><th>비고</th><th>점검</th>${admin ? '<th></th>' : ''}</tr></thead><tbody>
   ${rows.map((p, i) => `<tr><td class="c num muted">${i + 1}</td><td>${esc(p.team)}</td><td><b>${esc(p.name)}</b></td><td>${esc(p.rank)}</td><td>${esc(p.cat)}</td><td>${esc(p.eduDept)}</td><td class="c">${p.edu ? '●' : '<span class="muted">–</span>'}</td><td class="num">${esc(p.join)}</td><td class="r num">${fmt1(C.years(p.join))}</td><td class="muted">${esc(p.note)}</td><td>${personIssues(p).map(([c, t]) => `<span class="tag ${c}">${t}</span>`).join(' ')}</td>${admin ? `<td><button type="button" class="btn sm" data-act="person-edit" data-id="${p.id}">수정</button></td>` : ''}</tr>`).join('')}
@@ -1519,12 +1536,20 @@ document.addEventListener('click', e => {
   const needE = () => { if (!editor) { toast('편집 권한이 필요합니다', true); return false; } return true; };
   switch (a) {
     case 'logout': logout(); break;
+    case 'fix-edudept': if (!need()) break; {
+      const mm = eduMismatch();
+      confirmDlg(`${mm.map(p => `${esc(p.name)}: 교육 상세부서 ${esc(p.eduDept)} → <b>${esc(expEduDept(p))}</b>`).join('<br>')}<br><br>교육 대상 과목이 새 부서 기준으로 바뀝니다. 바꿀까요?`, '바꾸기', () => {
+        for (const p of mm) { p.eduDept = expEduDept(p); const { id, ...doc } = p; put('people/' + id, doc); }
+        rebuild(); render(); toast(`${mm.length}명의 교육 상세부서를 고쳤습니다`);
+      }); } break;
     case 'dense': setDense(!document.body.classList.contains('dense')); break;
-    case 'to-signup': ui.signup = true; ui.signupDone = ''; render(); break;
+    case 'to-signup': ui.signup = true; ui.signupDone = ''; render();
+      if (!ui.opts) fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'options' }) }).then(r => r.json()).then(d => { if (d.ok) { ui.opts = d; if (ui.signup) render(); } }).catch(() => { });
+      break;
     case 'to-login': ui.signup = false; render(); break;
     case 'acct-approve': if (!need()) break; { const u = ui.users.find(x => x.id === d.id), role = document.getElementById('role-' + d.id)?.value || '보기', team = (document.getElementById('team-' + d.id)?.value || u.team || '').trim();
       if (role === '팀장' && !(S.config?.teamOrder || []).includes(team)) { toast('팀장은 소속을 인원 명단의 팀 이름과 똑같이 정해야 합니다', true); break; }
-      acctCall('userSave', { user: { id: u.id, name: u.name, team, role, active: true } }, `${u.name} 님을 '${role}' 권한으로 승인했습니다`); } break;
+      acctCall('userSave', { user: { id: u.id, name: u.name, team, rank: u.rank, role, active: true } }, `${u.name} 님을 '${role}' 권한으로 승인했습니다`); } break;
     case 'acct-reject': if (!need()) break; { const u = ui.users.find(x => x.id === d.id); confirmDlg(`${esc(u.name)} (${esc(u.id)}) 님의 가입 신청을 거절할까요? 신청 내용이 삭제됩니다.`, '거절', () => acctCall('userDelete', { id: d.id }, '가입 신청을 거절했습니다')); } break;
     case 'chpw': pwDialog(); break;
     case 'set-server': setServer(); break;
