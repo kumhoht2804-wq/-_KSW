@@ -845,7 +845,7 @@ const today = () => { const d = new Date(); return d.getFullYear() + '-' + Strin
 const lvClass = lv => lv === '미달' ? 'lv-X' : 'lv-' + lv;
 const lvTag = lv => lv ? `<span class="lv ${lvClass(lv)}">${esc(lv)}</span>` : '<span class="muted">–</span>';
 // ===== 서버 주소 (구글 Apps Script 웹 앱 URL) =====
-const DEFAULT_API = '';   // ← 배포한 웹 앱 URL을 여기에 넣으면 모든 사람이 같은 서버를 씁니다
+const DEFAULT_API = 'https://script.google.com/macros/s/AKfycbwhYUwsn7ZO3g4GMlLOwdbr2KWaqxQ0Dx8r9tvu9T1t-PBwXJXJMSWWmaqIOaGLVN5jow/exec';   // ← 배포한 웹 앱 URL을 여기에 넣으면 모든 사람이 같은 서버를 씁니다
 const LS = { get: k => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch { } } };
 let API_URL = DEFAULT_API || LS.get('lab_api') || '';
 
@@ -953,7 +953,7 @@ function vLogin() {
   return `<section class="card auth"><h2>로그인</h2><p class="muted small">연구소 역량·교육 관리</p>
     ${ui.signupDone ? `<div class="notice ok">${esc(ui.signupDone)}</div>` : ''}
     <form class="form one" data-form="login"><label class="field">아이디<input name="id" autocomplete="username" required></label><label class="field">비밀번호<input name="pw" type="password" autocomplete="current-password" required></label><div class="err"></div><div class="actions"><button class="btn primary wide" type="submit">로그인</button></div></form>
-    <div class="auth-foot"><span class="muted small">계정이 없나요?</span> <button type="button" class="link small" data-act="to-signup">회원가입</button><span class="spacer"></span><button type="button" class="link small muted" data-act="set-server">서버 주소 변경</button></div></section>`;
+    <div class="auth-foot"><span class="muted small">계정이 없나요?</span> <button type="button" class="link small" data-act="to-signup">회원가입</button>${DEFAULT_API ? '' : '<span class="spacer"></span><button type="button" class="link small muted" data-act="set-server">서버 주소 변경</button>'}</div></section>`;
 }
 function setServer() { API_URL = ''; LS.set('lab_api', null); logout(true); }
 function startSession(d) {
