@@ -216,6 +216,10 @@ select.gsel{width:44px;height:28px}
 .hbar .num.r{text-align:right}
 footer.foot{border-top:1px solid var(--line);margin-top:8px}
 .unit{font-size:11px;color:var(--muted);margin-left:1px}
+/* 표 정렬 원칙: 제목 줄은 가운데, 숫자·상태·날짜는 가운데, 글자는 왼쪽 */
+table thead th{text-align:center!important}
+#view table td,#dlgBody table td{text-align:center}
+#view table td.l,#dlgBody table td.l{text-align:left}
 /* ---- 팀별 도넛 ---- */
 .hbars{display:flex;flex-direction:column;gap:8px;flex:1;justify-content:space-evenly}
 :root{--track:#EDF0F4}
@@ -319,7 +323,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 연구소 역량·교육 관리 · v2026.11.02 19:51</footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 연구소 역량·교육 관리 · v2026.11.02 19:53</footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -1188,15 +1192,15 @@ function vAccounts() {
     ${wait.map(u => `<tr><td class="num">${esc(u.id)}</td><td><b>${esc(u.name)}</b></td><td><input class="ci" id="team-${esc(u.id)}" list="teamlist" value="${esc(u.team || '')}" style="width:130px"></td><td>${esc(u.rank || '–')}</td><td>${rosterTag(u)}</td><td class="num muted">${esc(String(u.created).slice(0, 16))}</td>
       <td><select class="ci" id="role-${esc(u.id)}">${Object.keys(ROLE_DESC).map(r => `<option${r === '보기' ? ' selected' : ''}>${r}</option>`).join('')}</select></td>
       <td class="r"><button type="button" class="btn sm primary" data-act="acct-approve" data-id="${esc(u.id)}">승인</button> <button type="button" class="btn sm danger" data-act="acct-reject" data-id="${esc(u.id)}">거절</button></td></tr>`).join('')}
-    </tbody></table></div>${teamList()}<p class="muted small">팀장으로 승인할 때는 소속을 인원 명단의 소속(예: 기구개발팀)과 똑같이 맞춰 주세요. 그 팀 인원만 수정할 수 있게 됩니다.</p>` : '<p class="muted small">대기 중인 가입 신청이 없습니다. 사이트 주소를 알려 주면 로그인 화면의 회원가입으로 신청할 수 있습니다.</p>'}</section>`;
+    </tbody></table></div>${teamList()}<p class="muted small">팀장은 소속을 인원 명단의 팀 이름과 똑같이 맞춰 주세요.</p>` : '<p class="muted small">대기 중인 가입 신청이 없습니다.</p>'}</section>`;
   h += `<section class="card"><div class="head"><h2>계정 관리</h2><span class="sub">관리자 ${cnt('관리자')} · 연구소장 ${cnt('연구소장')} · 개발실장 ${cnt('개발실장') + cnt('편집')} · 팀장 ${cnt('팀장')} · 보기 ${cnt('보기')}</span><span class="spacer"></span><button type="button" class="btn primary" data-act="acct-edit">계정 직접 추가</button></div>
     <div class="chk">${Object.entries(ROLE_DESC).map(([r, d]) => `<span class="tag">${r} · ${d}</span>`).join('')}</div>
     <div class="tw free"><table><thead><tr><th>아이디</th><th>이름</th><th>부서</th><th>직급</th><th>역할</th><th>상태</th><th>가입일</th><th>마지막 로그인</th><th style="width:190px"></th></tr></thead><tbody>
     ${act.map(u => `<tr><td class="num">${esc(u.id)}${u.id === auth.user.id ? ' <span class="tag">나</span>' : ''}</td><td><b>${esc(u.name)}</b></td><td>${esc(u.team || '–')}${u.role === '팀장' && !(S.config?.teamOrder || []).includes(u.team) ? ' <span class="tag bad" title="인원 명단의 팀 이름과 달라 수정 권한이 작동하지 않습니다">명단과 다름</span>' : ''}</td><td>${esc(u.rank || '–')}</td><td><span class="tag ${u.role === '관리자' ? 'ok' : ''}">${esc(u.role)}</span></td><td>${u.active ? '<span class="tag ok">사용</span>' : '<span class="tag bad">중지</span>'}</td><td class="num muted">${esc(String(u.created).slice(0, 10))}</td><td class="num muted">${esc(u.lastLogin || '–')}</td>
       <td class="r">${u.id === auth.user.id ? '' : `<button type="button" class="btn sm" data-act="acct-edit" data-id="${esc(u.id)}">수정</button> <button type="button" class="btn sm" data-act="acct-toggle" data-id="${esc(u.id)}">${u.active ? '중지' : '사용'}</button> <button type="button" class="btn sm danger" data-act="acct-del" data-id="${esc(u.id)}">삭제</button>`}</td></tr>`).join('')}
-    </tbody></table></div><p class="muted small">비밀번호를 잊은 사람은 '수정'에서 새 비밀번호를 정해 전달하세요. 접속·수정 기록은 구글 시트의 log 탭에 남습니다.</p></section>
+    </tbody></table></div></section>
     <section class="card"><div class="head"><h2>엑셀 잠금 비밀번호</h2><span class="tag ${ui.lockSet ? 'ok' : 'bad'}">${ui.lockSet ? '설정됨' : '미설정 · 잠금 없이 내보내짐'}</span><span class="spacer"></span><button type="button" class="btn" data-act="lockpw">${ui.lockSet ? '변경' : '설정'}</button></div>
-    <p class="muted small">누가 내보내도 같은 비밀번호로 잠긴 엑셀이 나옵니다. 비밀번호 자체는 관리자도 다시 볼 수 없으니 따로 기록해 두세요.</p></section>`;
+    <p class="muted small">저장한 비밀번호는 다시 볼 수 없으니 따로 기록해 두세요.</p></section>`;
   return h;
 }
 
@@ -1256,11 +1260,7 @@ function renderInner() {
   }
   const r = route();
   let html = '';
-  if (!editor) html += `<div class="notice">보기 전용 계정입니다. 수정이 필요하면 관리자에게 권한을 요청하세요.</div>`;
-  else if (leader) html += S.people.some(p => p.team === myTeam)
-    ? `<div class="notice">팀장 계정 (${esc(myTeam)}): 우리 팀 인원의 역량평가 등급·교육 이수와, 우리 팀이 쓰는 파트의 평가항목만 수정할 수 있습니다.</div>`
-    : `<div class="notice bad">팀장 계정의 소속이 '${esc(myTeam || '미지정')}'인데, 인원 명단에 이 소속의 인원이 없어 수정할 수 있는 사람이 없습니다. 관리자에게 계정 소속을 명단의 팀 이름(${esc((S.config.teamOrder || []).join(', '))})과 똑같이 바꿔 달라고 하세요.</div>`;
-  else if (!admin && !leader && r !== 'assess' && r !== 'education') html += `<div class="notice">${esc(auth.user.role)} 계정은 부서 전체 인원의 역량평가 등급과 교육 이수만 수정할 수 있습니다.</div>`;
+  if (leader && !S.people.some(p => p.team === myTeam)) html += `<div class="notice bad">팀장 계정의 소속이 '${esc(myTeam || '미지정')}'인데, 인원 명단에 이 소속의 인원이 없어 수정할 수 있는 사람이 없습니다. 관리자에게 계정 소속을 명단의 팀 이름(${esc((S.config.teamOrder || []).join(', '))})과 똑같이 바꿔 달라고 하세요.</div>`;
   html += ({ dashboard: vDash, assess: vAssess, education: vEdu, people: vPeople, settings: vSettings, accounts: vAccounts })[r]();
   v.innerHTML = html;
 }
@@ -1352,7 +1352,7 @@ function vDash() {
       <div class="dleg"><span>이수<em>${dn}/${tot}</em></span>${pre ? `<span>선이수<em>${pre}</em></span>` : ''}<span>완료<em>${full}명</em></span></div></figure>`; }).join('')}</div></section></div>`;
   // level criteria
   h += `<section class="card"><div class="head"><h2>종합 Level 기준</h2><span class="sub">Knowledge 50 + Skill 50 = 100점 · 등급 반영률 ${S.config.grades.slice().reverse().map(g => `${g.g} ${Math.round(g.step / S.config.grades.length * 100)}%`).join(' · ')}</span></div>
-  <div class="tw free"><table><thead><tr><th>Level</th><th>숙련도</th><th class="r">종합 점수</th><th>참고 (직급·경력)</th><th>설명</th></tr></thead><tbody>${S.config.levels.map(l => `<tr><td>${lvTag(l.lv)}</td><td>${esc(l.label.replace(/\n/g, ' '))}</td><td class="r num">${l.min}점 이상</td><td>${esc((l.ref || '').replace(/\n/g, ' '))}</td><td style="white-space:normal;min-width:320px">${esc(l.desc || '').replace(/\n/g, '<br>')}</td></tr>`).join('')}</tbody></table></div></section>`;
+  <div class="tw free"><table><thead><tr><th>Level</th><th>숙련도</th><th class="r">종합 점수</th><th>참고 (직급·경력)</th><th>설명</th></tr></thead><tbody>${S.config.levels.map(l => `<tr><td>${lvTag(l.lv)}</td><td>${esc(l.label.replace(/\n/g, ' '))}</td><td class="r num">${l.min}점 이상</td><td>${esc((l.ref || '').replace(/\n/g, ' '))}</td><td class="l" style="white-space:normal;min-width:320px">${esc(l.desc || '').replace(/\n/g, '<br>')}</td></tr>`).join('')}</tbody></table></div></section>`;
   return h;
 }
 
@@ -1368,7 +1368,7 @@ function vAssess() {
     const K = part.items.filter(i => i.area === 'Knowledge'), Sk = part.items.filter(i => i.area === 'Skill'), all = [...K, ...Sk];
     const ppl = C.sortComp(S.people.filter(p => p.cat === part.name));
     const N = S.config.grades.length, opts = S.config.grades.slice().reverse().map(g => g.g);
-    h += `<section class="card"><div class="head"><h2>${esc(part.name)} 역량평가</h2><span class="sub">${ppl.length}명 · Knowledge ${K.length}항목 · Skill ${Sk.length}항목 · 등급 ${S.config.grades.slice().reverse().map(g => `${g.g}=${Math.round(g.step / N * 100)}%`).join(' ')}</span><span class="spacer"></span>${editor ? '<span class="small muted">칸을 고르면 바로 저장됩니다</span>' : ''}</div>
+    h += `<section class="card"><div class="head"><h2>${esc(part.name)} 역량평가</h2><span class="sub">${ppl.length}명 · Knowledge ${K.length}항목 · Skill ${Sk.length}항목</span><span class="spacer"></span></div>
     <div class="tw" style="--s2:38px"><table><thead><tr><th class="sticky c" style="min-width:38px">No</th><th class="sticky2">성명</th><th>직급</th><th class="c">Level</th><th class="r">Total</th><th class="r">K</th><th class="r">S</th>
     ${all.map(it => `<th class="item ${it.area[0]}" title="${esc(it.name)}${it.basis ? ' · 근거: ' + esc(it.basis) : ''}">${esc(it.name)}<span class="w">${it.area === 'Knowledge' ? 'K' : 'S'} ${fmt1(it.ratio * 50)}점</span></th>`).join('')}</tr></thead><tbody>`;
     ppl.forEach((p, i) => {
@@ -1412,7 +1412,7 @@ function vEdu() {
     const opts = deptOptions();
     if (!opts.includes(ui.eduDept)) { const mine = leader && S.people.find(p => p.edu && p.team === myTeam); ui.eduDept = (mine && opts.includes(mine.eduDept)) ? mine.eduDept : (LS.get('lab_edudept') && opts.includes(LS.get('lab_edudept')) ? LS.get('lab_edudept') : opts[0]); }
     h += `<label class="field"><span>부서 선택</span><select class="ci" data-act="f-dept">${deptOptions().map(d => `<option${d === ui.eduDept ? ' selected' : ''}>${esc(d)}</option>`).join('')}</select></label>
-    <span class="legend-inline"><span class="pill ok">이수</span><span class="pill miss">미이수</span><span class="pill pre">선이수</span><span class="muted small">선이수 = 아직 대상 구간이 아닌데 미리 들은 교육 (대상이 되면 이수로 집계)${editor ? ' · 빈칸의 + 를 누르면 선이수 등록' : ''}</span></span></div>`;
+    <span class="legend-inline"><span class="pill ok">이수</span><span class="pill miss">미이수</span><span class="pill pre">선이수</span>${editor ? '<span class="muted small">칸을 누르면 변경 · 빈칸 + 는 선이수</span>' : ''}</span></div>`;
     const v = C.eduView(ui.eduDept);
     const invalid = S.people.filter(p => p.edu && !C.eduValid(p));
     if (invalid.length) h += `<div class="notice warn small">직급 또는 상세부서가 교육 설정에 없어 표시되지 않는 인원 ${invalid.length}명: ${invalid.map(p => esc(p.name)).join(', ')}</div>`;
@@ -1456,8 +1456,8 @@ function vEdu() {
     const rows = [];
     C.sortEdu(S.people).forEach((p, pi) => { for (const [cid, r] of Object.entries(S.edu[p.id] || {})) { const c = cmap[cid]; if (c && !r.x && (!ui.q || p.name.includes(ui.q) || c.name.includes(ui.q))) rows.push({ p, c, r, pi }); } });
 
-    h += `<section class="card"><div class="head"><h2>교육 이수 기록</h2><span class="sub">${rows.length.toLocaleString()}건 · 수료 현황표에서 누른 내용도 여기에 자동으로 들어옵니다</span></div><div class="tw"><table><thead><tr><th class="c">No</th><th>이름</th><th>소속</th><th>교육명</th><th>구분</th><th>부서</th><th>비고</th>${editor ? '<th></th>' : ''}</tr></thead><tbody>
-    ${rows.map((x, i) => `<tr><td class="c num muted">${i + 1}</td><td><button class="link" data-act="person-edu" data-id="${x.p.id}" type="button">${esc(x.p.name)}</button></td><td>${esc(x.p.team)}</td><td>${esc(x.c.name)}</td><td><span class="tag ${x.c.type === '필수' ? 'ok' : ''}">${esc(x.c.type)}</span></td><td>${esc(x.c.dept)}</td><td>${esc(x.r.note)}</td>${editor ? `<td>${canP(x.p) ? `<button type="button" class="btn sm danger" data-act="del-rec" data-p="${x.p.id}" data-c="${x.c.id}">삭제</button>` : ''}</td>` : ''}</tr>`).join('')}
+    h += `<section class="card"><div class="head"><h2>교육 이수 기록</h2><span class="sub">${rows.length.toLocaleString()}건</span></div><div class="tw"><table><thead><tr><th class="c">No</th><th>이름</th><th>소속</th><th>교육명</th><th>구분</th><th>부서</th><th>비고</th>${editor ? '<th></th>' : ''}</tr></thead><tbody>
+    ${rows.map((x, i) => `<tr><td class="c num muted">${i + 1}</td><td><button class="link" data-act="person-edu" data-id="${x.p.id}" type="button">${esc(x.p.name)}</button></td><td>${esc(x.p.team)}</td><td class="l">${esc(x.c.name)}</td><td><span class="tag ${x.c.type === '필수' ? 'ok' : ''}">${esc(x.c.type)}</span></td><td>${esc(x.c.dept)}</td><td class="l">${esc(x.r.note)}</td>${editor ? `<td>${canP(x.p) ? `<button type="button" class="btn sm danger" data-act="del-rec" data-p="${x.p.id}" data-c="${x.c.id}">삭제</button>` : ''}</td>` : ''}</tr>`).join('')}
     </tbody></table></div></section>`;
     return h;
   }
@@ -1468,9 +1468,10 @@ function vEdu() {
   <label class="field"><span>검색</span><input class="ci" data-act="f-q" value="${esc(ui.q)}" placeholder="교육명"></label>
   <span class="spacer"></span>${admin ? '<button type="button" class="btn primary" data-act="course-edit">교육 추가</button>' : ''}</div>`;
   const rows = S.courses.filter(c => (!ui.guideDept || c.dept === ui.guideDept) && (!ui.guideType || c.type === ui.guideType) && (!ui.q || c.name.includes(ui.q)));
-  const cnt = cid => Object.values(S.edu).filter(m => m[cid]).length;
-  h += `<section class="card"><div class="head"><h2>연구소 교육 가이드</h2><span class="sub">필수 ${S.courses.filter(c => c.type === '필수').length}건 · 선택 ${S.courses.filter(c => c.type === '선택').length}건</span></div><div class="tw"><table><thead><tr><th class="c">No</th><th>교육내용</th><th>교육목적</th><th>부서</th><th>직급</th><th class="c">단계</th><th class="c">구분</th><th class="r">이수 인원</th>${admin ? '<th></th>' : ''}</tr></thead><tbody>
-  ${rows.map((c, i) => { const st = C.cStage(c); return `<tr><td class="c num muted">${i + 1}</td><td><b>${esc(c.name)}</b></td><td class="muted" style="white-space:normal">${esc(c.purpose)}</td><td>${esc(c.dept)}</td><td>${esc(c.rank)}</td><td class="c num">${st == null ? '<span class="tag bad">직급 표기 확인</span>' : st || '–'}</td><td class="c"><span class="tag ${c.type === '필수' ? 'ok' : ''}">${esc(c.type || '미지정')}</span></td><td class="r num">${cnt(c.id)}</td>${admin ? `<td><button type="button" class="btn sm" data-act="course-edit" data-id="${c.id}">수정</button></td>` : ''}</tr>`; }).join('')}
+  const cnt = cid => Object.values(S.edu).filter(m => m[cid] && !m[cid].x).length;
+  const anyPurpose = rows.some(c => c.purpose);
+  h += `<section class="card"><div class="head"><h2>연구소 교육 가이드</h2><span class="sub">필수 ${S.courses.filter(c => c.type === '필수').length}건 · 선택 ${S.courses.filter(c => c.type === '선택').length}건</span></div><div class="tw"><table><thead><tr><th class="c">No</th><th>교육내용</th>${anyPurpose ? '<th>교육목적</th>' : ''}<th>부서</th><th>직급</th><th class="c">단계</th><th class="c">구분</th><th class="r">이수 인원</th>${admin ? '<th></th>' : ''}</tr></thead><tbody>
+  ${rows.map((c, i) => { const st = C.cStage(c); return `<tr><td class="c num muted">${i + 1}</td><td class="l"><b>${esc(c.name)}</b></td>${anyPurpose ? `<td class="muted l" style="white-space:normal">${esc(c.purpose)}</td>` : ''}<td>${esc(c.dept)}</td><td>${esc(c.rank)}</td><td class="c num">${st == null ? '<span class="tag bad">직급 표기 확인</span>' : st || '–'}</td><td class="c"><span class="tag ${c.type === '필수' ? 'ok' : ''}">${esc(c.type || '미지정')}</span></td><td class="r num">${cnt(c.id)}</td>${admin ? `<td><button type="button" class="btn sm" data-act="course-edit" data-id="${c.id}">수정</button></td>` : ''}</tr>`; }).join('')}
   </tbody></table></div></section>`;
   return h;
 }
@@ -1489,8 +1490,8 @@ function vCurri() {
     return `<span class="cchip ${cls}" title="${esc(tip)}">${esc(c.name)}</span>`;
   };
   let h = `<label class="field"><span>개인별 이수 표시</span><select class="ci" data-act="f-curp"><option value="">선택 안 함</option>${people.map(p => `<option value="${p.id}"${p.id === ui.curPerson ? ' selected' : ''}>${esc(p.name)} · ${esc(p.team)} · ${esc(p.rank)}</option>`).join('')}</select></label>
-    ${sel ? `<span class="legend-inline"><span class="pill ok">이수</span><span class="pill miss">미이수</span><span class="pill pre">선이수</span><span class="muted small">흐린 칸은 ${esc(sel.name)} 님 대상이 아닌 교육</span></span>` : '<span class="muted small">교육에 마우스를 올리면 대상 인원 중 이수 인원이 보입니다</span>'}</div>`;
-  h += `<section class="card"><div class="head"><h2>연구소 교육 커리큘럼</h2><span class="sub">필수 교육 ${req.length}건 · 직급별 역할 변화에 따라 공통역량과 분야별 전문교육을 단계적으로 운영</span></div>
+    ${sel ? `<span class="legend-inline"><span class="pill ok">이수</span><span class="pill miss">미이수</span><span class="pill pre">선이수</span><span class="muted small">흐린 칸: 대상 아님</span></span>` : ''}</div>`;
+  h += `<section class="card"><div class="head"><h2>연구소 교육 커리큘럼</h2><span class="sub">필수 교육 ${req.length}건</span></div>
     <div class="curri" style="--n:${depts.length}">
     <div class="cr-corner">직급 \ 분야</div>${depts.map(d => `<div class="cr-dept">${esc(d)}</div>`).join('')}`;
   for (const st of stages) {
@@ -1505,7 +1506,7 @@ function vCurri() {
   h += `</div>`;
   const elect = S.courses.filter(c => c.type === '선택');
   if (elect.length) h += `<details class="cr-elect"><summary>선택 교육 <span class="muted">전 직급 공통 · ${elect.length}건</span></summary><div class="cr-elist">${elect.map(c => { const cnt = Object.values(S.edu).filter(m => m[c.id]).length; let cls = ''; if (sel) cls = (S.edu[sel.id] || {})[c.id] ? 'ok' : 'na'; return `<span class="cchip ${cls}" title="${esc(c.name)} · 이수 ${cnt}명">${esc(c.name)}</span>`; }).join('')}</div></details>`;
-  h += `<p class="muted small">교육 가이드에서 교육을 추가하거나 부서·직급을 바꾸면 이 커리큘럼에 바로 반영됩니다.</p></section>`;
+  h += `</section>`;
   return h;
 }
 function personOpts(sel) { return C.sortEdu(S.people.filter(p => p.edu && canP(p))).map(p => `<option value="${p.id}"${p.id === sel ? ' selected' : ''}>${esc(p.name)} · ${esc(p.team)}</option>`).join(''); }
@@ -1526,7 +1527,7 @@ function personEdu(pid) {
   const p = S.people.find(x => x.id === pid); if (!p) return;
   const e = C.edu(p), cmap = S.courses;
   const req = cmap.filter(c => C.cell(c, p).target), el = cmap.filter(c => c.type === '선택' && (S.edu[p.id] || {})[c.id]);
-  const rows = req.map(c => { const x = C.cell(c, p); return `<tr><td>${esc(c.name)}</td><td>${esc(c.dept)}</td><td class="c num">${C.cStage(c)}</td><td class="c">${x.mark ? `<span class="pill ok">이수</span>` : '<span class="pill miss">미이수</span>'}</td>${canP(p) ? `<td>${x.mark === '◎' ? `<button type="button" class="btn sm" data-act="toggle-rec" data-p="${p.id}" data-c="${c.id}" >미이수로</button>` : x.ex ? `<button type="button" class="btn sm" data-act="toggle-rec" data-p="${p.id}" data-c="${c.id}">이수로</button>` : x.rec ? `<button type="button" class="btn sm danger" data-act="dlg-del-rec" data-p="${p.id}" data-c="${c.id}">취소</button>` : `<button type="button" class="btn sm" data-act="dlg-add-rec" data-p="${p.id}" data-c="${c.id}">이수</button>`}</td>` : ''}</tr>`; }).join('');
+  const rows = req.map(c => { const x = C.cell(c, p); return `<tr><td class="l">${esc(c.name)}</td><td>${esc(c.dept)}</td><td class="c num">${C.cStage(c)}</td><td class="c">${x.mark ? `<span class="pill ok">이수</span>` : '<span class="pill miss">미이수</span>'}</td>${canP(p) ? `<td>${x.mark === '◎' ? `<button type="button" class="btn sm" data-act="toggle-rec" data-p="${p.id}" data-c="${c.id}" >미이수로</button>` : x.ex ? `<button type="button" class="btn sm" data-act="toggle-rec" data-p="${p.id}" data-c="${c.id}">이수로</button>` : x.rec ? `<button type="button" class="btn sm danger" data-act="dlg-del-rec" data-p="${p.id}" data-c="${c.id}">취소</button>` : `<button type="button" class="btn sm" data-act="dlg-add-rec" data-p="${p.id}" data-c="${c.id}">이수</button>`}</td>` : ''}</tr>`; }).join('');
   openDlg(`<div class="head"><h2>${esc(p.name)}</h2><span class="sub">${esc(p.team)} · ${esc(p.rank)} · ${esc(p.eduDept)} (교육분야 ${esc(e.field || '-')}, ${e.stage ?? '-'}단계)</span><span class="spacer"></span><button type="button" class="btn sm" data-act="close">닫기</button></div>
    <div class="kpis"><div class="kpi edu"><span class="k">필수 대상</span><span class="v">${e.target}</span></div><div class="kpi edu"><span class="k">필수 이수</span><span class="v">${e.done}</span></div><div class="kpi edu"><span class="k">이수율</span><span class="v">${pct(e.rate)}</span></div><div class="kpi edu"><span class="k">선이수</span><span class="v">${e.pre}</span></div><div class="kpi edu"><span class="k">선택 이수</span><span class="v">${e.elective}</span></div></div>
    <h3 style="font-size:14px">필수 교육</h3><div class="tw free"><table><thead><tr><th>교육명</th><th>부서</th><th class="c">단계</th><th class="c">상태</th>${canP(p) ? '<th></th>' : ''}</tr></thead><tbody>${rows || '<tr><td colspan="6" class="muted">필수 대상 교육이 없습니다</td></tr>'}</tbody></table></div>
@@ -1566,8 +1567,9 @@ function vPeople() {
   const mm = eduMismatch();
   if (mm.length) h += `<div class="notice warn">평가 파트와 교육 상세부서가 맞지 않는 인원 ${mm.length}명: ${mm.map(p => `<b>${esc(p.name)}</b> (평가 ${esc(p.cat)} → 교육 ${esc(p.eduDept)})`).join(', ')}${admin ? ` <button type="button" class="btn sm primary" data-act="fix-edudept">평가 파트에 맞추기</button>` : ''}</div>`;
   const rows = C.sortComp(S.people).filter(p => !ui.q || p.name.includes(ui.q) || p.team.includes(ui.q));
-  h += `<section class="card"><div class="head"><h2>연구소 인원</h2><span class="sub">${S.people.length}명 · 역량평가와 교육 현황이 같은 명단을 씁니다</span></div><div class="tw"><table><thead><tr><th class="c">No</th><th>소속</th><th>성명</th><th>직급</th><th>평가 파트</th><th>교육 상세부서</th><th class="c">교육 대상</th><th class="c">입사일</th><th class="c">경력</th><th>비고</th><th>점검</th>${admin ? '<th></th>' : ''}</tr></thead><tbody>
-  ${rows.map((p, i) => `<tr><td class="c num muted">${i + 1}</td><td>${esc(p.team)}</td><td><b>${esc(p.name)}</b></td><td>${esc(p.rank)}</td><td>${esc(p.cat)}</td><td>${esc(p.eduDept)}</td><td class="c">${p.edu ? '●' : '<span class="muted">–</span>'}</td><td class="c num">${esc(p.join) || '–'}</td><td class="c num">${career(p.join)}</td><td class="muted">${esc(p.note)}</td><td>${personIssues(p).map(([c, t]) => `<span class="tag ${c}">${t}</span>`).join(' ')}</td>${admin ? `<td><button type="button" class="btn sm" data-act="person-edit" data-id="${p.id}">수정</button></td>` : ''}</tr>`).join('')}
+  const anyNote = rows.some(p => p.note), anyIssue = rows.some(p => personIssues(p).length);
+  h += `<section class="card"><div class="head"><h2>연구소 인원</h2><span class="sub">${S.people.length}명</span></div><div class="tw"><table><thead><tr><th class="c">No</th><th>소속</th><th>성명</th><th>직급</th><th>평가 파트</th><th>교육 상세부서</th><th class="c">교육 대상</th><th class="c">입사일</th><th class="c">경력</th>${anyNote ? '<th>비고</th>' : ''}${anyIssue ? '<th>점검</th>' : ''}${admin ? '<th></th>' : ''}</tr></thead><tbody>
+  ${rows.map((p, i) => `<tr><td class="c num muted">${i + 1}</td><td>${esc(p.team)}</td><td><b>${esc(p.name)}</b></td><td>${esc(p.rank)}</td><td>${esc(p.cat)}</td><td>${esc(p.eduDept)}</td><td class="c">${p.edu ? '●' : '<span class="muted">–</span>'}</td><td class="c num">${esc(p.join) || '–'}</td><td class="c num">${career(p.join)}</td>${anyNote ? `<td class="muted l">${esc(p.note)}</td>` : ''}${anyIssue ? `<td>${personIssues(p).map(([c, t]) => `<span class="tag ${c}">${t}</span>`).join(' ')}</td>` : ''}${admin ? `<td><button type="button" class="btn sm" data-act="person-edit" data-id="${p.id}">수정</button></td>` : ''}</tr>`).join('')}
   </tbody></table></div></section>`;
   return h;
 }
@@ -1594,7 +1596,7 @@ function vSettings() {
   const part = S.parts.find(p => p.id === ui.setPart);
   let dis = part && canPart(part) ? '' : 'disabled';
   const pe = !dis;
-  let h = `<section class="card"><div class="head"><h2>평가 항목 · 배점</h2><span class="sub">파트별 Knowledge 비율 합 100%, Skill 비율 합 100% (각 50점 환산)</span><span class="spacer"></span>${admin ? '<button type="button" class="btn sm" data-act="part-add">파트 추가</button>' : ''}</div>
+  let h = `<section class="card"><div class="head"><h2>평가 항목 · 배점</h2><span class="spacer"></span>${admin ? '<button type="button" class="btn sm" data-act="part-add">파트 추가</button>' : ''}</div>
   <div class="chips">${S.parts.map(p => `<button type="button" class="pchip" data-act="spart" data-v="${p.id}" aria-pressed="${p.id === ui.setPart}">${esc(p.name)}<span class="c">${(p.items || []).length}</span></button>`).join('')}</div>`;
   if (part) {
     const d = draft('part:' + part.id, () => part.items || []);
@@ -1626,15 +1628,15 @@ function vSettings() {
     <div class="tw free"><table><thead><tr><th>Level</th><th>숙련도</th><th class="r">최소 점수</th><th>전 항목 동일 등급일 때</th></tr></thead><tbody>
     ${cfg.levels.map((l, i) => `<tr><td>${lvTag(l.lv)}</td><td>${esc(l.label.replace(/\n/g, ' '))}</td><td class="r"><input class="ci num" style="width:60px;text-align:right" type="number" min="0" max="100" data-act="cfg-lv" data-i="${i}" value="${l.min}" ${dis}></td><td class="small muted">${cfg.grades.slice().reverse().filter(g => { const t = 100 * g.step / N; const ls = [...cfg.levels].sort((a, b) => b.min - a.min); const hit = ls.find(x => t >= x.min); return hit && hit.lv === l.lv; }).map(g => `전 항목 ${g.g} = ${fmt1(100 * g.step / N)}점`).join(', ') || '–'}</td></tr>`).join('')}</tbody></table></div></section>`;
   // edu settings
-  h += `<section class="card"><div class="head"><h2>교육 설정</h2><span class="sub">직급별 교육 단계, 상세부서별 적용 교육부서</span></div>
+  h += `<section class="card"><div class="head"><h2>교육 설정</h2></div>
     <div class="grid" style="grid-template-columns:1fr 1fr">
     <div class="tw free"><table><thead><tr><th>직급</th><th class="r">교육 단계</th></tr></thead><tbody>${cfg.rankStage.map((x, i) => `<tr><td>${esc(x.rank)}</td><td class="r"><input class="ci num" style="width:56px;text-align:right" type="number" min="1" max="9" data-act="cfg-rs" data-i="${i}" value="${x.stage}" ${dis}></td></tr>`).join('')}</tbody></table></div>
     <div class="tw free"><table><thead><tr><th>상세부서</th><th>적용 교육부서</th></tr></thead><tbody>${cfg.eduDeptMap.map((x, i) => `<tr><td>${esc(x.dept)}</td><td><input class="ci" style="width:90px" data-act="cfg-dm" data-i="${i}" value="${esc(x.edu)}" ${dis}></td></tr>`).join('')}</tbody></table></div>
     </div>
     <div class="tw free"><table><thead><tr><th>가이드 직급 표기</th><th class="r">교육 단계</th></tr></thead><tbody>${cfg.guideStage.map((x, i) => `<tr><td>${esc(x.label)}</td><td class="r"><input class="ci num" style="width:56px;text-align:right" type="number" min="1" max="9" data-act="cfg-gs" data-i="${i}" value="${x.stage}" ${dis}></td></tr>`).join('')}</tbody></table></div>
-    <p class="small muted" style="margin:0">적용 교육부서는 가이드의 부서명을 포함하면 대상이 됩니다(예: 기능안전 → SW).</p>
+    
     </section></div>`;
-  h += `<section class="card"><div class="head"><h2>표시 순서</h2><span class="sub">쉼표로 구분 · 위에서부터 정렬 우선</span></div><div class="form" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr))">
+  h += `<section class="card"><div class="head"><h2>표시 순서</h2><span class="sub">쉼표로 구분</span></div><div class="form" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr))">
     <label class="field">소속<input data-act="cfg-list" data-k="teamOrder" value="${esc(cfg.teamOrder.join(', '))}" ${dis}></label>
     <label class="field">평가 파트<input data-act="cfg-list" data-k="partOrder" value="${esc(cfg.partOrder.join(', '))}" ${dis}></label>
     <label class="field">직급<input data-act="cfg-list" data-k="rankOrder" value="${esc(cfg.rankOrder.join(', '))}" ${dis}></label>
@@ -1643,9 +1645,9 @@ function vSettings() {
   // history
   const hist = [...S.history].sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.rev - b.rev));
   h += `<section class="card"><div class="head"><h2>제/개정 이력</h2></div><div class="tw free"><table><thead><tr><th>Ver</th><th class="r">Rev</th><th>날짜</th><th>작성자 부서/성명</th><th>제/개정사항</th><th>비고</th>${admin ? '<th></th>' : ''}</tr></thead><tbody>
-    ${hist.map(x => `<tr><td>${esc(x.ver)}</td><td class="r num">${esc(x.rev)}</td><td class="num">${esc(x.date)}</td><td>${esc(x.author)}</td><td>${esc(x.change)}</td><td>${esc(x.note)}</td>${admin ? `<td><button type="button" class="btn sm danger" data-act="hist-del" data-id="${x.id}">삭제</button></td>` : ''}</tr>`).join('')}</tbody></table></div>
+    ${hist.map(x => `<tr><td>${esc(x.ver)}</td><td class="r num">${esc(x.rev)}</td><td class="num">${esc(x.date)}</td><td>${esc(x.author)}</td><td class="l">${esc(x.change)}</td><td class="l">${esc(x.note)}</td>${admin ? `<td><button type="button" class="btn sm danger" data-act="hist-del" data-id="${x.id}">삭제</button></td>` : ''}</tr>`).join('')}</tbody></table></div>
     ${admin ? `<form class="form" data-form="hist"><label class="field">Ver<input name="ver" value="${esc(hist.at(-1)?.ver || 'V1.0')}"></label><label class="field">Rev<input name="rev" type="number" value="${(+(hist.at(-1)?.rev ?? -1)) + 1}"></label><label class="field">날짜<input name="date" type="date" value="${today()}"></label><label class="field">작성자<input name="author" placeholder="부서/성명"></label><label class="field" style="grid-column:span 2">제/개정사항<input name="change" required></label><div><button class="btn primary" type="submit">이력 추가</button></div></form>` : ''}</section>`;
-  if (admin) h += `<section class="card"><div class="head"><h2>데이터 불러오기 · 백업</h2></div><p class="small muted" style="margin:0">원본 엑셀(역량평가 현황, 교육 현황)을 하나 또는 둘 다 선택하면 그 파일 내용으로 바뀝니다. 한 파일만 넣으면 나머지 데이터는 유지됩니다. 이름이 같은 사람은 같은 사람으로 이어집니다.</p><div class="toolbar"><label class="btn primary">원본 엑셀 불러오기 (.xlsx)<input type="file" accept=".xlsx" multiple data-act="import-xlsx" hidden></label><button type="button" class="btn" data-act="export-json">백업 내려받기 (.json)</button><label class="btn">백업 파일 불러오기 (.json)<input type="file" accept=".json" data-act="import-json" hidden></label></div></section>`;
+  if (admin) h += `<section class="card"><div class="head"><h2>데이터 불러오기 · 백업</h2></div><p class="small muted" style="margin:0">한 파일만 넣으면 나머지 데이터는 유지됩니다.</p><div class="toolbar"><label class="btn primary">원본 엑셀 불러오기 (.xlsx)<input type="file" accept=".xlsx" multiple data-act="import-xlsx" hidden></label><button type="button" class="btn" data-act="export-json">백업 내려받기 (.json)</button><label class="btn">백업 파일 불러오기 (.json)<input type="file" accept=".json" data-act="import-json" hidden></label></div></section>`;
   return h;
 }
 
