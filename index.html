@@ -157,6 +157,7 @@ dialog::backdrop{background:rgba(10,16,22,.45)}
 .ro{background:transparent!important;border-color:transparent!important}
 footer.foot{padding:16px 20px 24px;text-align:center;font-size:12px;color:var(--muted)}
 footer.foot b{color:var(--ink);font-weight:600}
+footer.foot .fv{display:block;margin-top:3px;font-size:11px;opacity:.8}
 @media (max-width:640px){main{padding:12px}.bar{padding:10px 12px}.g2{grid-template-columns:1fr}.hbar{grid-template-columns:80px 1fr 48px}}
 /* ---- 정렬·통일 ---- */
 body{font-size:14px;letter-spacing:-0.01em}
@@ -238,9 +239,9 @@ table thead th{text-align:center!important}
 .donut figcaption{display:flex;flex-direction:column;align-items:center;line-height:1.25;max-width:100%}
 .donut figcaption b{font-size:12.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .donut figcaption span{font-size:11px;color:var(--muted)}
-.dleg{display:grid;grid-template-columns:repeat(2,max-content);justify-content:center;gap:2px 10px;font-size:10.5px;color:var(--muted);line-height:1.35}
+.dleg{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10.5px;color:var(--muted);line-height:1.35}
+.dleg>div{display:flex;justify-content:center;gap:0 9px}
 .dleg span{display:inline-flex;align-items:center;gap:3px;white-space:nowrap}
-.dleg span.w{grid-column:1/-1;justify-self:center}
 .dleg span.z{opacity:.45}
 .dleg i{width:6px;height:6px;border-radius:50%;display:inline-block}
 .dleg em{font-style:normal;font-weight:700;color:var(--ink)}
@@ -328,7 +329,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 연구소 역량·교육 관리 · v2026.11.03 08:31</footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.03 08:42</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -509,7 +510,7 @@ function makeCalc(S){
   }
   function edu(p){
     let t=0,d=0,el=0,pre=0;
-    for(const c of S.courses){ const x=cell(c,p); if(x.target){t++; if(x.mark) d++;} else if(c.type==='필수'&&x.rec&&x.mark!=='◎') pre++; if(c.type==='선택'&&x.rec) el++; }
+    for(const c of S.courses){ const x=cell(c,p); if(x.target){t++; if(x.mark) d++;} else if(c.type==='필수'&&x.rec&&x.mark!=='◎'){pre++;t++;d++;} /* 미리 들은 필수 교육은 대상·이수에 포함 */ if(c.type==='선택'&&x.rec) el++; }
     return {target:t,done:d,rate:t?d/t:null,elective:el,pre,stage:rs[p.rank]??null,field:eduField(p)};
   }
   const idxOf=(arr,v)=>{const i=arr.indexOf(v);return i<0?99:i;};
@@ -682,8 +683,8 @@ const Export = (() => {
     // matrix
     const m = new Sheet('부서별 교육 수료 현황');
     m.set(0, 0, '부서별 교육 수료 현황', T);
-    m.set(0, 6, '부서: ' + (dept || '전체') + '   표시 ' + view.people.length + '명 / 필수 교육 ' + view.courses.length + '건   (이수 / 미이수 / 선이수 = 대상 구간 전에 미리 들음)', { color: '5B6573' });
-    const fixed = ['No', '이름', '직급', '소속', '상세부서', '교육분야', '교육 단계', '필수 대상', '필수 이수', '필수 이수율', '선이수', '선택 이수'];
+    m.set(0, 6, '부서: ' + (dept || '전체') + '   표시 ' + view.people.length + '명 / 필수 교육 ' + view.courses.length + '건', { color: '5B6573' });
+    const fixed = ['No', '이름', '직급', '소속', '상세부서', '교육분야', '교육 단계', '필수 대상', '필수 이수', '필수 이수율', '선택 이수'];
     const c0 = fixed.length;
     fixed.forEach((h, i) => { for (let k = 2; k <= 5; k++) m.set(k, i, k === 2 ? h : '', H); m.merge(2, i, 5, i); });
     view.courses.forEach((c, j) => {
@@ -694,11 +695,11 @@ const Export = (() => {
       const rr = 6 + i, e = C.edu(p);
       [i + 1, p.name, p.rank, p.team, p.eduDept, e.field || '', e.stage ?? '', e.target, e.done].forEach((v, j) => m.set(rr, j, v, j === 1 || j === 3 ? B : BC));
       m.set(rr, 9, e.rate ?? '-', { ...BC, fmt: '0%', bold: true, fill: e.rate == null ? undefined : e.rate >= 1 ? 'DDF3E4' : e.rate < 0.5 ? 'F9D0D0' : 'FFF1CC' });
-      m.set(rr, 10, e.pre, BC); m.set(rr, 11, e.elective, BC);
-      view.courses.forEach((c, j) => { const x = C.cell(c, p); const v = x.target ? (x.mark ? '이수' : '미이수') : (x.rec ? '선이수' : ''); m.set(rr, c0 + j, v, v === '이수' ? { ...BC, color: '22643C', fill: 'E3F3E8' } : v === '미이수' ? { ...BC, color: '952B2B', fill: 'FBEAEA' } : v === '선이수' ? { ...BC, color: '22643C', fill: 'F4FBF6' } : BC); });
+      m.set(rr, 10, e.elective, BC);
+      view.courses.forEach((c, j) => { const x = C.cell(c, p); const v = x.target ? (x.mark ? '이수' : '미이수') : (x.rec ? '이수' : ''); m.set(rr, c0 + j, v, v === '이수' ? { ...BC, color: '22643C', fill: 'E3F3E8' } : v === '미이수' ? { ...BC, color: '952B2B', fill: 'FBEAEA' } : BC); });
     });
     m.freeze = { row: 6, col: 2 };
-    [5, 9, 11, 11, 9, 9, 7, 7, 7, 8, 7, 7].forEach((w, i) => m.width(i, w));
+    [5, 9, 11, 11, 9, 9, 7, 7, 7, 8, 7].forEach((w, i) => m.width(i, w));
     out.push(m);
 
     // records
@@ -1337,7 +1338,7 @@ function vDash() {
     const c = cnt(L), n = L.length, av = n ? L.reduce((a, x) => a + x.c.T, 0) / n : null;
     const svg = ring(lvls.map(l => ({ v: c[l], color: LVSOLID[l], title: `${l === '미달' ? '미달' : 'Level ' + l}: ${c[l]}명 (${n ? Math.round(c[l] / n * 100) : 0}%)` })), fmt1(av), '평균 점수');
     return `<figure class="donut${gi === 0 ? ' all' : ''}">${svg}<figcaption><b>${esc(name)}</b><span>${n}명</span></figcaption>
-      <div class="dleg">${['A', 'B', 'C', 'D'].filter(l => lvls.includes(l)).map(l => `<span${c[l] ? '' : ' class="z"'}><i style="background:${LVSOLID[l]}"></i>${l}<em>${c[l]}</em></span>`).join('')}<span class="w${c['미달'] ? '' : ' z'}"><i style="background:${LVSOLID['미달']}"></i>미달<em>${c['미달']}명</em></span></div></figure>`; }).join('')}</div>`;
+      <div class="dleg">${(() => { const it = l => `<span${c[l] ? '' : ' class="z"'}><i style="background:${LVSOLID[l]}"></i>${l}<em>${c[l]}${l === '미달' ? '명' : ''}</em></span>`, L2 = lvls.filter(l => l !== '미달'); return `<div>${L2.slice(0, 3).map(it).join('')}</div><div>${[...L2.slice(3), '미달'].map(it).join('')}</div>`; })()}</div></figure>`; }).join('')}</div>`;
   h += `</section>`;
   // edu by team
   h += `<section class="card"><div class="head"><h2>팀별 필수 교육 이수율</h2></div><div class="hbars">`;
@@ -1350,11 +1351,11 @@ function vDash() {
   // 팀별 필수 교육 이수율 링
   const eg = [['연구소 전체', es.withT], ...teams.map(t => [t, es.withT.filter(x => x.p.team === t)]).filter(([, L]) => L.length)];
   h += `<div class="donuts" style="--k:${eg.length}">${eg.map(([name, L], gi) => {
-    const tot = L.reduce((a, x) => a + x.e.target, 0), dn = L.reduce((a, x) => a + x.e.done, 0), pre = L.reduce((a, x) => a + (x.e.pre || 0), 0), full = L.filter(x => x.e.rate >= 1).length;
+    const tot = L.reduce((a, x) => a + x.e.target, 0), dn = L.reduce((a, x) => a + x.e.done, 0), full = L.filter(x => x.e.rate >= 1).length;
     const r = tot ? dn / tot : 0, col = r >= 1 ? 'var(--dB)' : r < .5 ? 'var(--dX)' : 'var(--dC)';
     const svg = ring([{ v: r, color: col, title: `${name}: 필수 ${tot}건 중 ${dn}건 이수` }, { v: 1 - r, color: 'transparent' }], `${Math.round(r * 100)}<tspan class="du">%</tspan>`, '이수율', { round: r > 0 && r < 1 });
     return `<figure class="donut${gi === 0 ? ' all' : ''}">${svg}<figcaption><b>${esc(name)}</b><span>${L.length}명</span></figcaption>
-      <div class="dleg"><span><i class="dg"></i>대상<em>${tot}</em></span><span${dn ? '' : ' class="z"'}><i style="background:${col}"></i>이수<em>${dn}</em></span><span${tot - dn ? '' : ' class="z"'}><i class="dg dd"></i>미이수<em>${tot - dn}</em></span><span${pre ? '' : ' class="z"'}><i class="dd"></i>선이수<em>${pre}</em></span><span class="w${full ? '' : ' z'}"><i style="background:var(--dB)"></i>완료<em>${full}명</em></span></div></figure>`; }).join('')}</div></section></div>`;
+      <div class="dleg"><div><span><i class="dg"></i>대상<em>${tot}</em></span><span${dn ? '' : ' class="z"'}><i style="background:${col}"></i>이수<em>${dn}</em></span></div><div><span${tot - dn ? '' : ' class="z"'}><i class="dg dd"></i>미이수<em>${tot - dn}</em></span><span${full ? '' : ' class="z"'}><i style="background:var(--dB)"></i>완료<em>${full}명</em></span></div></div></figure>`; }).join('')}</div></section></div>`;
   // level criteria
   h += `<section class="card"><div class="head"><h2>종합 Level 기준</h2><span class="sub">Knowledge 50 + Skill 50 = 100점 · 등급 반영률 ${S.config.grades.slice().reverse().map(g => `${g.g} ${Math.round(g.step / S.config.grades.length * 100)}%`).join(' · ')}</span></div>
   <div class="tw free"><table><thead><tr><th>Level</th><th>숙련도</th><th class="r">종합 점수</th><th>참고 (직급·경력)</th><th>설명</th></tr></thead><tbody>${S.config.levels.map(l => `<tr><td>${lvTag(l.lv)}</td><td>${esc(l.label.replace(/\n/g, ' '))}</td><td class="r num">${l.min}점 이상</td><td>${esc((l.ref || '').replace(/\n/g, ' '))}</td><td class="l" style="white-space:normal;min-width:320px">${esc(l.desc || '').replace(/\n/g, '<br>')}</td></tr>`).join('')}</tbody></table></div></section>`;
@@ -1417,16 +1418,16 @@ function vEdu() {
     const opts = deptOptions();
     if (!opts.includes(ui.eduDept)) { const mine = leader && S.people.find(p => p.edu && p.team === myTeam); ui.eduDept = (mine && opts.includes(mine.eduDept)) ? mine.eduDept : (LS.get('lab_edudept') && opts.includes(LS.get('lab_edudept')) ? LS.get('lab_edudept') : opts[0]); }
     h += `<label class="field"><span>부서 선택</span><select class="ci" data-act="f-dept">${deptOptions().map(d => `<option${d === ui.eduDept ? ' selected' : ''}>${esc(d)}</option>`).join('')}</select></label>
-    <span class="legend-inline"><span class="pill ok">이수</span><span class="pill miss">미이수</span><span class="pill pre">선이수</span>${editor ? '<span class="muted small">칸을 누르면 변경 · 빈칸 + 는 선이수</span>' : ''}</span></div>`;
+    <span class="legend-inline"><span class="pill ok">이수</span><span class="pill miss">미이수</span>${editor ? '<span class="muted small">칸을 누르면 변경 · + 는 미리 들은 교육</span>' : ''}</span></div>`;
     const v = C.eduView(ui.eduDept);
     const invalid = S.people.filter(p => p.edu && !C.eduValid(p));
     if (invalid.length) h += `<div class="notice warn small">직급 또는 상세부서가 교육 설정에 없어 표시되지 않는 인원 ${invalid.length}명: ${invalid.map(p => esc(p.name)).join(', ')}</div>`;
     h += `<section class="card"><div class="head"><h2>부서별 교육 수료 현황</h2><span class="sub">표시 ${v.people.length}명 / 필수 교육 ${v.courses.length}건</span></div>
-    <div class="tw" style="--s2:38px"><table><thead><tr><th class="sticky c" style="min-width:38px">No</th><th class="sticky2">이름</th><th>직급</th><th class="opt">소속</th><th class="opt">상세부서</th><th class="c opt">단계</th><th class="r">대상</th><th class="r">이수</th><th>이수율</th><th class="r" title="대상 구간이 아니지만 미리 들은 필수 교육">선이수</th><th class="r opt">선택</th>
+    <div class="tw" style="--s2:38px"><table><thead><tr><th class="sticky c" style="min-width:38px">No</th><th class="sticky2">이름</th><th>직급</th><th class="opt">소속</th><th class="opt">상세부서</th><th class="c opt">단계</th><th class="r">대상</th><th class="r">이수</th><th>이수율</th><th class="r opt">선택</th>
     ${v.courses.map(c => `<th class="course" title="${esc(c.name)} · ${esc(c.dept)} · ${esc(c.rank)} (${C.cStage(c)}단계)"><span class="cn">${esc(c.name)}</span><span class="cd">${esc(c.dept)} · ${C.cStage(c)}단계</span></th>`).join('')}</tr></thead><tbody>`;
     v.people.forEach((p, i) => {
       const e = C.edu(p);
-      h += `<tr><td class="sticky c num muted">${i + 1}</td><td class="sticky2"><button class="link" data-act="person-edu" data-id="${p.id}" type="button">${esc(p.name)}</button></td><td class="muted">${esc(p.rank)}</td><td class="opt">${esc(p.team)}</td><td class="opt">${esc(p.eduDept)}</td><td class="c num opt">${e.stage}</td><td class="r num">${e.target}</td><td class="r num">${e.done}</td><td>${meter(e.rate)}</td><td class="r num">${e.pre || '<span class="muted">0</span>'}</td><td class="r num opt">${e.elective}</td>`;
+      h += `<tr><td class="sticky c num muted">${i + 1}</td><td class="sticky2"><button class="link" data-act="person-edu" data-id="${p.id}" type="button">${esc(p.name)}</button></td><td class="muted">${esc(p.rank)}</td><td class="opt">${esc(p.team)}</td><td class="opt">${esc(p.eduDept)}</td><td class="c num opt">${e.stage}</td><td class="r num">${e.target}</td><td class="r num">${e.done}</td><td>${meter(e.rate)}</td><td class="r num opt">${e.elective}</td>`;
       for (const c of v.courses) {
         const x = C.cell(c, p), auto = x.mark === '◎', done = !!x.mark;
         if (x.target && (auto || x.ex)) {   // 상위 직급 자동 인정 칸: 눌러서 '미이수 처리' ↔ 되돌리기
@@ -1436,11 +1437,11 @@ function vEdu() {
             : `<td class="c"><span class="pill ${auto ? 'ok' : 'miss'}" title="${esc(t3)}">${auto ? '이수' : '미이수'}</span></td>`;
           continue;
         }
-        if (!x.target) {   // 대상 구간이 아닌 교육: 미리 들었으면 '선이수', 아니면 빈칸(누르면 선이수 등록)
+        if (!x.target) {   // 대상 구간이 아닌 교육: 미리 들었으면 '이수', 아니면 빈칸(누르면 이수 등록)
           const t2 = `${p.name} · ${c.name} · 대상 구간 아님`;
           h += x.rec
-            ? (canP(p) ? `<td class="c"><button type="button" class="pill pre click" data-act="toggle-rec" data-p="${p.id}" data-c="${c.id}" title="${esc(t2)} · 미리 들음 · 눌러서 취소">선이수</button></td>` : `<td class="c"><span class="pill pre" title="${esc(t2)} · 미리 들음">선이수</span></td>`)
-            : (canP(p) ? `<td class="c"><button type="button" class="pill add click" data-act="toggle-rec" data-p="${p.id}" data-c="${c.id}" title="${esc(t2)} · 미리 들었으면 눌러서 선이수 등록">+</button></td>` : '<td class="c"></td>');
+            ? (canP(p) ? `<td class="c"><button type="button" class="pill ok click" data-act="toggle-rec" data-p="${p.id}" data-c="${c.id}" title="${esc(p.name)} · ${esc(c.name)} · 이수(미리 들음) · 눌러서 취소">이수</button></td>` : `<td class="c"><span class="pill ok" title="${esc(p.name)} · ${esc(c.name)} · 이수(미리 들음)">이수</span></td>`)
+            : (canP(p) ? `<td class="c"><button type="button" class="pill add click" data-act="toggle-rec" data-p="${p.id}" data-c="${c.id}" title="${esc(t2)} · 미리 들었으면 눌러서 이수 등록">+</button></td>` : '<td class="c"></td>');
           continue;
         }
         const tt = `${p.name} · ${c.name} · ${done ? '이수' : '미이수'}`;
@@ -1493,12 +1494,12 @@ function vCurri() {
   const people = C.sortEdu(S.people.filter(p => eduActive(p)));
   const chip = c => {
     let cls = '', tip = `${c.name} · ${c.dept} · ${c.rank}`;
-    if (sel) { const x = C.cell(c, sel); if (x.target) { cls = x.mark ? 'ok' : 'miss'; tip += x.mark ? ' · 이수' : ' · 미이수'; } else if (x.rec) { cls = 'pre'; tip += ' · 선이수(미리 들음)'; } else cls = 'na'; }
+    if (sel) { const x = C.cell(c, sel); if (x.target) { cls = x.mark ? 'ok' : 'miss'; tip += x.mark ? ' · 이수' : ' · 미이수'; } else if (x.rec) { cls = 'ok'; tip += ' · 이수(미리 들음)'; } else cls = 'na'; }
     else { const tgt = S.people.filter(p => C.eduValid(p) && C.cell(c, p).target), dn = tgt.filter(p => C.cell(c, p).mark).length; if (tgt.length) tip += ` · 대상 ${tgt.length}명 중 ${dn}명 이수`; }
     return `<span class="cchip ${cls}" title="${esc(tip)}">${esc(c.name)}</span>`;
   };
   let h = `<label class="field"><span>개인별 이수 표시</span><select class="ci" data-act="f-curp"><option value="">선택 안 함</option>${people.map(p => `<option value="${p.id}"${p.id === ui.curPerson ? ' selected' : ''}>${esc(p.name)} · ${esc(p.team)} · ${esc(p.rank)}</option>`).join('')}</select></label>
-    ${sel ? `<span class="legend-inline"><span class="pill ok">이수</span><span class="pill miss">미이수</span><span class="pill pre">선이수</span><span class="muted small">흐린 칸: 대상 아님</span></span>` : ''}</div>`;
+    ${sel ? `<span class="legend-inline"><span class="pill ok">이수</span><span class="pill miss">미이수</span><span class="muted small">흐린 칸: 대상 아님</span></span>` : ''}</div>`;
   h += `<section class="card"><div class="head"><h2>연구소 교육 커리큘럼</h2><span class="sub">필수 교육 ${req.length}건</span></div>
     <div class="curri" style="--n:${depts.length}">
     <div class="cr-corner">직급 \ 분야</div>${depts.map(d => `<div class="cr-dept">${esc(d)}</div>`).join('')}`;
@@ -1534,14 +1535,13 @@ function setRec(pid, cid, rec) {
 function personEdu(pid) {
   const p = S.people.find(x => x.id === pid); if (!p) return;
   const e = C.edu(p), cmap = S.courses;
-  const req = cmap.filter(c => C.cell(c, p).target), el = cmap.filter(c => c.type === '선택' && (S.edu[p.id] || {})[c.id]);
+  const req = cmap.filter(c => C.cell(c, p).target || (c.type === '필수' && (S.edu[p.id] || {})[c.id])), el = cmap.filter(c => c.type === '선택' && (S.edu[p.id] || {})[c.id]);
   const rows = req.map(c => { const x = C.cell(c, p); return `<tr><td class="l">${esc(c.name)}</td><td>${esc(c.dept)}</td><td class="c num">${C.cStage(c)}</td><td class="c">${x.mark ? `<span class="pill ok">이수</span>` : '<span class="pill miss">미이수</span>'}</td>${canP(p) ? `<td>${x.mark === '◎' ? `<button type="button" class="btn sm" data-act="toggle-rec" data-p="${p.id}" data-c="${c.id}" >미이수로</button>` : x.ex ? `<button type="button" class="btn sm" data-act="toggle-rec" data-p="${p.id}" data-c="${c.id}">이수로</button>` : x.rec ? `<button type="button" class="btn sm danger" data-act="dlg-del-rec" data-p="${p.id}" data-c="${c.id}">취소</button>` : `<button type="button" class="btn sm" data-act="dlg-add-rec" data-p="${p.id}" data-c="${c.id}">이수</button>`}</td>` : ''}</tr>`; }).join('');
   openDlg(`<div class="head"><h2>${esc(p.name)}</h2><span class="sub">${esc(p.team)} · ${esc(p.rank)} · ${esc(p.eduDept)} (교육분야 ${esc(e.field || '-')}, ${e.stage ?? '-'}단계)</span><span class="spacer"></span><button type="button" class="btn sm" data-act="close">닫기</button></div>
-   <div class="kpis"><div class="kpi edu"><span class="k">필수 대상</span><span class="v">${e.target}</span></div><div class="kpi edu"><span class="k">필수 이수</span><span class="v">${e.done}</span></div><div class="kpi edu"><span class="k">이수율</span><span class="v">${pct(e.rate)}</span></div><div class="kpi edu"><span class="k">선이수</span><span class="v">${e.pre}</span></div><div class="kpi edu"><span class="k">선택 이수</span><span class="v">${e.elective}</span></div></div>
+   <div class="kpis"><div class="kpi edu"><span class="k">필수 대상</span><span class="v">${e.target}</span></div><div class="kpi edu"><span class="k">필수 이수</span><span class="v">${e.done}</span></div><div class="kpi edu"><span class="k">이수율</span><span class="v">${pct(e.rate)}</span></div><div class="kpi edu"><span class="k">선택 이수</span><span class="v">${e.elective}</span></div></div>
    <h3 style="font-size:14px">필수 교육</h3><div class="tw free"><table><thead><tr><th>교육명</th><th>부서</th><th class="c">단계</th><th class="c">상태</th>${canP(p) ? '<th></th>' : ''}</tr></thead><tbody>${rows || '<tr><td colspan="6" class="muted">필수 대상 교육이 없습니다</td></tr>'}</tbody></table></div>
-   ${(() => { const pre = S.courses.filter(c => c.type === '필수' && !C.cell(c, p).target && (S.edu[p.id] || {})[c.id]); return pre.length ? `<h3 style="font-size:14px">선이수 (대상 구간 전에 미리 들은 필수 교육)</h3><div class="chk">${pre.map(c => `<span class="pill pre" title="${esc(c.dept)} · ${esc(c.rank)}">${esc(c.name)}${canP(p) ? ` <button type="button" class="btn sm danger" style="padding:0 4px;height:18px" data-act="dlg-del-rec" data-p="${p.id}" data-c="${c.id}" aria-label="${esc(c.name)} 삭제">×</button>` : ''}</span>`).join('')}</div>` : ''; })()}
    <h3 style="font-size:14px">선택 교육 이수</h3><div class="chk">${el.map(c => `<span class="tag ok">${esc(c.name)}${canP(p) ? ` <button type="button" class="btn sm danger" style="padding:0 4px" data-act="dlg-del-rec" data-p="${p.id}" data-c="${c.id}" aria-label="${esc(c.name)} 삭제">×</button>` : ''}</span>`).join('') || '<span class="muted small">없음</span>'}</div>
-   ${canP(p) ? `<form class="form" data-form="rec" data-dlg="${p.id}"><input type="hidden" name="p" value="${p.id}"><label class="field">교육 추가 (대상 밖 과목은 선이수로 기록)<select name="c" required><option value="">선택</option>${courseOpts(null, c => !(S.edu[p.id] || {})[c.id])}</select></label><label class="field">비고<input name="n" value="이수 완료"></label><div><button class="btn primary" type="submit">등록</button></div></form>` : ''}`, true);
+   ${canP(p) ? `<form class="form" data-form="rec" data-dlg="${p.id}"><input type="hidden" name="p" value="${p.id}"><label class="field">교육 추가<select name="c" required><option value="">선택</option>${courseOpts(null, c => !(S.edu[p.id] || {})[c.id])}</select></label><label class="field">비고<input name="n" value="이수 완료"></label><div><button class="btn primary" type="submit">등록</button></div></form>` : ''}`, true);
 }
 function courseDialog(id) {
   const c = S.courses.find(x => x.id === id) || { name: '', purpose: '', dept: '공통', rank: '사원/연구원', type: '필수' };
@@ -1705,7 +1705,7 @@ document.addEventListener('click', e => {
       if (x.ex) { setRec(d.p, d.c, null); toast(`${nm}: 이수로 바꿨습니다`); }
       else if (x.auto) { setRec(d.p, d.c, { note: '미이수 처리', x: true }); toast(`${nm}: 미이수로 바꿨습니다`); }
       else if (x.rec) { setRec(d.p, d.c, null); toast(`${nm}: ${x.target ? '미이수로 바꾸고 ' : ''}이수 기록에서 지웠습니다`); }
-      else { setRec(d.p, d.c, { note: '이수 완료' }); toast(`${nm}: ${x.target ? '이수' : '선이수(미리 들음)'}로 이수 기록에 추가했습니다`); }
+      else { setRec(d.p, d.c, { note: '이수 완료' }); toast(`${nm}: 이수 기록에 추가했습니다`); }
       if (dlg().open) personEdu(d.p);
     } break;
     case 'del-rec': if (!canP(pById(d.p))) break; { const p = S.people.find(x => x.id === d.p), c = S.courses.find(x => x.id === d.c); confirmDlg(`${esc(p?.name)} · ${esc(c?.name)} 이수 기록을 삭제할까요?`, '삭제', () => setRec(d.p, d.c, null)); } break;
