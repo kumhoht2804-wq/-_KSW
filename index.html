@@ -293,7 +293,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 연구소 역량·교육 관리 · v2026.11.02 19:18</footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 연구소 역량·교육 관리 · v2026.11.02 19:21</footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -954,7 +954,10 @@ async function reload(manual) {
   if (!auth || loading || busy) { if (manual) toast('저장 중입니다. 잠시 후 다시 눌러 주세요'); return; }
   loading = true; syncUI();
   const seq = writeSeq;
-  try { const d = await api('load');
+  try {
+    // 관리자가 역할·소속을 바꿨을 수 있으니 매번 서버 기준으로 갱신
+    try { const me = await api('me'); if (me.user && JSON.stringify(me.user) !== JSON.stringify(auth.user)) { const changed = me.user.role !== auth.user.role || me.user.team !== auth.user.team; auth.user = me.user; LS.set('lab_auth', JSON.stringify(auth)); setRole(); whoUI(); if (changed && !manual) toast(`권한이 '${me.user.role}${me.user.team ? ' · ' + me.user.team : ''}'(으)로 바뀌었습니다`); } } catch (e) { if (e.auth) { loading = false; return; } }
+    const d = await api('load');
     // 받아오는 사이에 수정이 있었으면 이 응답은 예전 값이라 버리고 잠시 뒤 다시 받음
     if (seq !== writeSeq || busy || Date.now() - lastWrite < 3000) { loading = false; syncUI(); setTimeout(() => reload(), 4000); return; }
     applyDocs(d.docs);
@@ -1061,6 +1064,7 @@ async function formAuth(f) {
     if (f.dataset.form === 'chpw') { if (v.pw !== v.pw2) throw new Error('새 비밀번호가 서로 다릅니다'); await api('changePw', { old: v.old, pw: v.pw }); closeDlg(); toast('비밀번호를 바꿨습니다'); return; }
     if (f.dataset.form === 'acct') {
       const user = { id: v.id.trim(), name: v.name.trim(), team: (v.team || '').trim(), rank: (v.rank || '').trim(), role: v.role, active: true, pw: v.pw || undefined };
+      if (user.role === '팀장' && S.config && !(S.config.teamOrder || []).includes(user.team)) throw new Error(`팀장은 소속을 인원 명단의 팀 이름 중 하나로 정확히 입력해야 합니다: ${(S.config.teamOrder || []).join(', ')}`);
       const old = ui.users.find(u => u.id === user.id);
       if (f.dataset.id && old) user.active = old.active;
       if (!f.dataset.id && old) throw new Error('이미 있는 아이디입니다');
@@ -1084,7 +1088,7 @@ function acctDialog(id) {
   openDlg(`<h2>${id ? '계정 수정' : '계정 추가'}</h2><form class="form" data-form="acct" data-id="${esc(id || '')}" style="grid-template-columns:1fr 1fr">
     <label class="field">아이디 (영문·숫자)<input name="id" value="${esc(u.id)}" ${id ? 'readonly' : ''} required></label>
     <label class="field">이름<input name="name" value="${esc(u.name)}" required></label>
-    <label class="field">부서 (팀장은 명단의 소속과 똑같이)<input name="team" list="teamlist" value="${esc(u.team || '')}">${teamList()}</label>
+    <label class="field">부서<select name="team"><option value="">(없음)</option>${[...new Set([...(S.config?.teamOrder || []), u.team].filter(Boolean))].map(t => `<option${t === u.team ? ' selected' : ''}>${esc(t)}</option>`).join('')}</select></label>
     <label class="field">직급<input name="rank" list="ranklist" value="${esc(u.rank || '')}"><datalist id="ranklist">${(S.config?.rankOrder || []).map(r => `<option value="${esc(r)}">`).join('')}</datalist></label>
     <label class="field" style="grid-column:1/-1">역할<select name="role">${Object.entries(ROLE_DESC).map(([r, dsc]) => `<option value="${r}"${r === u.role ? ' selected' : ''}>${r} — ${dsc}</option>`).join('')}</select></label>
     <label class="field" style="grid-column:1/-1">${id ? '새 비밀번호 (바꿀 때만 입력)' : '처음 비밀번호 (6자 이상, 본인에게 전달 후 변경 안내)'}<input name="pw" type="text" autocomplete="off" ${id ? '' : 'required'}></label>
@@ -1119,7 +1123,7 @@ function vAccounts() {
   h += `<section class="card"><div class="head"><h2>계정 관리</h2><span class="sub">관리자 ${cnt('관리자')} · 편집 ${cnt('편집')} · 보기 ${cnt('보기')}</span><span class="spacer"></span><button type="button" class="btn primary" data-act="acct-edit">계정 직접 추가</button></div>
     <div class="chk">${Object.entries(ROLE_DESC).map(([r, d]) => `<span class="tag">${r} · ${d}</span>`).join('')}</div>
     <div class="tw free"><table><thead><tr><th>아이디</th><th>이름</th><th>부서</th><th>직급</th><th>역할</th><th>상태</th><th>가입일</th><th>마지막 로그인</th><th style="width:190px"></th></tr></thead><tbody>
-    ${act.map(u => `<tr><td class="num">${esc(u.id)}${u.id === auth.user.id ? ' <span class="tag">나</span>' : ''}</td><td><b>${esc(u.name)}</b></td><td>${esc(u.team || '–')}</td><td>${esc(u.rank || '–')}</td><td><span class="tag ${u.role === '관리자' ? 'ok' : ''}">${esc(u.role)}</span></td><td>${u.active ? '<span class="tag ok">사용</span>' : '<span class="tag bad">중지</span>'}</td><td class="num muted">${esc(String(u.created).slice(0, 10))}</td><td class="num muted">${esc(u.lastLogin || '–')}</td>
+    ${act.map(u => `<tr><td class="num">${esc(u.id)}${u.id === auth.user.id ? ' <span class="tag">나</span>' : ''}</td><td><b>${esc(u.name)}</b></td><td>${esc(u.team || '–')}${u.role === '팀장' && !(S.config?.teamOrder || []).includes(u.team) ? ' <span class="tag bad" title="인원 명단의 팀 이름과 달라 수정 권한이 작동하지 않습니다">명단과 다름</span>' : ''}</td><td>${esc(u.rank || '–')}</td><td><span class="tag ${u.role === '관리자' ? 'ok' : ''}">${esc(u.role)}</span></td><td>${u.active ? '<span class="tag ok">사용</span>' : '<span class="tag bad">중지</span>'}</td><td class="num muted">${esc(String(u.created).slice(0, 10))}</td><td class="num muted">${esc(u.lastLogin || '–')}</td>
       <td class="r">${u.id === auth.user.id ? '' : `<button type="button" class="btn sm" data-act="acct-edit" data-id="${esc(u.id)}">수정</button> <button type="button" class="btn sm" data-act="acct-toggle" data-id="${esc(u.id)}">${u.active ? '중지' : '사용'}</button> <button type="button" class="btn sm danger" data-act="acct-del" data-id="${esc(u.id)}">삭제</button>`}</td></tr>`).join('')}
     </tbody></table></div><p class="muted small">비밀번호를 잊은 사람은 '수정'에서 새 비밀번호를 정해 전달하세요. 접속·수정 기록은 구글 시트의 log 탭에 남습니다.</p></section>
     <section class="card"><div class="head"><h2>엑셀 잠금 비밀번호</h2><span class="tag ${ui.lockSet ? 'ok' : 'bad'}">${ui.lockSet ? '설정됨' : '미설정 · 잠금 없이 내보내짐'}</span><span class="spacer"></span><button type="button" class="btn" data-act="lockpw">${ui.lockSet ? '변경' : '설정'}</button></div>
@@ -1184,7 +1188,9 @@ function renderInner() {
   const r = route();
   let html = '';
   if (!editor) html += `<div class="notice">보기 전용 계정입니다. 수정이 필요하면 관리자에게 권한을 요청하세요.</div>`;
-  else if (leader) html += `<div class="notice">팀장 계정 (${esc(myTeam || '소속 미지정')}): 우리 팀 인원의 역량평가 등급·교육 이수와, 우리 팀이 쓰는 파트의 평가항목만 수정할 수 있습니다.</div>`;
+  else if (leader) html += S.people.some(p => p.team === myTeam)
+    ? `<div class="notice">팀장 계정 (${esc(myTeam)}): 우리 팀 인원의 역량평가 등급·교육 이수와, 우리 팀이 쓰는 파트의 평가항목만 수정할 수 있습니다.</div>`
+    : `<div class="notice bad">팀장 계정의 소속이 '${esc(myTeam || '미지정')}'인데, 인원 명단에 이 소속의 인원이 없어 수정할 수 있는 사람이 없습니다. 관리자에게 계정 소속을 명단의 팀 이름(${esc((S.config.teamOrder || []).join(', '))})과 똑같이 바꿔 달라고 하세요.</div>`;
   else if (!admin && !leader && r !== 'assess' && r !== 'education') html += `<div class="notice">편집 계정은 역량평가 등급과 교육 이수만 수정할 수 있습니다.</div>`;
   html += ({ dashboard: vDash, assess: vAssess, education: vEdu, people: vPeople, settings: vSettings, accounts: vAccounts })[r]();
   v.innerHTML = html;
