@@ -1,0 +1,227 @@
+/**
+ * 연구소 역량·교육 관리 서버 (Google Apps Script)
+ *
+ * 1) 새 구글 시트를 만들고 [확장 프로그램 → Apps Script]에 이 코드를 그대로 붙여넣기
+ * 2) [배포 → 새 배포 → 유형: 웹 앱]
+ *      다음 사용자 인증 정보로 실행: 나
+ *      액세스 권한이 있는 사용자: 모든 사용자
+ * 3) 나온 웹 앱 URL을 사이트(index.html)의 API_URL에 넣기
+ *
+ * 시트 탭(docs / users / log)은 첫 요청 때 자동으로 만들어져요.
+ * 비밀번호·잠금 암호는 이 코드에 적지 않습니다. 사이트에서 처음 만든 관리자가 설정해요.
+ */
+
+const SHEETS = {
+  docs:  ['path', 'data', 'updated', 'by'],
+  users: ['id', 'name', 'role', 'hash', 'salt', 'active', 'created', 'lastLogin'],
+  log:   ['time', 'user', 'action', 'detail'],
+};
+const ROLES = ['관리자', '편집', '보기'];
+const TOKEN_TTL = 21600;           // 6시간 (CacheService 최대치)
+const LOCK_SPIN = 10000;           // 엑셀 잠금 해시 반복 횟수
+
+function sheet_(name) {
+  const ss = SpreadsheetApp.getActive();
+  let s = ss.getSheetByName(name);
+  if (!s) {
+    s = ss.insertSheet(name);
+    s.appendRow(SHEETS[name]);
+    s.setFrozenRows(1);
+  }
+  return s;
+}
+function out_(o) {
+  return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);
+}
+function now_() { return Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss'); }
+
+function doGet(e) {
+  return out_({ ok: true, msg: '연구소 관리 서버 작동 중' });
+}
+
+function doPost(e) {
+  let b;
+  try { b = JSON.parse(e.postData.contents); } catch (x) { return out_({ ok: false, err: '잘못된 요청' }); }
+  const write = ['put', 'import', 'userSave', 'userDelete', 'changePw', 'setup', 'setLockPw', 'login'].indexOf(b.action) >= 0;
+  const lock = LockService.getScriptLock();
+  if (write) lock.waitLock(20000);
+  try {
+    switch (b.action) {
+      case 'ping':       return out_({ ok: true, setup: needsSetup_() });
+      case 'setup':      return out_(setup_(b));
+      case 'login':      return out_(login_(b));
+      case 'logout':     CacheService.getScriptCache().remove('t_' + b.token); return out_({ ok: true });
+      case 'me':         return out_({ ok: true, user: auth_(b, '보기') });
+      case 'load':       auth_(b, '보기'); return out_({ ok: true, docs: loadDocs_() });
+      case 'put':        return out_(put_(b));
+      case 'import':     return out_(import_(b));
+      case 'users':      auth_(b, '관리자'); return out_({ ok: true, users: listUsers_(), lockSet: !!prop_('LOCK_PW') });
+      case 'userSave':   return out_(userSave_(b));
+      case 'userDelete': return out_(userDelete_(b));
+      case 'changePw':   return out_(changePw_(b));
+      case 'setLockPw':  return out_(setLockPw_(b));
+      case 'lockHash':   return out_(lockHash_(b));
+    }
+    return out_({ ok: false, err: '알 수 없는 요청' });
+  } catch (x) {
+    const m = String(x && x.message || x);
+    return out_({ ok: false, err: m, auth: m.indexOf('AUTH:') === 0 });
+  } finally {
+    if (write) lock.releaseLock();
+  }
+}
+
+/* ---------- 계정 ---------- */
+function hash_(pw, salt) {
+  return Utilities.base64Encode(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, salt + '|' + pw, Utilities.Charset.UTF_8));
+}
+function users_() {
+  const s = sheet_('users'), v = s.getDataRange().getValues();
+  const out = [];
+  for (let i = 1; i < v.length; i++) if (v[i][0] !== '') out.push({ row: i + 1, id: String(v[i][0]), name: String(v[i][1]), role: String(v[i][2]), hash: String(v[i][3]), salt: String(v[i][4]), active: v[i][5] === true || v[i][5] === 'TRUE', created: String(v[i][6]), lastLogin: String(v[i][7]) });
+  return out;
+}
+function needsSetup_() { return users_().filter(u => u.role === '관리자' && u.active).length === 0; }
+function prop_(k, v) { const p = PropertiesService.getScriptProperties(); if (v === undefined) return p.getProperty(k); p.setProperty(k, v); }
+function log_(user, action, detail) {
+  try { sheet_('log').appendRow([now_(), user || '', action, String(detail || '').slice(0, 300)]); } catch (x) { }
+}
+function checkPw_(pw) { if (!pw || String(pw).length < 6) throw new Error('비밀번호는 6자 이상이어야 합니다'); }
+function checkId_(id) { if (!/^[A-Za-z0-9._@-]{2,40}$/.test(String(id || ''))) throw new Error('아이디는 영문·숫자 2~40자로 정해 주세요'); }
+
+function setup_(b) {
+  if (!needsSetup_()) throw new Error('이미 관리자가 있습니다');
+  checkId_(b.id); checkPw_(b.pw);
+  const salt = Utilities.getUuid();
+  sheet_('users').appendRow([b.id, b.name || b.id, '관리자', hash_(b.pw, salt), salt, true, now_(), '']);
+  log_(b.id, 'setup', '최초 관리자 생성');
+  return login_(b);
+}
+function login_(b) {
+  const u = users_().filter(x => x.id === String(b.id || ''))[0];
+  if (!u || !u.active || hash_(String(b.pw || ''), u.salt) !== u.hash) { log_(b.id, 'login-fail', ''); return { ok: false, err: '아이디 또는 비밀번호가 맞지 않습니다' }; }
+  const token = Utilities.getUuid();
+  const info = { id: u.id, name: u.name, role: u.role };
+  CacheService.getScriptCache().put('t_' + token, JSON.stringify(info), TOKEN_TTL);
+  sheet_('users').getRange(u.row, 8).setValue(now_());
+  log_(u.id, 'login', '');
+  return { ok: true, token: token, user: info };
+}
+function auth_(b, need) {
+  const raw = b && b.token ? CacheService.getScriptCache().get('t_' + b.token) : null;
+  if (!raw) throw new Error('AUTH:로그인이 만료되었습니다. 다시 로그인해 주세요');
+  const info = JSON.parse(raw);
+  const u = users_().filter(x => x.id === info.id)[0];
+  if (!u || !u.active) throw new Error('AUTH:사용이 중지된 계정입니다');
+  info.role = u.role; info.name = u.name;
+  if (ROLES.indexOf(info.role) > ROLES.indexOf(need)) throw new Error('권한이 없습니다 (' + need + ' 이상 필요)');
+  return info;
+}
+function listUsers_() {
+  return users_().map(u => ({ id: u.id, name: u.name, role: u.role, active: u.active, created: u.created, lastLogin: u.lastLogin }));
+}
+function userSave_(b) {
+  const me = auth_(b, '관리자');
+  const u = b.user || {};
+  checkId_(u.id);
+  if (ROLES.indexOf(u.role) < 0) throw new Error('역할이 올바르지 않습니다');
+  const s = sheet_('users'), all = users_(), ex = all.filter(x => x.id === u.id)[0];
+  if (ex) {
+    if (ex.id === me.id && (u.role !== '관리자' || u.active === false)) throw new Error('본인 계정의 관리자 권한은 해제할 수 없습니다');
+    s.getRange(ex.row, 2, 1, 1).setValue(u.name || ex.name);
+    s.getRange(ex.row, 3, 1, 1).setValue(u.role);
+    s.getRange(ex.row, 6, 1, 1).setValue(u.active !== false);
+    if (u.pw) { checkPw_(u.pw); const salt = Utilities.getUuid(); s.getRange(ex.row, 4, 1, 2).setValues([[hash_(u.pw, salt), salt]]); }
+    log_(me.id, 'user-update', u.id + ' ' + u.role + (u.pw ? ' 비밀번호 재설정' : '') + (u.active === false ? ' 중지' : ''));
+  } else {
+    checkPw_(u.pw);
+    const salt = Utilities.getUuid();
+    s.appendRow([u.id, u.name || u.id, u.role, hash_(u.pw, salt), salt, u.active !== false, now_(), '']);
+    log_(me.id, 'user-add', u.id + ' ' + u.role);
+  }
+  return { ok: true, users: listUsers_() };
+}
+function userDelete_(b) {
+  const me = auth_(b, '관리자');
+  if (b.id === me.id) throw new Error('본인 계정은 삭제할 수 없습니다');
+  const ex = users_().filter(x => x.id === b.id)[0];
+  if (ex) { sheet_('users').deleteRow(ex.row); log_(me.id, 'user-delete', b.id); }
+  return { ok: true, users: listUsers_() };
+}
+function changePw_(b) {
+  const me = auth_(b, '보기');
+  const u = users_().filter(x => x.id === me.id)[0];
+  if (hash_(String(b.old || ''), u.salt) !== u.hash) throw new Error('현재 비밀번호가 맞지 않습니다');
+  checkPw_(b.pw);
+  const salt = Utilities.getUuid();
+  sheet_('users').getRange(u.row, 4, 1, 2).setValues([[hash_(b.pw, salt), salt]]);
+  log_(me.id, 'change-pw', '');
+  return { ok: true };
+}
+
+/* ---------- 데이터 ---------- */
+function loadDocs_() {
+  const v = sheet_('docs').getDataRange().getValues(), out = {};
+  for (let i = 1; i < v.length; i++) if (v[i][0] !== '') { try { out[v[i][0]] = JSON.parse(v[i][1]); } catch (x) { } }
+  return out;
+}
+const EDIT_PATHS = /^(grades|edu)\/[A-Za-z0-9_-]+$/;
+const PATH_OK = /^(config|parts|people|grades|courses|edu|history)\/[A-Za-z0-9_-]+$/;
+function put_(b) {
+  const me = auth_(b, '편집');
+  const ops = b.ops || [];
+  const s = sheet_('docs'), v = s.getDataRange().getValues(), idx = {};
+  for (let i = 1; i < v.length; i++) if (v[i][0] !== '') idx[v[i][0]] = i + 1;
+  const dels = [];
+  ops.forEach(op => {
+    if (!PATH_OK.test(op.path)) throw new Error('잘못된 경로: ' + op.path);
+    if (me.role !== '관리자' && !EDIT_PATHS.test(op.path)) throw new Error('권한이 없습니다 (관리자만 수정 가능)');
+    if (op.data === null) { if (idx[op.path]) dels.push(idx[op.path]); return; }
+    const json = JSON.stringify(op.data);
+    if (json.length > 45000) throw new Error('데이터가 너무 큽니다: ' + op.path);
+    if (idx[op.path]) s.getRange(idx[op.path], 2, 1, 3).setValues([[json, now_(), me.id]]);
+    else { s.appendRow([op.path, json, now_(), me.id]); idx[op.path] = s.getLastRow(); }
+  });
+  dels.sort((a, c) => c - a).forEach(r => s.deleteRow(r));
+  log_(me.id, 'put', ops.map(o => (o.data === null ? '-' : '') + o.path).join(', '));
+  return { ok: true };
+}
+function import_(b) {
+  const me = auth_(b, '관리자');
+  const docs = b.docs || {};
+  const rows = Object.keys(docs).filter(p => PATH_OK.test(p)).map(p => [p, JSON.stringify(docs[p]), now_(), me.id]);
+  const s = sheet_('docs');
+  if (s.getLastRow() > 1) s.deleteRows(2, s.getLastRow() - 1);
+  if (rows.length) s.getRange(2, 1, rows.length, 4).setValues(rows);
+  log_(me.id, 'import', rows.length + '건');
+  return { ok: true, count: rows.length };
+}
+
+/* ---------- 엑셀 잠금 ---------- */
+function setLockPw_(b) {
+  const me = auth_(b, '관리자');
+  if (!b.pw) throw new Error('잠금 비밀번호를 입력하세요');
+  prop_('LOCK_PW', String(b.pw));
+  CacheService.getScriptCache().remove('lockHash');
+  log_(me.id, 'lock-pw', '엑셀 잠금 비밀번호 변경');
+  return { ok: true };
+}
+// 비밀번호는 서버 밖으로 내보내지 않고, 엑셀 시트 보호용 해시만 계산해서 돌려줌
+function lockHash_(b) {
+  auth_(b, '보기');
+  const pw = prop_('LOCK_PW');
+  if (!pw) return { ok: true, prot: null };
+  const c = CacheService.getScriptCache(), hit = c.get('lockHash');
+  if (hit) return { ok: true, prot: JSON.parse(hit) };
+  const salt = [];
+  const u = Utilities.getUuid().replace(/-/g, '');
+  for (let i = 0; i < 16; i++) salt.push(sb_(parseInt(u.substr(i * 2, 2), 16)));
+  const pwb = [];
+  for (let i = 0; i < pw.length; i++) { const ch = pw.charCodeAt(i); pwb.push(sb_(ch & 255), sb_(ch >> 8)); }
+  let h = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_512, salt.concat(pwb));
+  for (let i = 0; i < LOCK_SPIN; i++) h = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_512, h.concat([sb_(i & 255), sb_((i >>> 8) & 255), sb_((i >>> 16) & 255), sb_((i >>> 24) & 255)]));
+  const prot = { salt: Utilities.base64Encode(salt), hash: Utilities.base64Encode(h), spin: LOCK_SPIN };
+  c.put('lockHash', JSON.stringify(prot), TOKEN_TTL);
+  return { ok: true, prot: prot };
+}
+function sb_(x) { x = x & 255; return x > 127 ? x - 256 : x; }
