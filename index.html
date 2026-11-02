@@ -329,7 +329,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.03 08:42</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.03 08:50</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -959,9 +959,10 @@ function rebuild() {
 }
 const DIRECTORS = ['연구소장', '개발실장', '편집'];   // 부서 전체 수정 ('편집'은 예전 이름)
 let director = false;
-function setRole() { const u = auth?.user, r = u?.role; admin = r === '관리자'; leader = r === '팀장'; director = DIRECTORS.includes(r); editor = admin || director || leader; myTeam = u?.team || ''; }
+let partLead = false, scoped = false;
+function setRole() { const u = auth?.user, r = u?.role; admin = r === '관리자'; leader = r === '팀장'; partLead = r === '파트장'; scoped = r === '파트장' || r === '보기'; director = DIRECTORS.includes(r); editor = admin || director || leader || partLead; myTeam = u?.team || ''; }
 // 이 사람의 등급·교육 이수를 고칠 수 있나 (팀장은 자기 팀만)
-function canP(p) { return admin || director || (leader && !!p && p.team === myTeam); }
+function canP(p) { return admin || director || ((leader || partLead) && !!p && p.team === myTeam); }
 // 이 파트의 평가항목을 고칠 수 있나 (팀장은 자기 팀 인원이 속한 파트만)
 function canPart(part) { return admin || (leader && !!part && S.people.some(p => p.cat === part.name && p.team === myTeam)); }
 const pById = id => S.people.find(x => x.id === id);
@@ -1081,7 +1082,7 @@ function whoUI() {
   const acc = document.querySelector('#tabs a[data-route="accounts"]');
   if (acc) { acc.hidden = !admin; const n = ui.users.filter(x => x.role === '대기').length; acc.innerHTML = '계정 관리' + (n ? ` <span class="badge" title="승인 대기">${n}</span>` : ''); }
   $('#expMenu').hidden = !admin;
-  const st = document.querySelector('#tabs a[data-route="settings"]'); if (st) st.hidden = !editor;
+  const st = document.querySelector('#tabs a[data-route="settings"]'); if (st) st.hidden = !(admin || director || leader);
 }
 function vServer() {
   return `<section class="card auth"><h2>서버 연결</h2><p class="muted small">구글 Apps Script에 배포한 웹 앱 주소를 넣어 주세요. 이 브라우저에 기억됩니다.</p>
@@ -1143,7 +1144,7 @@ async function formAuth(f) {
     if (f.dataset.form === 'chpw') { if (v.pw !== v.pw2) throw new Error('새 비밀번호가 서로 다릅니다'); await api('changePw', { old: v.old, pw: v.pw }); closeDlg(); toast('비밀번호를 바꿨습니다'); return; }
     if (f.dataset.form === 'acct') {
       const user = { id: v.id.trim(), name: v.name.trim(), team: (v.team || '').trim(), rank: (v.rank || '').trim(), role: v.role, active: true, pw: v.pw || undefined };
-      if (user.role === '팀장' && S.config && !(S.config.teamOrder || []).includes(user.team)) throw new Error(`팀장은 소속을 인원 명단의 팀 이름 중 하나로 정확히 입력해야 합니다: ${(S.config.teamOrder || []).join(', ')}`);
+      if (['팀장', '파트장', '보기'].includes(user.role) && S.config && !(S.config.teamOrder || []).includes(user.team)) throw new Error(`${user.role}은(는) 소속을 인원 명단의 팀 이름 중 하나로 정확히 입력해야 합니다: ${(S.config.teamOrder || []).join(', ')}`);
       const old = ui.users.find(u => u.id === user.id);
       if (f.dataset.id && old) user.active = old.active;
       if (!f.dataset.id && old) throw new Error('이미 있는 아이디입니다');
@@ -1160,7 +1161,7 @@ function pwDialog() {
     <label class="field">새 비밀번호 확인<input name="pw2" type="password" autocomplete="new-password" required></label>
     <div class="err"></div><div class="actions"><button type="button" class="btn" data-act="close">취소</button><button class="btn primary" type="submit">변경</button></div></form>`);
 }
-const ROLE_DESC = { '관리자': '모든 화면 수정 · 계정 관리 · 엑셀/백업 받기', '연구소장': '부서 전체 역량평가 등급·교육 이수 수정', '개발실장': '부서 전체 역량평가 등급·교육 이수 수정', '팀장': '우리 팀 역량평가·교육 이수·우리 파트 평가항목 수정', '보기': '조회만 (기준 정보 제외)' };
+const ROLE_DESC = { '관리자': '모든 화면 수정 · 계정 관리 · 엑셀/백업 받기', '연구소장': '부서 전체 역량평가 등급·교육 이수 수정', '개발실장': '부서 전체 역량평가 등급·교육 이수 수정', '팀장': '우리 팀 역량평가·교육 이수·우리 파트 평가항목 수정', '파트장': '우리 팀만 보기 · 우리 팀 역량평가·교육 이수 수정', '보기': '우리 팀만 조회 (기준 정보 제외)' };
 const teamList = () => `<datalist id="teamlist">${(S.config?.teamOrder || []).map(t => `<option value="${esc(t)}">`).join('')}</datalist>`;
 function acctDialog(id) {
   const u = ui.users.find(x => x.id === id) || { id: '', name: '', role: '보기' };
@@ -1198,11 +1199,11 @@ function vAccounts() {
     ${wait.map(u => `<tr><td class="num">${esc(u.id)}</td><td><b>${esc(u.name)}</b></td><td><input class="ci" id="team-${esc(u.id)}" list="teamlist" value="${esc(u.team || '')}" style="width:130px"></td><td>${esc(u.rank || '–')}</td><td>${rosterTag(u)}</td><td class="num muted">${esc(String(u.created).slice(0, 16))}</td>
       <td><select class="ci" id="role-${esc(u.id)}">${Object.keys(ROLE_DESC).map(r => `<option${r === '보기' ? ' selected' : ''}>${r}</option>`).join('')}</select></td>
       <td class="r"><button type="button" class="btn sm primary" data-act="acct-approve" data-id="${esc(u.id)}">승인</button> <button type="button" class="btn sm danger" data-act="acct-reject" data-id="${esc(u.id)}">거절</button></td></tr>`).join('')}
-    </tbody></table></div>${teamList()}<p class="muted small">팀장은 소속을 인원 명단의 팀 이름과 똑같이 맞춰 주세요.</p>` : '<p class="muted small">대기 중인 가입 신청이 없습니다.</p>'}</section>`;
-  h += `<section class="card"><div class="head"><h2>계정 관리</h2><span class="sub">관리자 ${cnt('관리자')} · 연구소장 ${cnt('연구소장')} · 개발실장 ${cnt('개발실장') + cnt('편집')} · 팀장 ${cnt('팀장')} · 보기 ${cnt('보기')}</span><span class="spacer"></span><button type="button" class="btn primary" data-act="acct-edit">계정 직접 추가</button></div>
+    </tbody></table></div>${teamList()}<p class="muted small">팀장·파트장·보기는 소속을 인원 명단의 팀 이름과 똑같이 맞춰 주세요.</p>` : '<p class="muted small">대기 중인 가입 신청이 없습니다.</p>'}</section>`;
+  h += `<section class="card"><div class="head"><h2>계정 관리</h2><span class="sub">관리자 ${cnt('관리자')} · 연구소장 ${cnt('연구소장')} · 개발실장 ${cnt('개발실장') + cnt('편집')} · 팀장 ${cnt('팀장')} · 파트장 ${cnt('파트장')} · 보기 ${cnt('보기')}</span><span class="spacer"></span><button type="button" class="btn primary" data-act="acct-edit">계정 직접 추가</button></div>
     <div class="chk">${Object.entries(ROLE_DESC).map(([r, d]) => `<span class="tag">${r} · ${d}</span>`).join('')}</div>
     <div class="tw free"><table><thead><tr><th>아이디</th><th>이름</th><th>부서</th><th>직급</th><th>역할</th><th>상태</th><th>가입일</th><th>마지막 로그인</th><th style="width:190px"></th></tr></thead><tbody>
-    ${act.map(u => `<tr><td class="num">${esc(u.id)}${u.id === auth.user.id ? ' <span class="tag">나</span>' : ''}</td><td><b>${esc(u.name)}</b></td><td>${esc(u.team || '–')}${u.role === '팀장' && !(S.config?.teamOrder || []).includes(u.team) ? ' <span class="tag bad" title="인원 명단의 팀 이름과 달라 수정 권한이 작동하지 않습니다">명단과 다름</span>' : ''}</td><td>${esc(u.rank || '–')}</td><td><span class="tag ${u.role === '관리자' ? 'ok' : ''}">${esc(u.role)}</span></td><td>${u.active ? '<span class="tag ok">사용</span>' : '<span class="tag bad">중지</span>'}</td><td class="num muted">${esc(String(u.created).slice(0, 10))}</td><td class="num muted">${esc(u.lastLogin || '–')}</td>
+    ${act.map(u => `<tr><td class="num">${esc(u.id)}${u.id === auth.user.id ? ' <span class="tag">나</span>' : ''}</td><td><b>${esc(u.name)}</b></td><td>${esc(u.team || '–')}${['팀장', '파트장', '보기'].includes(u.role) && !(S.config?.teamOrder || []).includes(u.team) ? ' <span class="tag bad" title="인원 명단의 팀 이름과 달라 수정 권한이 작동하지 않습니다">명단과 다름</span>' : ''}</td><td>${esc(u.rank || '–')}</td><td><span class="tag ${u.role === '관리자' ? 'ok' : ''}">${esc(u.role)}</span></td><td>${u.active ? '<span class="tag ok">사용</span>' : '<span class="tag bad">중지</span>'}</td><td class="num muted">${esc(String(u.created).slice(0, 10))}</td><td class="num muted">${esc(u.lastLogin || '–')}</td>
       <td class="r">${u.id === auth.user.id ? '' : `<button type="button" class="btn sm" data-act="acct-edit" data-id="${esc(u.id)}">수정</button> <button type="button" class="btn sm" data-act="acct-toggle" data-id="${esc(u.id)}">${u.active ? '중지' : '사용'}</button> <button type="button" class="btn sm danger" data-act="acct-del" data-id="${esc(u.id)}">삭제</button>`}</td></tr>`).join('')}
     </tbody></table></div></section>
     <section class="card"><div class="head"><h2>엑셀 잠금 비밀번호</h2><span class="tag ${ui.lockSet ? 'ok' : 'bad'}">${ui.lockSet ? '설정됨' : '미설정 · 잠금 없이 내보내짐'}</span><span class="spacer"></span><button type="button" class="btn" data-act="lockpw">${ui.lockSet ? '변경' : '설정'}</button></div>
@@ -1233,7 +1234,7 @@ function confirmDlg(msg, okLabel, fn) {
 
 // ---------- routing ----------
 const ROUTES = ['dashboard', 'assess', 'education', 'people', 'settings', 'accounts'];
-const route = () => { const h = location.hash.slice(1); return ROUTES.includes(h) && (h !== 'accounts' || admin) && (h !== 'settings' || editor) ? h : 'dashboard'; };
+const route = () => { const h = location.hash.slice(1); return ROUTES.includes(h) && (h !== 'accounts' || admin) && (h !== 'settings' || admin || director || leader) ? h : 'dashboard'; };
 window.addEventListener('hashchange', () => { render(); window.scrollTo(0, 0); });
 
 // ---------- render ----------
@@ -1266,7 +1267,7 @@ function renderInner() {
   }
   const r = route();
   let html = '';
-  if (leader && !S.people.some(p => p.team === myTeam)) html += `<div class="notice bad">팀장 계정의 소속이 '${esc(myTeam || '미지정')}'인데, 인원 명단에 이 소속의 인원이 없어 수정할 수 있는 사람이 없습니다. 관리자에게 계정 소속을 명단의 팀 이름(${esc((S.config.teamOrder || []).join(', '))})과 똑같이 바꿔 달라고 하세요.</div>`;
+  if ((leader || scoped) && !S.people.some(p => p.team === myTeam)) html += `<div class="notice bad">${esc(auth.user.role)} 계정의 소속이 '${esc(myTeam || '미지정')}'인데, 인원 명단에 이 소속의 인원이 없어 볼 수 있는(수정할 수 있는) 사람이 없습니다. 관리자에게 계정 소속을 명단의 팀 이름(${esc((S.config.teamOrder || []).join(', '))})과 똑같이 바꿔 달라고 하세요.</div>`;
   html += ({ dashboard: vDash, assess: vAssess, education: vEdu, people: vPeople, settings: vSettings, accounts: vAccounts })[r]();
   v.innerHTML = html;
 }
@@ -1333,7 +1334,7 @@ function vDash() {
   h += `<tr class="sumrow"><td>합계</td><td class="r num">${cs.tg.length}</td><td class="r num">${cs.done.length}</td><td class="r num">${fmt1(cs.avg)}</td><td>${stackBar(ct, cs.done.length)}</td>${lvls.map(l => `<td class="c num">${ct[l]}</td>`).join('')}</tr></tbody></table></div>
   <div class="legend">${lvls.map(l => `<span><i style="background:${LVCOL[l]};border:1px solid ${LVINK[l]}"></i>${l === '미달' ? '미달' : 'Level ' + l}</span>`).join('')}</div>`;
   // 팀별 Level 구성 도넛
-  const groups = [['연구소 전체', cs.done], ...teams.map(t => [t, cs.done.filter(x => x.p.team === t)]).filter(([, L]) => L.length)];
+  const groups = [...(scoped ? [] : [['연구소 전체', cs.done]]), ...teams.map(t => [t, cs.done.filter(x => x.p.team === t)]).filter(([, L]) => L.length)];
   h += `<div class="donuts" style="--k:${groups.length}">${groups.map(([name, L], gi) => {
     const c = cnt(L), n = L.length, av = n ? L.reduce((a, x) => a + x.c.T, 0) / n : null;
     const svg = ring(lvls.map(l => ({ v: c[l], color: LVSOLID[l], title: `${l === '미달' ? '미달' : 'Level ' + l}: ${c[l]}명 (${n ? Math.round(c[l] / n * 100) : 0}%)` })), fmt1(av), '평균 점수');
@@ -1349,7 +1350,7 @@ function vDash() {
   }
   h += `</div>`;
   // 팀별 필수 교육 이수율 링
-  const eg = [['연구소 전체', es.withT], ...teams.map(t => [t, es.withT.filter(x => x.p.team === t)]).filter(([, L]) => L.length)];
+  const eg = [...(scoped ? [] : [['연구소 전체', es.withT]]), ...teams.map(t => [t, es.withT.filter(x => x.p.team === t)]).filter(([, L]) => L.length)];
   h += `<div class="donuts" style="--k:${eg.length}">${eg.map(([name, L], gi) => {
     const tot = L.reduce((a, x) => a + x.e.target, 0), dn = L.reduce((a, x) => a + x.e.done, 0), full = L.filter(x => x.e.rate >= 1).length;
     const r = tot ? dn / tot : 0, col = r >= 1 ? 'var(--dB)' : r < .5 ? 'var(--dX)' : 'var(--dC)';
@@ -1364,7 +1365,7 @@ function vDash() {
 
 // ===== 역량평가 =====
 function vAssess() {
-  const parts = S.parts.filter(p => (p.items || []).length);
+  const parts = S.parts.filter(p => (p.items || []).length && (!scoped || S.people.some(x => x.cat === p.name)));
   if (!ui.part || !parts.find(p => p.id === ui.part)) ui.part = (leader && parts.find(canPart) || parts[0])?.id;
   let h = `<div class="toolbar"><div class="seg" role="group" aria-label="보기"><button type="button" data-act="amode" data-v="part" aria-pressed="${ui.assessMode === 'part'}">파트별 입력</button><button type="button" data-act="amode" data-v="all" aria-pressed="${ui.assessMode === 'all'}">전체 평가현황</button></div>`;
   if (ui.assessMode === 'part') {
@@ -1416,7 +1417,7 @@ function vEdu() {
   if (ui.eduMode === 'curri') return h + vCurri();
   if (ui.eduMode === 'matrix') {
     const opts = deptOptions();
-    if (!opts.includes(ui.eduDept)) { const mine = leader && S.people.find(p => p.edu && p.team === myTeam); ui.eduDept = (mine && opts.includes(mine.eduDept)) ? mine.eduDept : (LS.get('lab_edudept') && opts.includes(LS.get('lab_edudept')) ? LS.get('lab_edudept') : opts[0]); }
+    if (!opts.includes(ui.eduDept)) { const mine = (leader || partLead) && S.people.find(p => p.edu && p.team === myTeam); ui.eduDept = (mine && opts.includes(mine.eduDept)) ? mine.eduDept : (LS.get('lab_edudept') && opts.includes(LS.get('lab_edudept')) ? LS.get('lab_edudept') : opts[0]); }
     h += `<label class="field"><span>부서 선택</span><select class="ci" data-act="f-dept">${deptOptions().map(d => `<option${d === ui.eduDept ? ' selected' : ''}>${esc(d)}</option>`).join('')}</select></label>
     <span class="legend-inline"><span class="pill ok">이수</span><span class="pill miss">미이수</span>${editor ? '<span class="muted small">칸을 누르면 변경 · + 는 미리 들은 교육</span>' : ''}</span></div>`;
     const v = C.eduView(ui.eduDept);
@@ -1684,7 +1685,7 @@ document.addEventListener('click', e => {
       break;
     case 'to-login': ui.signup = false; render(); break;
     case 'acct-approve': if (!need()) break; { const u = ui.users.find(x => x.id === d.id), role = document.getElementById('role-' + d.id)?.value || '보기', team = (document.getElementById('team-' + d.id)?.value || u.team || '').trim();
-      if (role === '팀장' && !(S.config?.teamOrder || []).includes(team)) { toast('팀장은 소속을 인원 명단의 팀 이름과 똑같이 정해야 합니다', true); break; }
+      if (['팀장', '파트장', '보기'].includes(role) && !(S.config?.teamOrder || []).includes(team)) { toast(role + ' 계정은 소속을 인원 명단의 팀 이름과 똑같이 정해야 합니다', true); break; }
       acctCall('userSave', { user: { id: u.id, name: u.name, team, rank: u.rank, role, active: true } }, `${u.name} 님을 '${role}' 권한으로 승인했습니다`); } break;
     case 'acct-reject': if (!need()) break; { const u = ui.users.find(x => x.id === d.id); confirmDlg(`${esc(u.name)} (${esc(u.id)}) 님의 가입 신청을 거절할까요? 신청 내용이 삭제됩니다.`, '거절', () => acctCall('userDelete', { id: d.id }, '가입 신청을 거절했습니다')); } break;
     case 'chpw': pwDialog(); break;
