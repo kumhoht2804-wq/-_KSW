@@ -216,17 +216,22 @@ select.gsel{width:44px;height:28px}
 .hbar .num.r{text-align:right}
 footer.foot{border-top:1px solid var(--line);margin-top:8px}
 /* ---- 팀별 도넛 ---- */
-.donuts{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px;border-top:1px solid var(--line);padding-top:12px}
+.hbars{display:flex;flex-direction:column;gap:8px;flex:1;justify-content:space-evenly}
+.donuts{display:grid;grid-template-columns:repeat(var(--k,6),minmax(0,1fr));gap:6px;border-top:1px solid var(--line);padding-top:12px;margin-top:auto}
+.donut{min-width:0}
+.donut svg{width:100%;max-width:92px;height:auto}
+.donut figcaption b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+@media (max-width:900px){.donuts{grid-template-columns:repeat(auto-fit,minmax(104px,1fr))}}
 .donut{margin:0;display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 6px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
 .donut.all{background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent) 35%,var(--line))}
-.donut svg{width:92px;height:92px}
+
 .donut .dv{font:700 17px var(--font-body);fill:var(--ink)}
 .donut .dl{font:500 9px var(--font-body);fill:var(--muted)}
 .donut figcaption{display:flex;gap:6px;align-items:baseline;font-size:13px}
 .donut figcaption span{font-size:11.5px;color:var(--muted)}
 .dleg{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 8px;font-size:11px;color:var(--muted)}
 .dleg i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:3px;vertical-align:0}
-body.dense .donut svg{width:88px;height:88px}
+
 .donut figcaption{flex-direction:column;align-items:center;gap:0;line-height:1.3}
 .donut figcaption b{font-size:12.5px}
 /* ---- 교육 커리큘럼 ---- */
@@ -308,7 +313,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 연구소 역량·교육 관리 · v2026.11.02 19:26</footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 연구소 역량·교육 관리 · v2026.11.02 19:32</footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -1262,7 +1267,7 @@ function vDash() {
   <div class="legend">${lvls.map(l => `<span><i style="background:${LVCOL[l]};border:1px solid ${LVINK[l]}"></i>${l === '미달' ? '미달' : 'Level ' + l}</span>`).join('')}</div>`;
   // 팀별 Level 구성 도넛
   const groups = [['연구소 전체', cs.done], ...teams.map(t => [t, cs.done.filter(x => x.p.team === t)]).filter(([, L]) => L.length)];
-  h += `<div class="donuts">${groups.map(([name, L], gi) => {
+  h += `<div class="donuts" style="--k:${groups.length}">${groups.map(([name, L], gi) => {
     const c = cnt(L), n = L.length, av = n ? L.reduce((a, x) => a + x.c.T, 0) / n : null;
     const R = 38, CIR = 2 * Math.PI * R; let off = 0;
     const segs = lvls.filter(l => c[l]).map(l => { const len = c[l] / n * CIR; const el = `<circle r="${R}" cx="50" cy="50" fill="none" stroke="${LVSOLID[l]}" stroke-width="14" stroke-dasharray="${len.toFixed(2)} ${(CIR - len).toFixed(2)}" stroke-dashoffset="${(-off).toFixed(2)}" transform="rotate(-90 50 50)"><title>Level ${l}: ${c[l]}명 (${Math.round(c[l] / n * 100)}%)</title></circle>`; off += len; return el; }).join('');
@@ -1271,13 +1276,21 @@ function vDash() {
       <div class="dleg">${lvls.filter(l => c[l]).map(l => `<span><i style="background:${LVSOLID[l]}"></i>${l === '미달' ? '미달' : l} ${c[l]}</span>`).join('')}</div></figure>`; }).join('')}</div>`;
   h += `</section>`;
   // edu by team
-  h += `<section class="card"><div class="head"><h2>팀별 필수 교육 이수율</h2><span class="sub">상위 직급 자동 인정 포함</span></div><div style="display:flex;flex-direction:column;gap:8px">`;
+  h += `<section class="card"><div class="head"><h2>팀별 필수 교육 이수율</h2><span class="sub">상위 직급 자동 인정 포함</span></div><div class="hbars">`;
   for (const t of teams) {
     const a = es.withT.filter(x => x.p.team === t); if (!a.length) continue;
     const tot = a.reduce((s, x) => s + x.e.target, 0), dn = a.reduce((s, x) => s + x.e.done, 0), r = tot ? dn / tot : 0;
     h += `<div class="hbar"><span>${esc(t)}</span><span class="track"><i style="width:${r * 100}%;background:${r >= 1 ? 'var(--ok)' : r < .5 ? 'var(--bad)' : 'var(--warn)'}"></i></span><span class="num r">${pct(r)}</span></div>`;
   }
-  h += `</div></section></div>`;
+  h += `</div>`;
+  // 팀별 필수 교육 이수율 링
+  const eg = [['연구소 전체', es.withT], ...teams.map(t => [t, es.withT.filter(x => x.p.team === t)]).filter(([, L]) => L.length)];
+  h += `<div class="donuts" style="--k:${eg.length}">${eg.map(([name, L], gi) => {
+    const tot = L.reduce((a, x) => a + x.e.target, 0), dn = L.reduce((a, x) => a + x.e.done, 0), pre = L.reduce((a, x) => a + (x.e.pre || 0), 0), full = L.filter(x => x.e.rate >= 1).length;
+    const r = tot ? dn / tot : 0, R = 38, CIR = 2 * Math.PI * R, len = r * CIR, col = r >= 1 ? 'var(--dB)' : r < .5 ? 'var(--dX)' : 'var(--dC)';
+    return `<figure class="donut${gi === 0 ? ' all' : ''}"><svg viewBox="0 0 100 100" role="img" aria-label="${esc(name)} 필수 교육 이수율 ${Math.round(r * 100)}%"><circle r="${R}" cx="50" cy="50" fill="none" stroke="var(--sunk)" stroke-width="14"/><circle r="${R}" cx="50" cy="50" fill="none" stroke="${col}" stroke-width="14" stroke-linecap="${r > 0 && r < 1 ? 'round' : 'butt'}" stroke-dasharray="${len.toFixed(2)} ${(CIR - len).toFixed(2)}" transform="rotate(-90 50 50)"><title>${esc(name)}: 필수 ${tot}건 중 ${dn}건 이수</title></circle><text x="50" y="49" text-anchor="middle" class="dv">${Math.round(r * 100)}%</text><text x="50" y="62" text-anchor="middle" class="dl">이수율</text></svg>
+      <figcaption><b>${esc(name)}</b><span>${L.length}명</span></figcaption>
+      <div class="dleg"><span>이수 ${dn} / ${tot}건</span>${pre ? `<span>선이수 ${pre}</span>` : ''}<span>완료 ${full}명</span></div></figure>`; }).join('')}</div></section></div>`;
   // level criteria
   h += `<section class="card"><div class="head"><h2>종합 Level 기준</h2><span class="sub">Knowledge 50 + Skill 50 = 100점 · 등급 반영률 ${S.config.grades.slice().reverse().map(g => `${g.g} ${Math.round(g.step / S.config.grades.length * 100)}%`).join(' · ')}</span></div>
   <div class="tw free"><table><thead><tr><th>Level</th><th>숙련도</th><th class="r">종합 점수</th><th>참고 (직급·경력)</th><th>설명</th></tr></thead><tbody>${S.config.levels.map(l => `<tr><td>${lvTag(l.lv)}</td><td>${esc(l.label.replace(/\n/g, ' '))}</td><td class="r num">${l.min}점 이상</td><td>${esc((l.ref || '').replace(/\n/g, ' '))}</td><td style="white-space:normal;min-width:320px">${esc(l.desc || '').replace(/\n/g, '<br>')}</td></tr>`).join('')}</tbody></table></div></section>`;
