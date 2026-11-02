@@ -18,7 +18,7 @@ const SHEETS = {
   users: ['id', 'name', 'role', 'hash', 'salt', 'active', 'created', 'lastLogin', 'team'],
   log:   ['time', 'user', 'action', 'detail'],
 };
-const ROLES = ['관리자', '편집', '보기'];
+const ROLES = ['관리자', '팀장', '편집', '보기'];   // 팀장: 자기 팀(소속) 인원과 그 팀이 쓰는 파트만 수정 / 편집: 연구소장·개발실장 등 부서 전체 역량·교육 수정
 const TOKEN_TTL = 21600;           // 6시간 (CacheService 최대치)
 const LOCK_SPIN = 10000;           // 엑셀 잠금 해시 반복 횟수
 
@@ -108,7 +108,7 @@ function login_(b) {
   if (u.role === '대기') return { ok: false, err: '가입 신청을 관리자가 아직 승인하지 않았습니다. 승인 후 로그인할 수 있습니다' };
   if (!u.active) return { ok: false, err: '사용이 중지된 계정입니다. 관리자에게 문의하세요' };
   const token = Utilities.getUuid();
-  const info = { id: u.id, name: u.name, role: u.role };
+  const info = { id: u.id, name: u.name, role: u.role, team: u.team };
   CacheService.getScriptCache().put('t_' + token, JSON.stringify(info), TOKEN_TTL);
   sheet_('users').getRange(u.row, 8).setValue(now_());
   log_(u.id, 'login', '');
@@ -120,7 +120,7 @@ function auth_(b, need) {
   const info = JSON.parse(raw);
   const u = users_().filter(x => x.id === info.id)[0];
   if (!u || !u.active) throw new Error('AUTH:사용이 중지된 계정입니다');
-  info.role = u.role; info.name = u.name;
+  info.role = u.role; info.name = u.name; info.team = u.team;
   if (ROLES.indexOf(info.role) < 0 || ROLES.indexOf(info.role) > ROLES.indexOf(need)) throw new Error('권한이 없습니다 (' + need + ' 이상 필요)');
   return info;
 }
@@ -146,6 +146,7 @@ function userSave_(b) {
   const u = b.user || {};
   checkId_(u.id);
   if (ROLES.indexOf(u.role) < 0) throw new Error('역할이 올바르지 않습니다');
+  if (u.role === '팀장' && !String(u.team || '').trim()) throw new Error('팀장은 소속 팀을 정해야 합니다');
   const s = sheet_('users'), all = users_(), ex = all.filter(x => x.id === u.id)[0];
   if (ex) {
     if (ex.id === me.id && (u.role !== '관리자' || u.active === false)) throw new Error('본인 계정의 관리자 권한은 해제할 수 없습니다');
@@ -189,6 +190,7 @@ function loadDocs_() {
   return out;
 }
 const EDIT_PATHS = /^(grades|edu)\/[A-Za-z0-9_-]+$/;
+const LEADER_PATHS = /^(grades|edu|parts)\/[A-Za-z0-9_-]+$/;
 const PATH_OK = /^(config|parts|people|grades|courses|edu|history)\/[A-Za-z0-9_-]+$/;
 function put_(b) {
   const me = auth_(b, '편집');
@@ -196,9 +198,24 @@ function put_(b) {
   const s = sheet_('docs'), v = s.getDataRange().getValues(), idx = {};
   for (let i = 1; i < v.length; i++) if (v[i][0] !== '') idx[v[i][0]] = i + 1;
   const dels = [];
+  let docs = null;
   ops.forEach(op => {
     if (!PATH_OK.test(op.path)) throw new Error('잘못된 경로: ' + op.path);
-    if (me.role !== '관리자' && !EDIT_PATHS.test(op.path)) throw new Error('권한이 없습니다 (관리자만 수정 가능)');
+    if (me.role === '편집' && !EDIT_PATHS.test(op.path)) throw new Error('권한이 없습니다 (관리자만 수정 가능)');
+    if (me.role === '팀장') {
+      if (!LEADER_PATHS.test(op.path)) throw new Error('권한이 없습니다 (관리자만 수정 가능)');
+      docs = docs || loadDocs_();
+      const id = op.path.split('/')[1], team = String(me.team || '');
+      const mine = Object.keys(docs).filter(k => k.indexOf('people/') === 0 && docs[k].team === team).map(k => docs[k]);
+      if (op.path.indexOf('parts/') === 0) {
+        const cur = docs[op.path];
+        if (!cur || op.data === null || (op.data && op.data.name !== cur.name)) throw new Error('파트 추가·삭제·이름 변경은 관리자만 할 수 있습니다');
+        if (!mine.some(p => p.cat === cur.name)) throw new Error('우리 팀이 쓰는 파트만 수정할 수 있습니다');
+      } else {
+        const p = docs['people/' + id];
+        if (!p || p.team !== team) throw new Error('우리 팀 인원만 수정할 수 있습니다');
+      }
+    }
     if (op.data === null) { if (idx[op.path]) dels.push(idx[op.path]); return; }
     const json = JSON.stringify(op.data);
     if (json.length > 45000) throw new Error('데이터가 너무 큽니다: ' + op.path);
@@ -231,7 +248,7 @@ function setLockPw_(b) {
 }
 // 비밀번호는 서버 밖으로 내보내지 않고, 엑셀 시트 보호용 해시만 계산해서 돌려줌
 function lockHash_(b) {
-  auth_(b, '보기');
+  auth_(b, '관리자');
   const pw = prop_('LOCK_PW');
   if (!pw) return { ok: true, prot: null };
   const c = CacheService.getScriptCache(), hit = c.get('lockHash');
