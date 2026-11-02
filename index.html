@@ -313,7 +313,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 연구소 역량·교육 관리 · v2026.11.02 19:33</footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 연구소 역량·교육 관리 · v2026.11.02 19:40</footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -484,10 +484,11 @@ function makeCalc(S){
   function eduField(p){ return dm[p.eduDept]??null; }
   function applies(c,p){ const f=eduField(p)||''; return c.dept==='공통'||(c.dept&&f.includes(c.dept)); }
   function cell(c,p){ // '◎' '●' '' and isTarget
-    const ps=rs[p.rank], cs=cStage(c), rec=(S.edu[p.id]||{})[c.id];
-    const req=c.type==='필수'&&cs!=null, ap=req&&applies(c,p);
-    const mark=(ap&&ps>cs)?'◎':(rec?'●':'');
-    return {mark,target:ap&&cs<=ps,rec};
+    const ps=rs[p.rank], cs=cStage(c), r0=(S.edu[p.id]||{})[c.id];
+    const ex=!!(r0&&r0.x), rec=ex?null:r0;          // x: 관리자가 '미이수 처리'한 기록 (자동 인정 해제)
+    const req=c.type==='필수'&&cs!=null, ap=req&&applies(c,p), auto=ap&&ps>cs;
+    const mark=(auto&&!ex)?'◎':(rec?'●':'');
+    return {mark,target:ap&&cs<=ps,rec,ex,auto};
   }
   function edu(p){
     let t=0,d=0,el=0,pre=0;
@@ -689,7 +690,7 @@ const Export = (() => {
     ['No', '이름', '소속', '교육명', '구분', '비고'].forEach((h, i) => rc.set(2, i, h, H));
     let r = 3; const cmap = Object.fromEntries(S.courses.map(c => [c.id, c]));
     for (const p of C.sortEdu(S.people)) for (const [cid, rec] of Object.entries(S.edu[p.id] || {})) {
-      const c = cmap[cid]; if (!c) continue;
+      const c = cmap[cid]; if (!c || rec.x) continue;
       [r - 2, p.name, p.team, c.name, c.type, rec.note || ''].forEach((v, j) => rc.set(r, j, v, j === 1 || j === 2 || j === 3 || j === 5 ? B : BC)); r++;
     }
     [6, 10, 12, 36, 7, 14].forEach((w, i) => rc.width(i, w)); rc.freeze = { row: 3 };
@@ -951,7 +952,7 @@ setRole();
 async function api(action, payload) {
   const r = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(Object.assign({ action, token: auth?.token }, payload || {})) });
   const d = await r.json();
-  if (!d.ok) { if (d.auth) { logout(true); } const e = new Error(d.err || '서버 오류'); e.auth = d.auth; throw e; }
+  if (!d.ok) { if (d.auth) { logout(true); } const e = new Error(d.err || '서버 오류'); e.auth = d.auth; e.perm = /권한|우리 팀|관리자만|파트 추가/.test(d.err || ''); throw e; }
   return d;
 }
 function applyDocs(docs) {
@@ -963,8 +964,8 @@ function applyDocs(docs) {
     else if (col === 'edu') by.edu[id] = data.r || {};
     else if (by[col]) by[col].push({ id, ...data });
   }
-  // 저장 중인 문서는 화면 값을 유지
-  for (const p of [...pend.keys(), ...running]) {
+  // 저장 중이거나 아직 저장 안 된 문서는 화면 값을 유지
+  for (const p of [...pend.keys(), ...running, ...Object.keys(unsaved)]) {
     const [col, id] = p.split('/');
     if (col === 'grades' && S.grades[id]) by.grades[id] = S.grades[id];
     if (col === 'edu' && S.edu[id]) by.edu[id] = S.edu[id];
@@ -973,7 +974,8 @@ function applyDocs(docs) {
 }
 let loading = false;
 async function reload(manual) {
-  if (!auth || loading || busy) { if (manual) toast('저장 중입니다. 잠시 후 다시 눌러 주세요'); return; }
+  if (!auth || loading) return;
+  if (busy) { setTimeout(() => reload(manual), 1200); return; }   // 저장이 끝나면 이어서 받기
   loading = true; syncUI();
   const seq = writeSeq;
   try {
@@ -993,26 +995,46 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 // ---------- write queue (문서별로 한 번에 하나, 마지막 값 우선) ----------
 const pend = new Map(), running = new Set();
 let busy = 0;
-let writeSeq = 0, lastWrite = 0;
-function put(path, data) { writeSeq++; lastWrite = Date.now(); pend.set(path, data); pump(path); }
+let writeSeq = 0, lastWrite = 0, lastSaved = '', retryT = null;
+// 아직 서버에 안 들어간 수정은 브라우저에 보관 → 창이 꺼져도 다음 접속 때 다시 저장
+let unsaved = {}; try { unsaved = JSON.parse(LS.get('lab_unsaved') || '{}') || {}; } catch { unsaved = {}; }
+const keepUnsaved = () => LS.set('lab_unsaved', Object.keys(unsaved).length ? JSON.stringify(unsaved) : null);
+function put(path, data) { writeSeq++; lastWrite = Date.now(); unsaved[path] = data; keepUnsaved(); pend.set(path, data); pump(path); }
 async function pump(path) {
   if (running.has(path)) return; running.add(path); busy++; syncUI();
   while (pend.has(path)) {
     const d = pend.get(path); pend.delete(path);
-    try { await api('put', { ops: [{ path, data: d }] }); }
-    catch (e) { writeErr(e); }
+    try {
+      await api('put', { ops: [{ path, data: d }] });
+      if (JSON.stringify(unsaved[path]) === JSON.stringify(d)) { delete unsaved[path]; keepUnsaved(); }
+      lastSaved = new Date().toTimeString().slice(0, 5);
+    } catch (e) {
+      writeErr(e);
+      if (e.perm) { delete unsaved[path]; keepUnsaved(); }        // 권한 없음: 다시 보내도 안 되니 버림
+      else if (!retryT) retryT = setTimeout(() => { retryT = null; flush(); }, 8000);   // 연결 문제: 잠시 뒤 다시
+    }
   }
   running.delete(path); busy--; syncUI();
 }
-function writeErr(e) { if (!e.auth) toast('저장하지 못했습니다: ' + e.message, true); }
+function flush(manual) {
+  const ks = Object.keys(unsaved);
+  if (!auth) return;
+  if (!ks.length) { if (manual) toast('모두 저장되어 있습니다'); return; }
+  for (const k of ks) if (!pend.has(k) && !running.has(k)) { pend.set(k, unsaved[k]); pump(k); }
+  if (manual) toast(`저장 안 된 ${ks.length}건을 저장하는 중입니다…`);
+}
+function writeErr(e) { if (!e.auth) toast((e.perm ? '저장할 권한이 없습니다: ' : '저장하지 못했습니다 (잠시 뒤 자동으로 다시 시도): ') + e.message, true); }
+window.addEventListener('beforeunload', e => { if (busy || Object.keys(unsaved).length) { e.preventDefault(); e.returnValue = ''; } });
 function syncUI() {
   const el = $('#sync'); if (!el) return;
-  let cls = '', txt = '저장됨';
+  const n = Object.keys(unsaved).length;
+  let cls = '', txt = lastSaved ? `모두 저장됨 ${lastSaved}` : '모두 저장됨';
   if (!auth) { cls = 'off'; txt = '로그인 필요'; }
-  else if (offline) { cls = 'off'; txt = '서버 연결 안 됨'; }
   else if (busy) { cls = 'busy'; txt = '저장 중…'; }
+  else if (n) { cls = 'off'; txt = `저장 안 된 ${n}건`; }
+  else if (offline) { cls = 'off'; txt = '서버 연결 안 됨'; }
   else if (loading) { cls = 'busy'; txt = '불러오는 중'; }
-  el.innerHTML = `<span class="dot ${cls}"></span><span>${txt}</span>${auth ? ' <button class="btn sm" data-act="reload" type="button" title="다른 사람이 바꾼 내용 받기">새로 고침</button>' : ''}`;
+  el.innerHTML = `<span class="dot ${cls}"></span><span>${txt}</span>${auth && editor ? ` <button class="btn sm ${n ? 'primary' : ''}" data-act="save-now" type="button" title="저장 안 된 수정을 지금 서버에 저장">저장</button>` : ''}${auth ? ' <button class="btn sm" data-act="reload" type="button" title="다른 사람이 바꾼 내용 받기">새로 고침</button>' : ''}`;
 }
 function toast(msg, bad) { const d = document.createElement('div'); if (bad) d.className = 'bad'; d.textContent = msg; $('#toast').appendChild(d); setTimeout(() => d.remove(), bad ? 6000 : 2600); }
 
@@ -1052,6 +1074,7 @@ function vLogin() {
 function setServer() { API_URL = ''; LS.set('lab_api', null); logout(true); }
 function startSession(d) {
   auth = { token: d.token, user: d.user }; LS.set('lab_auth', JSON.stringify(auth)); setRole(); whoUI(); syncUI(); if (admin) loadUsers(true);
+  if (Object.keys(unsaved).length) { toast(`지난번에 저장되지 않은 수정 ${Object.keys(unsaved).length}건을 다시 저장합니다`); flush(); }
   loadedOnce = false; render(); reload();
 }
 function logout(silent) {
@@ -1367,6 +1390,13 @@ function vEdu() {
       h += `<tr><td class="sticky c num muted">${i + 1}</td><td class="sticky2"><button class="link" data-act="person-edu" data-id="${p.id}" type="button">${esc(p.name)}</button></td><td class="muted">${esc(p.rank)}</td><td class="opt">${esc(p.team)}</td><td class="opt">${esc(p.eduDept)}</td><td class="c num opt">${e.stage}</td><td class="r num">${e.target}</td><td class="r num">${e.done}</td><td>${meter(e.rate)}</td><td class="r num">${e.pre || '<span class="muted">0</span>'}</td><td class="r num opt">${e.elective}</td>`;
       for (const c of v.courses) {
         const x = C.cell(c, p), auto = x.mark === '◎', done = !!x.mark;
+        if (x.target && (auto || x.ex)) {   // 상위 직급 자동 인정 칸: 눌러서 '미이수 처리' ↔ 되돌리기
+          const t3 = `${p.name} · ${c.name} · ${auto ? '이수 (상위 직급 자동 인정)' : '미이수 처리됨 (자동 인정 해제)'}`;
+          h += canP(p)
+            ? `<td class="c"><button type="button" class="pill ${auto ? 'ok' : 'miss'} click" data-act="toggle-rec" data-p="${p.id}" data-c="${c.id}" title="${esc(t3)} · 눌러서 ${auto ? '미이수 처리' : '자동 인정으로 되돌리기'}">${auto ? '이수' : '미이수'}</button></td>`
+            : `<td class="c"><span class="pill ${auto ? 'ok' : 'miss'}" title="${esc(t3)}">${auto ? '이수' : '미이수'}</span></td>`;
+          continue;
+        }
         if (!x.target) {   // 대상 구간이 아닌 교육: 미리 들었으면 '선이수', 아니면 빈칸(누르면 선이수 등록)
           const t2 = `${p.name} · ${c.name} · 대상 구간 아님`;
           h += x.rec
@@ -1390,7 +1420,7 @@ function vEdu() {
     if (editor) h += recForm();
     const cmap = Object.fromEntries(S.courses.map(c => [c.id, c]));
     const rows = [];
-    C.sortEdu(S.people).forEach((p, pi) => { for (const [cid, r] of Object.entries(S.edu[p.id] || {})) { const c = cmap[cid]; if (c && (!ui.q || p.name.includes(ui.q) || c.name.includes(ui.q))) rows.push({ p, c, r, pi }); } });
+    C.sortEdu(S.people).forEach((p, pi) => { for (const [cid, r] of Object.entries(S.edu[p.id] || {})) { const c = cmap[cid]; if (c && !r.x && (!ui.q || p.name.includes(ui.q) || c.name.includes(ui.q))) rows.push({ p, c, r, pi }); } });
 
     h += `<section class="card"><div class="head"><h2>교육 이수 기록</h2><span class="sub">${rows.length.toLocaleString()}건 · 수료 현황표에서 누른 내용도 여기에 자동으로 들어옵니다</span></div><div class="tw"><table><thead><tr><th class="c">No</th><th>이름</th><th>소속</th><th>교육명</th><th>구분</th><th>부서</th><th>비고</th>${editor ? '<th></th>' : ''}</tr></thead><tbody>
     ${rows.map((x, i) => `<tr><td class="c num muted">${i + 1}</td><td><button class="link" data-act="person-edu" data-id="${x.p.id}" type="button">${esc(x.p.name)}</button></td><td>${esc(x.p.team)}</td><td>${esc(x.c.name)}</td><td><span class="tag ${x.c.type === '필수' ? 'ok' : ''}">${esc(x.c.type)}</span></td><td>${esc(x.c.dept)}</td><td>${esc(x.r.note)}</td>${editor ? `<td>${canP(x.p) ? `<button type="button" class="btn sm danger" data-act="del-rec" data-p="${x.p.id}" data-c="${x.c.id}">삭제</button>` : ''}</td>` : ''}</tr>`).join('')}
@@ -1462,7 +1492,7 @@ function personEdu(pid) {
   const p = S.people.find(x => x.id === pid); if (!p) return;
   const e = C.edu(p), cmap = S.courses;
   const req = cmap.filter(c => C.cell(c, p).target), el = cmap.filter(c => c.type === '선택' && (S.edu[p.id] || {})[c.id]);
-  const rows = req.map(c => { const x = C.cell(c, p); return `<tr><td>${esc(c.name)}</td><td>${esc(c.dept)}</td><td class="c num">${C.cStage(c)}</td><td class="c">${x.mark ? `<span class="pill ok">이수</span>${x.mark === '◎' ? ' <span class="muted small">상위 직급</span>' : ''}` : '<span class="pill miss">미이수</span>'}</td>${canP(p) ? `<td>${x.mark === '◎' ? '' : x.rec ? `<button type="button" class="btn sm danger" data-act="dlg-del-rec" data-p="${p.id}" data-c="${c.id}">취소</button>` : `<button type="button" class="btn sm" data-act="dlg-add-rec" data-p="${p.id}" data-c="${c.id}">이수</button>`}</td>` : ''}</tr>`; }).join('');
+  const rows = req.map(c => { const x = C.cell(c, p); return `<tr><td>${esc(c.name)}</td><td>${esc(c.dept)}</td><td class="c num">${C.cStage(c)}</td><td class="c">${x.mark ? `<span class="pill ok">이수</span>${x.mark === '◎' ? ' <span class="muted small">상위 직급</span>' : ''}` : '<span class="pill miss">미이수</span>'}</td>${canP(p) ? `<td>${x.mark === '◎' ? `<button type="button" class="btn sm" data-act="toggle-rec" data-p="${p.id}" data-c="${c.id}" title="상위 직급 자동 인정을 해제">미이수 처리</button>` : x.ex ? `<button type="button" class="btn sm" data-act="toggle-rec" data-p="${p.id}" data-c="${c.id}">되돌리기</button>` : x.rec ? `<button type="button" class="btn sm danger" data-act="dlg-del-rec" data-p="${p.id}" data-c="${c.id}">취소</button>` : `<button type="button" class="btn sm" data-act="dlg-add-rec" data-p="${p.id}" data-c="${c.id}">이수</button>`}</td>` : ''}</tr>`; }).join('');
   openDlg(`<div class="head"><h2>${esc(p.name)}</h2><span class="sub">${esc(p.team)} · ${esc(p.rank)} · ${esc(p.eduDept)} (교육분야 ${esc(e.field || '-')}, ${e.stage ?? '-'}단계)</span><span class="spacer"></span><button type="button" class="btn sm" data-act="close">닫기</button></div>
    <div class="kpis"><div class="kpi edu"><span class="k">필수 대상</span><span class="v">${e.target}</span></div><div class="kpi edu"><span class="k">필수 이수</span><span class="v">${e.done}</span></div><div class="kpi edu"><span class="k">이수율</span><span class="v">${pct(e.rate)}</span></div><div class="kpi edu"><span class="k">선이수</span><span class="v">${e.pre}</span></div><div class="kpi edu"><span class="k">선택 이수</span><span class="v">${e.elective}</span></div></div>
    <h3 style="font-size:14px">필수 교육</h3><div class="tw free"><table><thead><tr><th>교육명</th><th>부서</th><th class="c">단계</th><th class="c">상태</th>${canP(p) ? '<th></th>' : ''}</tr></thead><tbody>${rows || '<tr><td colspan="6" class="muted">필수 대상 교육이 없습니다</td></tr>'}</tbody></table></div>
@@ -1596,7 +1626,8 @@ document.addEventListener('click', e => {
   const need = () => { if (!admin) { toast('관리자만 할 수 있습니다', true); return false; } return true; };
   const needE = () => { if (!editor) { toast('수정 권한이 필요합니다', true); return false; } return true; };
   switch (a) {
-    case 'logout': logout(); break;
+    case 'logout': if (Object.keys(unsaved).length && !confirm_unsaved()) break; logout(); break;
+    case 'save-now': flush(true); break;
     case 'fix-edudept': if (!need()) break; {
       const mm = eduMismatch();
       confirmDlg(`${mm.map(p => `${esc(p.name)}: 교육 상세부서 ${esc(p.eduDept)} → <b>${esc(expEduDept(p))}</b>`).join('<br>')}<br><br>교육 대상 과목이 새 부서 기준으로 바뀝니다. 바꿀까요?`, '바꾸기', () => {
@@ -1625,10 +1656,14 @@ document.addEventListener('click', e => {
     case 'goto-part': { const p = S.parts.find(x => x.name === d.v); if (p) { ui.part = p.id; ui.assessMode = 'part'; render(); } break; }
     case 'emode': ui.eduMode = d.v; ui.q = ''; render(); break;
     case 'person-edu': personEdu(d.id); break;
-    case 'toggle-rec': if (!canP(pById(d.p))) { toast('우리 팀 인원만 수정할 수 있습니다', true); break; } { const has = (S.edu[d.p] || {})[d.c]; const p = S.people.find(x => x.id === d.p), c = S.courses.find(x => x.id === d.c);
-      setRec(d.p, d.c, has ? null : { note: '이수 완료' });
-      const tgt = p && c && C.cell(c, p).target;
-      toast(has ? `${p?.name} · ${c?.name}: ${tgt ? '미이수로 바꾸고 ' : ''}이수 기록에서 지웠습니다` : `${p?.name} · ${c?.name}: ${tgt ? '이수' : '선이수(미리 들음)'}로 이수 기록에 추가했습니다`); } break;
+    case 'toggle-rec': if (!canP(pById(d.p))) { toast('우리 팀 인원만 수정할 수 있습니다', true); break; } {
+      const p = pById(d.p), c = S.courses.find(x => x.id === d.c), x = C.cell(c, p), nm = `${p.name} · ${c.name}`;
+      if (x.ex) { setRec(d.p, d.c, null); toast(`${nm}: 상위 직급 자동 인정으로 되돌렸습니다 (이수)`); }
+      else if (x.auto) { setRec(d.p, d.c, { note: '미이수 처리', x: true }); toast(`${nm}: 미이수로 처리했습니다 (자동 인정 해제)`); }
+      else if (x.rec) { setRec(d.p, d.c, null); toast(`${nm}: ${x.target ? '미이수로 바꾸고 ' : ''}이수 기록에서 지웠습니다`); }
+      else { setRec(d.p, d.c, { note: '이수 완료' }); toast(`${nm}: ${x.target ? '이수' : '선이수(미리 들음)'}로 이수 기록에 추가했습니다`); }
+      if (dlg().open) personEdu(d.p);
+    } break;
     case 'del-rec': if (!canP(pById(d.p))) break; { const p = S.people.find(x => x.id === d.p), c = S.courses.find(x => x.id === d.c); confirmDlg(`${esc(p?.name)} · ${esc(c?.name)} 이수 기록을 삭제할까요?`, '삭제', () => setRec(d.p, d.c, null)); } break;
     case 'dlg-del-rec': if (!canP(pById(d.p))) break; setRec(d.p, d.c, null); personEdu(d.p); break;
     case 'dlg-add-rec': if (!canP(pById(d.p))) break; setRec(d.p, d.c, { note: '이수 완료' }); personEdu(d.p); break;
@@ -1791,12 +1826,13 @@ async function importExcel(files) {
   confirmDlg(`<b>${what}</b> 엑셀 내용으로 사이트 데이터를 바꿉니다. ${keep}<ul style="margin:8px 0 0;padding-left:18px">${r.notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul>`, '엑셀로 바꾸기', () => sendAll(r.data));
 }
 
+function confirm_unsaved() { toast('저장 안 된 수정이 있습니다. 저장 버튼을 눌러 저장한 뒤 로그아웃하세요', true); flush(true); return false; }
 function setDense(on) { document.body.classList.toggle('dense', on); const b = document.getElementById('denseBtn'); if (b) { b.setAttribute('aria-pressed', on); b.textContent = on ? '기본 크기로 보기' : '촘촘하게 보기'; } LS.set('lab_dense', on ? '1' : null); }
 document.body.classList.add('dense');
 // ---------- boot ----------
 try { document.getElementById('cy').textContent = new Date().getFullYear(); } catch { }
 whoUI(); syncUI(); render();
-if (auth) reload(); else checkSetup();
+if (auth) { if (Object.keys(unsaved).length) { toast(`지난번에 저장되지 않은 수정 ${Object.keys(unsaved).length}건을 다시 저장합니다`); flush(); } reload(); } else checkSetup();
 })();
 
 </script>
