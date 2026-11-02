@@ -238,7 +238,7 @@ footer.foot{border-top:1px solid var(--line);margin-top:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 연구소 역량·교육 관리</footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 연구소 역량·교육 관리 · v2026.11.02 18:13</footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -891,9 +891,13 @@ function applyDocs(docs) {
 }
 let loading = false;
 async function reload(manual) {
-  if (!auth || loading || busy) return;
+  if (!auth || loading || busy) { if (manual) toast('저장 중입니다. 잠시 후 다시 눌러 주세요'); return; }
   loading = true; syncUI();
-  try { const d = await api('load'); applyDocs(d.docs); loadedOnce = true; offline = false; if (admin) loadUsers(true); if (manual) toast('최신 데이터로 새로 고쳤습니다'); }
+  const seq = writeSeq;
+  try { const d = await api('load');
+    // 받아오는 사이에 수정이 있었으면 이 응답은 예전 값이라 버리고 잠시 뒤 다시 받음
+    if (seq !== writeSeq || busy || Date.now() - lastWrite < 3000) { loading = false; syncUI(); setTimeout(() => reload(), 4000); return; }
+    applyDocs(d.docs); loadedOnce = true; offline = false; if (admin) loadUsers(true); if (manual) toast('최신 데이터로 새로 고쳤습니다'); }
   catch (e) { if (!e.auth) { offline = true; toast('서버에서 데이터를 받지 못했습니다: ' + e.message, true); } }
   loading = false; syncUI(); schedule();
 }
@@ -903,7 +907,8 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 // ---------- write queue (문서별로 한 번에 하나, 마지막 값 우선) ----------
 const pend = new Map(), running = new Set();
 let busy = 0;
-function put(path, data) { pend.set(path, data); pump(path); }
+let writeSeq = 0, lastWrite = 0;
+function put(path, data) { writeSeq++; lastWrite = Date.now(); pend.set(path, data); pump(path); }
 async function pump(path) {
   if (running.has(path)) return; running.add(path); busy++; syncUI();
   while (pend.has(path)) {
