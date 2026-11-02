@@ -62,7 +62,7 @@ nav.tabs a[aria-current="page"]{background:var(--accent-soft);color:var(--accent
 .btn:disabled{opacity:.5;cursor:not-allowed}
 .chip{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;background:var(--sunk);color:var(--muted)}
 .chip.admin{background:var(--accent);color:#fff}
-main{padding:20px;display:flex;flex-direction:column;gap:20px;max-width:1680px;margin:0 auto}
+main{padding:16px 20px;display:flex;flex-direction:column;gap:16px;max-width:none;margin:0}
 .notice{padding:10px 14px;border-radius:var(--r);background:var(--sunk);color:var(--muted);font-size:13px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .notice.warn{background:var(--warn-soft);color:var(--warn)}
 .notice.bad{background:var(--bad-soft);color:var(--bad)}
@@ -86,7 +86,7 @@ main{padding:20px;display:flex;flex-direction:column;gap:20px;max-width:1680px;m
 .pchip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 12px;cursor:pointer;font-weight:500;display:inline-flex;gap:6px;align-items:center}
 .pchip .c{font:500 11px var(--font-num);color:var(--muted)}
 .pchip[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
-.tw{overflow:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);max-height:calc(100vh - 230px)}
+.tw{overflow:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);max-height:calc(100vh - 200px)}
 .tw.free{max-height:none}
 table{border-collapse:separate;border-spacing:0;width:100%;font-size:13px}
 th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle;white-space:nowrap}
@@ -209,6 +209,30 @@ select.gsel{width:44px;height:28px}
 .hbar{grid-template-columns:96px 1fr 48px}
 .hbar .num.r{text-align:right}
 footer.foot{border-top:1px solid var(--line);margin-top:8px}
+/* ---- 촘촘하게 보기 ---- */
+#denseBtn[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+body.dense main{padding:10px 12px;gap:10px}
+body.dense .card{padding:10px 12px;gap:8px}
+body.dense .card h2{font-size:14px}
+body.dense table{font-size:12px}
+body.dense th,body.dense td{padding:3px 6px}
+body.dense thead th{font-size:11px}
+body.dense .tw{max-height:calc(100vh - 150px)}
+body.dense .opt{display:none}
+body.dense th.course{width:54px;min-width:54px;max-width:54px;padding:4px 3px;font-size:10.5px;line-height:1.2}
+body.dense th.course .cd{display:none}
+body.dense .pill{height:18px;min-width:38px;padding:0 3px;font-size:10.5px;border-radius:4px}
+body.dense th.item{min-width:62px;max-width:76px;font-size:10.5px;padding:4px 3px;line-height:1.2}
+body.dense th.item .w{margin-top:2px;font-size:10px}
+body.dense select.gsel{width:34px;height:22px;font-size:11px}
+body.dense .g{width:26px;height:20px;font-size:11px}
+body.dense .lv{min-width:30px;height:18px;font-size:11px;padding:0 4px}
+body.dense .meter{width:36px}
+body.dense .kpis{gap:8px}
+body.dense .kpi{padding:8px 10px}
+body.dense .kpi .v{font-size:20px}
+body.dense .notice{padding:6px 10px}
+body.dense .toolbar{gap:8px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
@@ -225,6 +249,7 @@ footer.foot{border-top:1px solid var(--line);margin-top:8px}
       <a href="#accounts" data-route="accounts" hidden>계정 관리</a>
     </nav>
     <div class="spacer"></div>
+    <button class="btn sm" id="denseBtn" type="button" data-act="dense" aria-pressed="false" title="칸 간격과 글씨를 줄여 한 화면에 더 많이 보기">촘촘하게 보기</button>
     <div class="sync" id="sync"><span class="dot busy"></span><span>불러오는 중</span></div>
     <div class="menu" id="expMenu">
       <button class="btn" id="expBtn" type="button" aria-haspopup="true">엑셀 내보내기 ▾</button>
@@ -238,7 +263,7 @@ footer.foot{border-top:1px solid var(--line);margin-top:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 연구소 역량·교육 관리 · v2026.11.02 18:13</footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 연구소 역량·교육 관리 · v2026.11.02 18:15</footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -1196,11 +1221,11 @@ function vAssess() {
     const ppl = C.sortComp(S.people.filter(p => p.cat === part.name));
     const N = S.config.grades.length, opts = S.config.grades.slice().reverse().map(g => g.g);
     h += `<section class="card"><div class="head"><h2>${esc(part.name)} 역량평가</h2><span class="sub">${ppl.length}명 · Knowledge ${K.length}항목 · Skill ${Sk.length}항목 · 등급 ${S.config.grades.slice().reverse().map(g => `${g.g}=${Math.round(g.step / N * 100)}%`).join(' ')}</span><span class="spacer"></span>${editor ? '<span class="small muted">칸을 고르면 바로 저장됩니다</span>' : ''}</div>
-    <div class="tw" style="--s2:38px"><table><thead><tr><th class="sticky c" style="min-width:38px">No</th><th class="sticky2">성명</th><th>직급</th><th class="c">Level</th><th class="r">Total</th><th class="r">K</th><th class="r">S</th><th class="c">입력</th>
+    <div class="tw" style="--s2:38px"><table><thead><tr><th class="sticky c" style="min-width:38px">No</th><th class="sticky2">성명</th><th>직급</th><th class="c">Level</th><th class="r">Total</th><th class="r">K</th><th class="r">S</th><th class="c opt">입력</th>
     ${all.map(it => `<th class="item ${it.area[0]}" title="${esc(it.name)}${it.basis ? ' · 근거: ' + esc(it.basis) : ''}">${esc(it.name)}<span class="w">${it.area === 'Knowledge' ? 'K' : 'S'} ${fmt1(it.ratio * 50)}점</span></th>`).join('')}</tr></thead><tbody>`;
     ppl.forEach((p, i) => {
       const c = C.comp(p), g = S.grades[p.id] || {};
-      h += `<tr><td class="sticky c num muted">${i + 1}</td><td class="sticky2">${esc(p.name)}</td><td class="muted">${esc(p.rank)}</td><td class="c">${lvTag(c.lv)}</td><td class="r num"><b>${fmt1(c.T)}</b></td><td class="r num">${fmt1(c.K)}</td><td class="r num">${fmt1(c.S)}</td><td class="c num ${c.filled < c.total ? '' : 'muted'}">${c.filled}/${c.total}</td>`;
+      h += `<tr><td class="sticky c num muted">${i + 1}</td><td class="sticky2">${esc(p.name)}</td><td class="muted">${esc(p.rank)}</td><td class="c">${lvTag(c.lv)}</td><td class="r num"><b>${fmt1(c.T)}</b></td><td class="r num">${fmt1(c.K)}</td><td class="r num">${fmt1(c.S)}</td><td class="c num opt ${c.filled < c.total ? '' : 'muted'}">${c.filled}/${c.total}</td>`;
       for (const it of all) {
         const v = g[it.id] || '';
         h += editor
@@ -1240,11 +1265,11 @@ function vEdu() {
     const invalid = S.people.filter(p => p.edu && !C.eduValid(p));
     if (invalid.length) h += `<div class="notice warn small">직급 또는 상세부서가 교육 설정에 없어 표시되지 않는 인원 ${invalid.length}명: ${invalid.map(p => esc(p.name)).join(', ')}</div>`;
     h += `<section class="card"><div class="head"><h2>부서별 교육 수료 현황</h2><span class="sub">표시 ${v.people.length}명 / 필수 교육 ${v.courses.length}건</span></div>
-    <div class="tw" style="--s2:38px"><table><thead><tr><th class="sticky c" style="min-width:38px">No</th><th class="sticky2">이름</th><th>직급</th><th>소속</th><th>상세부서</th><th class="c">단계</th><th class="r">대상</th><th class="r">이수</th><th>이수율</th><th class="r">선택</th>
+    <div class="tw" style="--s2:38px"><table><thead><tr><th class="sticky c" style="min-width:38px">No</th><th class="sticky2">이름</th><th>직급</th><th class="opt">소속</th><th class="opt">상세부서</th><th class="c opt">단계</th><th class="r">대상</th><th class="r">이수</th><th>이수율</th><th class="r opt">선택</th>
     ${v.courses.map(c => `<th class="course" title="${esc(c.name)} · ${esc(c.dept)} · ${esc(c.rank)} (${C.cStage(c)}단계)"><span class="cn">${esc(c.name)}</span><span class="cd">${esc(c.dept)} · ${C.cStage(c)}단계</span></th>`).join('')}</tr></thead><tbody>`;
     v.people.forEach((p, i) => {
       const e = C.edu(p);
-      h += `<tr><td class="sticky c num muted">${i + 1}</td><td class="sticky2"><button class="link" data-act="person-edu" data-id="${p.id}" type="button">${esc(p.name)}</button></td><td class="muted">${esc(p.rank)}</td><td>${esc(p.team)}</td><td>${esc(p.eduDept)}</td><td class="c num">${e.stage}</td><td class="r num">${e.target}</td><td class="r num">${e.done}</td><td>${meter(e.rate)}</td><td class="r num">${e.elective}</td>`;
+      h += `<tr><td class="sticky c num muted">${i + 1}</td><td class="sticky2"><button class="link" data-act="person-edu" data-id="${p.id}" type="button">${esc(p.name)}</button></td><td class="muted">${esc(p.rank)}</td><td class="opt">${esc(p.team)}</td><td class="opt">${esc(p.eduDept)}</td><td class="c num opt">${e.stage}</td><td class="r num">${e.target}</td><td class="r num">${e.done}</td><td>${meter(e.rate)}</td><td class="r num opt">${e.elective}</td>`;
       for (const c of v.courses) {
         const x = C.cell(c, p), auto = x.mark === '◎', done = !!x.mark;
         if (!done && !x.target) { h += '<td class="c"></td>'; continue; }
@@ -1429,6 +1454,7 @@ document.addEventListener('click', e => {
   const needE = () => { if (!editor) { toast('편집 권한이 필요합니다', true); return false; } return true; };
   switch (a) {
     case 'logout': logout(); break;
+    case 'dense': setDense(!document.body.classList.contains('dense')); break;
     case 'to-signup': ui.signup = true; ui.signupDone = ''; render(); break;
     case 'to-login': ui.signup = false; render(); break;
     case 'acct-approve': if (!need()) break; { const u = ui.users.find(x => x.id === d.id), role = document.getElementById('role-' + d.id)?.value || '보기'; acctCall('userSave', { user: { id: u.id, name: u.name, team: u.team, role, active: true } }, `${u.name} 님을 '${role}' 권한으로 승인했습니다`); } break;
@@ -1610,6 +1636,8 @@ async function importExcel(files) {
   confirmDlg(`<b>${what}</b> 엑셀 내용으로 사이트 데이터를 바꿉니다. ${keep}<ul style="margin:8px 0 0;padding-left:18px">${r.notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul>`, '엑셀로 바꾸기', () => sendAll(r.data));
 }
 
+function setDense(on) { document.body.classList.toggle('dense', on); const b = document.getElementById('denseBtn'); if (b) { b.setAttribute('aria-pressed', on); b.textContent = on ? '기본 크기로 보기' : '촘촘하게 보기'; } LS.set('lab_dense', on ? '1' : null); }
+setDense(LS.get('lab_dense') === '1');
 // ---------- boot ----------
 try { document.getElementById('cy').textContent = new Date().getFullYear(); } catch { }
 whoUI(); syncUI(); render();
