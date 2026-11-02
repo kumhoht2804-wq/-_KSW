@@ -1277,10 +1277,7 @@ function vDash() {
     const tot = a.reduce((s, x) => s + x.e.target, 0), dn = a.reduce((s, x) => s + x.e.done, 0), r = tot ? dn / tot : 0;
     h += `<div class="hbar"><span>${esc(t)}</span><span class="track"><i style="width:${r * 100}%;background:${r >= 1 ? 'var(--ok)' : r < .5 ? 'var(--bad)' : 'var(--warn)'}"></i></span><span class="num r">${pct(r)}</span></div>`;
   }
-  h += `</div><h3 style="font-size:13px;margin-top:6px">이수율 낮은 인원</h3><div class="tw free"><table><thead><tr><th>이름</th><th>소속</th><th>직급</th><th class="r">대상</th><th class="r">이수</th><th>이수율</th></tr></thead><tbody>`;
-  for (const x of [...es.withT].sort((a, b) => a.e.rate - b.e.rate || b.e.target - a.e.target).slice(0, 8))
-    h += `<tr><td><button class="link" data-act="person-edu" data-id="${x.p.id}" type="button">${esc(x.p.name)}</button></td><td>${esc(x.p.team)}</td><td>${esc(x.p.rank)}</td><td class="r num">${x.e.target}</td><td class="r num">${x.e.done}</td><td>${meter(x.e.rate)}</td></tr>`;
-  h += `</tbody></table></div></section></div>`;
+  h += `</div></section></div>`;
   // level criteria
   h += `<section class="card"><div class="head"><h2>종합 Level 기준</h2><span class="sub">Knowledge 50 + Skill 50 = 100점 · 등급 반영률 ${S.config.grades.slice().reverse().map(g => `${g.g} ${Math.round(g.step / S.config.grades.length * 100)}%`).join(' · ')}</span></div>
   <div class="tw free"><table><thead><tr><th>Level</th><th>숙련도</th><th class="r">종합 점수</th><th>참고 (직급·경력)</th><th>설명</th></tr></thead><tbody>${S.config.levels.map(l => `<tr><td>${lvTag(l.lv)}</td><td>${esc(l.label.replace(/\n/g, ' '))}</td><td class="r num">${l.min}점 이상</td><td>${esc((l.ref || '').replace(/\n/g, ' '))}</td><td style="white-space:normal;min-width:320px">${esc(l.desc || '').replace(/\n/g, '<br>')}</td></tr>`).join('')}</tbody></table></div></section>`;
