@@ -209,6 +209,25 @@ select.gsel{width:44px;height:28px}
 .hbar{grid-template-columns:96px 1fr 48px}
 .hbar .num.r{text-align:right}
 footer.foot{border-top:1px solid var(--line);margin-top:8px}
+/* ---- 교육 커리큘럼 ---- */
+.curri{display:grid;grid-template-columns:92px repeat(var(--n),minmax(150px,1fr));gap:6px;background:var(--surface)}
+.cr-head{}
+.cr-dept{background:var(--accent);color:#fff;font-weight:700;text-align:center;padding:8px;border-radius:6px;font-size:14px}
+.cr-stage{background:var(--sunk);border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:700;font-size:13px;text-align:center;padding:8px 4px;color:var(--ink)}
+.cr-stage small{font-weight:500;color:var(--muted);font-size:11px;margin-top:2px}
+.cr-stage.sub{background:transparent}
+.cr-cell{background:color-mix(in srgb,var(--ok-soft) 70%,var(--surface));border-radius:6px;padding:6px;display:flex;flex-direction:column;gap:5px;min-height:40px}
+.cr-common{grid-column:2 / -1;background:color-mix(in srgb,var(--accent-soft) 80%,var(--surface));border-radius:6px;padding:6px 8px;display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.cr-common b{font-size:12px;color:var(--accent);margin-right:4px}
+.cchip{display:inline-flex;align-items:center;justify-content:center;text-align:center;background:var(--surface);border:1px solid var(--line);border-radius:5px;padding:4px 8px;font-size:12.5px;line-height:1.3;word-break:keep-all}
+.cr-common .cchip{flex:0 1 auto}
+.cchip.ok{background:var(--ok-soft);border-color:var(--ok);color:var(--ok);font-weight:600}
+.cchip.miss{background:var(--bad-soft);border-color:var(--bad);color:var(--bad);font-weight:600}
+.cchip.na{opacity:.35}
+.cr-elect{display:flex;flex-direction:column;gap:6px;border-top:1px dashed var(--line);padding-top:10px}
+.cr-elect b{font-size:13px}
+.cr-elect div{display:flex;flex-wrap:wrap;gap:5px}
+body.dense .cchip{padding:3px 6px;font-size:11.5px}
 /* ---- 촘촘하게 보기 ---- */
 #denseBtn[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
 body.dense main{padding:10px 12px;gap:10px}
@@ -262,7 +281,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 연구소 역량·교육 관리 · v2026.11.02 18:31</footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 연구소 역량·교육 관리 · v2026.11.02 18:50</footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -1265,7 +1284,9 @@ function vEdu() {
   let h = `<div class="toolbar"><div class="seg" role="group" aria-label="보기">
     <button type="button" data-act="emode" data-v="matrix" aria-pressed="${ui.eduMode === 'matrix'}">부서별 수료 현황</button>
     <button type="button" data-act="emode" data-v="records" aria-pressed="${ui.eduMode === 'records'}">이수 기록</button>
+    <button type="button" data-act="emode" data-v="curri" aria-pressed="${ui.eduMode === 'curri'}">교육 커리큘럼</button>
     <button type="button" data-act="emode" data-v="guide" aria-pressed="${ui.eduMode === 'guide'}">교육 가이드</button></div>`;
+  if (ui.eduMode === 'curri') return h + vCurri();
   if (ui.eduMode === 'matrix') {
     const opts = deptOptions();
     if (!opts.includes(ui.eduDept)) { const mine = leader && S.people.find(p => p.edu && p.team === myTeam); ui.eduDept = (mine && opts.includes(mine.eduDept)) ? mine.eduDept : (LS.get('lab_edudept') && opts.includes(LS.get('lab_edudept')) ? LS.get('lab_edudept') : opts[0]); }
@@ -1317,6 +1338,39 @@ function vEdu() {
   h += `<section class="card"><div class="head"><h2>연구소 교육 가이드</h2><span class="sub">필수 ${S.courses.filter(c => c.type === '필수').length}건 · 선택 ${S.courses.filter(c => c.type === '선택').length}건</span></div><div class="tw"><table><thead><tr><th class="c">No</th><th>교육내용</th><th>교육목적</th><th>부서</th><th>직급</th><th class="c">단계</th><th class="c">구분</th><th class="r">이수 인원</th>${admin ? '<th></th>' : ''}</tr></thead><tbody>
   ${rows.map((c, i) => { const st = C.cStage(c); return `<tr><td class="c num muted">${i + 1}</td><td><b>${esc(c.name)}</b></td><td class="muted" style="white-space:normal">${esc(c.purpose)}</td><td>${esc(c.dept)}</td><td>${esc(c.rank)}</td><td class="c num">${st == null ? '<span class="tag bad">직급 표기 확인</span>' : st || '–'}</td><td class="c"><span class="tag ${c.type === '필수' ? 'ok' : ''}">${esc(c.type || '미지정')}</span></td><td class="r num">${cnt(c.id)}</td>${admin ? `<td><button type="button" class="btn sm" data-act="course-edit" data-id="${c.id}">수정</button></td>` : ''}</tr>`; }).join('')}
   </tbody></table></div></section>`;
+  return h;
+}
+// 교육 커리큘럼: 직급 단계(행) × 분야(열). 교육 가이드 데이터로 자동 구성
+function vCurri() {
+  const stages = [...S.config.guideStage].sort((a, b) => b.stage - a.stage);
+  const req = S.courses.filter(c => c.type === '필수' && C.cStage(c) != null);
+  const order = S.config.courseDeptOrder || [];
+  const depts = [...new Set(req.map(c => c.dept).filter(d => d !== '공통'))].sort((a, b) => (order.indexOf(a) + 1 || 99) - (order.indexOf(b) + 1 || 99));
+  const sel = S.people.find(p => p.id === ui.curPerson);
+  const people = C.sortEdu(S.people.filter(p => C.eduValid(p)));
+  const chip = c => {
+    let cls = '', tip = `${c.name} · ${c.dept} · ${c.rank}`;
+    if (sel) { const x = C.cell(c, sel); if (x.target || x.mark) { cls = x.mark ? 'ok' : 'miss'; tip += x.mark ? ' · 이수' : ' · 미이수'; } else cls = 'na'; }
+    else { const tgt = S.people.filter(p => C.eduValid(p) && C.cell(c, p).target), dn = tgt.filter(p => C.cell(c, p).mark).length; if (tgt.length) tip += ` · 대상 ${tgt.length}명 중 ${dn}명 이수`; }
+    return `<span class="cchip ${cls}" title="${esc(tip)}">${esc(c.name)}</span>`;
+  };
+  let h = `<label class="field"><span>개인별 이수 표시</span><select class="ci" data-act="f-curp"><option value="">선택 안 함</option>${people.map(p => `<option value="${p.id}"${p.id === ui.curPerson ? ' selected' : ''}>${esc(p.name)} · ${esc(p.team)} · ${esc(p.rank)}</option>`).join('')}</select></label>
+    ${sel ? `<span class="legend-inline"><span class="pill ok">이수</span><span class="pill miss">미이수</span><span class="muted small">흐린 칸은 ${esc(sel.name)} 님 대상이 아닌 교육</span></span>` : '<span class="muted small">교육에 마우스를 올리면 대상 인원 중 이수 인원이 보입니다</span>'}</div>`;
+  h += `<section class="card"><div class="head"><h2>연구소 교육 커리큘럼</h2><span class="sub">필수 교육 ${req.length}건 · 직급별 역할 변화에 따라 공통역량과 분야별 전문교육을 단계적으로 운영</span></div>
+    <div class="curri" style="--n:${depts.length}">
+    <div class="cr-head"></div>${depts.map(d => `<div class="cr-dept">${esc(d)}</div>`).join('')}`;
+  for (const st of stages) {
+    const L = req.filter(c => C.cStage(c) === st.stage);
+    if (!L.length) continue;
+    const common = L.filter(c => c.dept === '공통');
+    h += `<div class="cr-stage"><span>${esc(st.label.split('/').map(x => x.trim().replace(/\s*연구원$/, '') || x.trim()).join(' / '))}</span><small>${st.stage}단계</small></div>`;
+    h += depts.map(d => `<div class="cr-cell">${L.filter(c => c.dept === d).map(chip).join('')}</div>`).join('');
+    if (common.length) h += `<div class="cr-stage sub"></div><div class="cr-common"><b>공통</b>${common.map(chip).join('')}</div>`;
+  }
+  h += `</div>`;
+  const elect = S.courses.filter(c => c.type === '선택');
+  if (elect.length) h += `<div class="cr-elect"><b>선택 교육 (전 직급 공통 · ${elect.length}건)</b><div>${elect.map(c => { const cnt = Object.values(S.edu).filter(m => m[c.id]).length; let cls = ''; if (sel) cls = (S.edu[sel.id] || {})[c.id] ? 'ok' : 'na'; return `<span class="cchip ${cls}" title="${esc(c.name)} · 이수 ${cnt}명">${esc(c.name)}</span>`; }).join('')}</div></div>`;
+  h += `<p class="muted small">교육 가이드에서 교육을 추가하거나 부서·직급을 바꾸면 이 커리큘럼에 바로 반영됩니다.</p></section>`;
   return h;
 }
 function personOpts(sel) { return C.sortEdu(S.people.filter(p => p.edu && canP(p))).map(p => `<option value="${p.id}"${p.id === sel ? ' selected' : ''}>${esc(p.name)} · ${esc(p.team)}</option>`).join(''); }
@@ -1535,6 +1589,7 @@ document.addEventListener('change', e => {
   }
   else if (a === 'f-team') { ui.team = t.value; render(); }
   else if (a === 'f-lv') { ui.lv = t.value; render(); }
+  else if (a === 'f-curp') { ui.curPerson = t.value; render(); }
   else if (a === 'f-dept') { ui.eduDept = t.value; LS.set('lab_edudept', t.value); render(); }
   else if (a === 'f-gdept') { ui.guideDept = t.value; render(); }
   else if (a === 'f-gtype') { ui.guideType = t.value; render(); }
