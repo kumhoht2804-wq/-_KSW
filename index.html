@@ -447,7 +447,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.03 17:27</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.03 17:31</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -850,7 +850,37 @@ const Export = (() => {
     out.push(h);
     return out;
   }
-  return { comp, edu };
+  // 자산 보유현황 + SW 사용현황 (값만, 잠금 없음). full=false면 자산번호·자산명·취득일·관리부서만
+  function asset(S, full) {
+    const { Sheet } = XLSX, out = [];
+    const L = [...(S.asset || [])].sort((a, b) => String(b.date).localeCompare(String(a.date)) || String(a.no).localeCompare(String(b.no)));
+    const cols = full
+      ? [['No', 5], ['자산번호', 18], ['자산명', 46], ['취득일', 12], ['취득계정', 11], ['취득처', 22], ['취득수량', 9], ['취득가액', 14], ['잔존가액', 14], ['관리부서', 12], ['고정자산 유무', 9], ['장소', 8], ['위치', 14], ['비고', 30]]
+      : [['No', 5], ['자산번호', 18], ['자산명', 50], ['취득일', 12], ['관리부서', 12]];
+    const s1 = new Sheet('자산 보유현황');
+    s1.set(0, 0, '자산 보유현황', T); s1.set(0, cols.length - 2, '기준일', H2); s1.set(0, cols.length - 1, today(), BC);
+    cols.forEach(([h, w], i) => { s1.set(2, i, h, H); s1.width(i, w); });
+    const M = { border: true, h: 'right', fmt: '#,##0' };
+    L.forEach((a, r) => { const v = full ? [r + 1, a.no, a.name, a.date, a.acct, a.vendor, a.qty, a.cost, a.rest, a.dept, a.fixed, a.site, a.loc, a.note] : [r + 1, a.no, a.name, a.date, a.dept];
+      v.forEach((x, i) => s1.set(3 + r, i, x ?? '', full && (i === 7 || i === 8) ? M : (cols[i][0] === '자산명' || cols[i][0] === '취득처' || cols[i][0] === '비고') ? B : BC)); });
+    if (full && L.length) { const r = 3 + L.length; s1.set(r, 0, '합계', { ...H2 }); for (let i = 1; i < cols.length; i++) s1.set(r, i, i === 6 ? L.reduce((a, x) => a + (+x.qty || 0), 0) : i === 7 ? L.reduce((a, x) => a + (+x.cost || 0), 0) : i === 8 ? L.reduce((a, x) => a + (+x.rest || 0), 0) : '', i === 7 || i === 8 ? { ...M, bold: true, fill: 'E6EBF2' } : H2); }
+    s1.freeze = { row: 3, col: 0 };
+    out.push(s1);
+    const SW = [...(S.sw || [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    if (SW.length) {
+      const ord = S.config.teamOrder || [], teams = [...ord, ...new Set(SW.flatMap(x => Object.keys(x.use || {})).filter(t => !ord.includes(t)))].filter(t => SW.some(x => +(x.use || {})[t]));
+      const s2 = new Sheet('SW 사용현황');
+      s2.set(0, 0, 'SW 사용현황', T);
+      const hd = ['No', 'SW명', '공급사', '보유', '사용', '여유', '사용률', ...teams, '비고'];
+      hd.forEach((h, i) => { s2.set(2, i, h, H); s2.width(i, i === 1 ? 30 : i === 2 ? 16 : i === hd.length - 1 ? 24 : 11); });
+      SW.forEach((x, r) => { const n = +x.qty || 0, u = Object.values(x.use || {}).reduce((a, k) => a + (+k || 0), 0);
+        [r + 1, x.name, x.vendor || '', n, u, n - u, n ? u / n : '', ...teams.map(t => +(x.use || {})[t] || ''), x.note || ''].forEach((v, i) => s2.set(3 + r, i, v, i === 6 ? { ...BC, fmt: '0%' } : i === 1 || i === hd.length - 1 ? B : BC)); });
+      s2.freeze = { row: 3, col: 2 };
+      out.push(s2);
+    }
+    return out;
+  }
+  return { comp, edu, asset };
 })();
 if (typeof module !== 'undefined') module.exports = Export;
 
@@ -2045,7 +2075,7 @@ function vAsset() {
     ${admin && accts.length ? `<label class="field"><span>계정</span><select class="ci" data-act="f-asacct"><option value="">전체</option>${accts.map(x => `<option${x === ui.asAcct ? ' selected' : ''}>${esc(x)}</option>`).join('')}</select></label>` : ''}
     <label class="field"><span>관리부서</span><select class="ci" data-act="f-asdept"><option value="">전체</option>${depts.map(x => `<option${x === ui.asDept ? ' selected' : ''}>${esc(x)}</option>`).join('')}</select></label>
     <label class="field"><span>검색</span><input class="ci" data-act="f-asq" value="${esc(ui.asQ)}" placeholder="${admin ? '자산명·자산번호·취득처·위치' : '자산명·자산번호'}"></label>
-    <span class="spacer"></span>${admin ? '<button type="button" class="btn" data-act="as-paste">붙여넣기로 가져오기</button><button type="button" class="btn primary" data-act="as-edit">자산 추가</button>' : ''}</div>`;
+    <span class="spacer"></span>${admin || director ? '<button type="button" class="btn" data-act="as-xlsx">엑셀로 받기</button>' : ''}${admin ? '<button type="button" class="btn" data-act="as-paste">붙여넣기로 가져오기</button><button type="button" class="btn primary" data-act="as-edit">자산 추가</button>' : ''}</div>`;
   if (!L.length) return h + `<section class="card"><div class="empty">${admin ? '등록된 자산이 없습니다. 엑셀에서 표(제목 줄 포함)를 복사해 <b>붙여넣기로 가져오기</b>로 넣어 주세요.' : '등록된 자산이 없습니다.'}</div></section>`;
   if (admin) {
     const sum = (xs, k) => xs.reduce((a, x) => a + (+x[k] || 0), 0);
@@ -2069,7 +2099,7 @@ const swUsed = x => Object.values(x.use || {}).reduce((a, n) => a + (+n || 0), 0
 function vSW(aseg) {
   const T = swTeams(), L = [...S.sw].sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || String(a.name).localeCompare(String(b.name)));
   const q = ui.asQ.trim(), rows = L.filter(x => !q || String(x.name).includes(q) || String(x.vendor || '').includes(q));
-  let h = `<div class="toolbar">${aseg}<label class="field"><span>검색</span><input class="ci" data-act="f-asq" value="${esc(ui.asQ)}" placeholder="SW명"></label><span class="spacer"></span>${admin ? '<button type="button" class="btn" data-act="sw-paste">붙여넣기로 가져오기</button><button type="button" class="btn primary" data-act="sw-edit">SW 추가</button>' : ''}</div>`;
+  let h = `<div class="toolbar">${aseg}<label class="field"><span>검색</span><input class="ci" data-act="f-asq" value="${esc(ui.asQ)}" placeholder="SW명"></label><span class="spacer"></span>${admin || director ? '<button type="button" class="btn" data-act="as-xlsx">엑셀로 받기</button>' : ''}${admin ? '<button type="button" class="btn" data-act="sw-paste">붙여넣기로 가져오기</button><button type="button" class="btn primary" data-act="sw-edit">SW 추가</button>' : ''}</div>`;
   if (!L.length) return h + `<section class="card"><div class="empty">${admin ? '등록된 SW가 없습니다. <b>SW 추가</b> 또는 <b>붙여넣기로 가져오기</b>(제목 줄: SW명 · 보유 · 팀 이름들)로 넣어 주세요.' : '등록된 SW가 없습니다.'}</div></section>`;
   const own = rows.reduce((a, x) => a + (+x.qty || 0), 0), used = rows.reduce((a, x) => a + swUsed(x), 0);
   const useT = T.filter(t => rows.some(x => +(x.use || {})[t]));
@@ -2369,6 +2399,8 @@ document.addEventListener('click', e => {
     case 'pmode': ui.peopleMode = d.v; ui.q = ''; render(); break;
     case 'as-edit': if (!need()) break; asDialog(d.id); break;
     case 'asmode': ui.asMode = d.v; ui.asQ = ''; render(); break;
+    case 'as-xlsx': if (!(admin || director)) { toast('연구소장·개발실장·관리자만 받을 수 있습니다', true); break; }
+      (async () => { try { const bytes = await XLSX.build(Export.asset(S, admin), null); saveFile(`${stamp()}_연구소 자산 현황.xlsx`, new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })); } catch (e) { toast('엑셀을 만들지 못했습니다: ' + e.message, true); } })(); break;
     case 'sw-edit': if (!need()) break; swDialog(d.id); break;
     case 'sw-paste': if (!need()) break; swPasteDialog(); break;
     case 'sw-del': if (!need()) break; if (!confirm('이 SW를 삭제할까요?')) break; S.sw = S.sw.filter(x => x.id !== d.id); put('sw/' + d.id, null); closeDlg(); render(); toast('삭제했습니다'); break;
