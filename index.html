@@ -219,6 +219,9 @@ footer.foot{border-top:1px solid var(--line);margin-top:8px}
 .unit{font-size:11px;color:var(--muted);margin-left:1px}
 /* 표 정렬 원칙: 제목 줄은 가운데, 숫자·상태·날짜는 가운데, 글자는 왼쪽 */
 table thead th{text-align:center!important}
+.lvtbl{table-layout:fixed;width:100%}
+.lvtbl col{width:12%}
+.lvtbl col.w{width:52%}
 #view table td,#dlgBody table td{text-align:center}
 #view table td.l,#dlgBody table td.l{text-align:left}
 /* ---- 팀별 도넛 ---- */
@@ -329,7 +332,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.03 09:24</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.03 09:45</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -1300,6 +1303,7 @@ function eduStats() {
 }
 const LVCOL = { A: 'var(--lvA)', B: 'var(--lvB)', C: 'var(--lvC)', D: 'var(--lvD)', '미달': 'var(--lvX)' };
 const LVINK = { A: 'var(--lvAi)', B: 'var(--lvBi)', C: 'var(--lvCi)', D: 'var(--lvDi)', '미달': 'var(--lvXi)' };
+const STAY = [['연구원', 3], ['주임', 3], ['전임', 4], ['선임', 4], ['책임', 5], ['수석', 6]];
 const LVSOLID = { A: 'var(--dA)', B: 'var(--dB)', C: 'var(--dC)', D: 'var(--dD)', '미달': 'var(--dX)' };
 function stackBar(counts, total) {
   if (!total) return '<span class="muted small">평가 완료 인원 없음</span>';
@@ -1358,8 +1362,8 @@ function vDash() {
     return `<figure class="donut${gi === 0 ? ' all' : ''}">${svg}<figcaption><b>${esc(name)}</b><span>${L.length}명</span></figcaption>
       <div class="dleg"><div><span><i class="dg"></i>대상<em>${tot}</em></span><span${dn ? '' : ' class="z"'}><i style="background:${col}"></i>이수<em>${dn}</em></span></div><div><span${tot - dn ? '' : ' class="z"'}><i class="dg dd"></i>미이수<em>${tot - dn}</em></span><span${full ? '' : ' class="z"'}><i style="background:var(--dB)"></i>완료<em>${full}명</em></span></div></div></figure>`; }).join('')}</div></section></div>`;
   // level criteria
-  h += `<section class="card"><div class="head"><h2>종합 Level 기준</h2><span class="sub">Knowledge 50 + Skill 50 = 100점 · 등급 반영률 ${S.config.grades.slice().reverse().map(g => `${g.g} ${Math.round(g.step / S.config.grades.length * 100)}%`).join(' · ')}</span></div>
-  <div class="tw free"><table><thead><tr><th>Level</th><th>숙련도</th><th class="r">종합 점수</th><th>참고 (직급·경력)</th><th>설명</th></tr></thead><tbody>${S.config.levels.map(l => `<tr><td>${lvTag(l.lv)}</td><td>${esc(l.label.replace(/\n/g, ' '))}</td><td class="r num">${l.min}점 이상</td><td>${esc((l.ref || '').replace(/\n/g, ' '))}</td><td class="l" style="white-space:normal;min-width:320px">${esc(l.desc || '').replace(/\n/g, '<br>')}</td></tr>`).join('')}</tbody></table></div></section>`;
+  h += `<section class="card"><div class="head"><h2>종합 Level 기준</h2><span class="sub" style="margin-right:14px">직급별 체류기간 ${STAY.map(([r, y]) => `${r} ${y}년`).join(' · ')}</span><span class="sub">Knowledge 50 + Skill 50 = 100점 · 등급 반영률 ${S.config.grades.slice().reverse().map(g => `${g.g} ${Math.round(g.step / S.config.grades.length * 100)}%`).join(' · ')}</span></div>
+  <div class="tw free"><table class="lvtbl"><colgroup><col><col><col><col><col class="w"></colgroup><thead><tr><th>Level</th><th>숙련도</th><th>종합 점수</th><th>참고 직급</th><th>설명</th></tr></thead><tbody>${S.config.levels.map(l => `<tr><td>${lvTag(l.lv)}</td><td>${esc(l.label.replace(/\n/g, ' '))}</td><td class="num">${l.min}점 이상</td><td>${esc((l.ref || '').replace(/\n/g, ' ').replace(/\s*\d.*$/, ''))}</td><td class="l" style="white-space:normal">${esc(l.desc || '').replace(/\n/g, '<br>')}</td></tr>`).join('')}</tbody></table></div></section>`;
   return h;
 }
 
