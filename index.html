@@ -429,6 +429,7 @@ body.dense .toolbar{gap:8px}
     <nav class="tabs" id="tabs">
       <a href="#people" data-route="people">인원</a>
       <a href="#asset" data-route="asset">자산</a>
+      <a href="#sw" data-route="sw">SW</a>
       <a href="#education" data-route="education">교육</a>
       <a href="#assess" data-route="assess">역량평가</a>
       <a href="#accounts" data-route="accounts" hidden>계정 관리</a>
@@ -447,7 +448,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.03 17:31</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.03 17:34</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -851,7 +852,7 @@ const Export = (() => {
     return out;
   }
   // 자산 보유현황 + SW 사용현황 (값만, 잠금 없음). full=false면 자산번호·자산명·취득일·관리부서만
-  function asset(S, full) {
+  function asset(S, full, only) {
     const { Sheet } = XLSX, out = [];
     const L = [...(S.asset || [])].sort((a, b) => String(b.date).localeCompare(String(a.date)) || String(a.no).localeCompare(String(b.no)));
     const cols = full
@@ -865,7 +866,8 @@ const Export = (() => {
       v.forEach((x, i) => s1.set(3 + r, i, x ?? '', full && (i === 7 || i === 8) ? M : (cols[i][0] === '자산명' || cols[i][0] === '취득처' || cols[i][0] === '비고') ? B : BC)); });
     if (full && L.length) { const r = 3 + L.length; s1.set(r, 0, '합계', { ...H2 }); for (let i = 1; i < cols.length; i++) s1.set(r, i, i === 6 ? L.reduce((a, x) => a + (+x.qty || 0), 0) : i === 7 ? L.reduce((a, x) => a + (+x.cost || 0), 0) : i === 8 ? L.reduce((a, x) => a + (+x.rest || 0), 0) : '', i === 7 || i === 8 ? { ...M, bold: true, fill: 'E6EBF2' } : H2); }
     s1.freeze = { row: 3, col: 0 };
-    out.push(s1);
+    if (only !== 'sw') out.push(s1);
+    if (only === 'asset') return out;
     const SW = [...(S.sw || [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
     if (SW.length) {
       const ord = S.config.teamOrder || [], teams = [...ord, ...new Set(SW.flatMap(x => Object.keys(x.use || {})).filter(t => !ord.includes(t)))].filter(t => SW.some(x => +(x.use || {})[t]));
@@ -1442,7 +1444,7 @@ function confirmDlg(msg, okLabel, fn) {
 }
 
 // ---------- routing ----------
-const ROUTES = ['people', 'asset', 'education', 'assess', 'accounts'];
+const ROUTES = ['people', 'asset', 'sw', 'education', 'assess', 'accounts'];
 const canSet = () => admin || director || leader;   // 기준 정보 보기 · 사진 보기 (팀장 이상)
 const orgPh = () => ui.orgPhoto && canSet();
 const route = () => { let h = location.hash.slice(1);
@@ -1482,7 +1484,7 @@ function renderInner() {
   const r = route();
   let html = '';
   if ((leader || scoped) && !S.people.some(p => p.team === myTeam)) html += `<div class="notice bad">${esc(auth.user.role)} 계정의 소속이 '${esc(myTeam || '미지정')}'인데, 인원 명단에 이 소속의 인원이 없어 볼 수 있는(수정할 수 있는) 사람이 없습니다. 관리자에게 계정 소속을 명단의 팀 이름(${esc((S.config.teamOrder || []).join(', '))})과 똑같이 바꿔 달라고 하세요.</div>`;
-  html += ({ assess: vAssess, education: vEdu, people: vPeople, asset: vAsset, accounts: vAccounts })[r]();
+  html += ({ assess: vAssess, education: vEdu, people: vPeople, asset: vAsset, sw: vSW, accounts: vAccounts })[r]();
   v.innerHTML = html;
 }
 
@@ -2069,8 +2071,7 @@ function vAsset() {
   const depts = [...new Set(L.map(a => a.dept).filter(Boolean))].sort(), accts = [...new Set(L.map(a => a.acct).filter(Boolean))];
   const q = ui.asQ.trim();
   const rows = L.filter(a => (!ui.asDept || a.dept === ui.asDept) && (!ui.asAcct || a.acct === ui.asAcct) && (!q || [a.name, a.no, a.vendor, a.loc].some(v => String(v || '').includes(q))));
-  const aseg = `<div class="seg" role="group" aria-label="보기"><button type="button" data-act="asmode" data-v="list" aria-pressed="${ui.asMode === 'list'}">보유현황</button><button type="button" data-act="asmode" data-v="sw" aria-pressed="${ui.asMode === 'sw'}">SW 사용현황</button></div>`;
-  if (ui.asMode === 'sw') return vSW(aseg);
+  const aseg = `<div class="seg" role="group" aria-label="보기"><button type="button" aria-pressed="true">보유현황</button></div>`;
   let h = `<div class="toolbar">${aseg}
     ${admin && accts.length ? `<label class="field"><span>계정</span><select class="ci" data-act="f-asacct"><option value="">전체</option>${accts.map(x => `<option${x === ui.asAcct ? ' selected' : ''}>${esc(x)}</option>`).join('')}</select></label>` : ''}
     <label class="field"><span>관리부서</span><select class="ci" data-act="f-asdept"><option value="">전체</option>${depts.map(x => `<option${x === ui.asDept ? ' selected' : ''}>${esc(x)}</option>`).join('')}</select></label>
@@ -2096,7 +2097,8 @@ function vAsset() {
 // ===== SW 사용현황: 보유 라이선스 / 팀별 사용자 =====
 const swTeams = () => { const ord = S.config.teamOrder || [], extra = [...new Set(S.sw.flatMap(x => Object.keys(x.use || {})))].filter(t => !ord.includes(t)); return [...ord, ...extra]; };
 const swUsed = x => Object.values(x.use || {}).reduce((a, n) => a + (+n || 0), 0);
-function vSW(aseg) {
+function vSW() {
+  const aseg = `<div class="seg" role="group" aria-label="보기"><button type="button" aria-pressed="true">사용현황</button></div>`;
   const T = swTeams(), L = [...S.sw].sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || String(a.name).localeCompare(String(b.name)));
   const q = ui.asQ.trim(), rows = L.filter(x => !q || String(x.name).includes(q) || String(x.vendor || '').includes(q));
   let h = `<div class="toolbar">${aseg}<label class="field"><span>검색</span><input class="ci" data-act="f-asq" value="${esc(ui.asQ)}" placeholder="SW명"></label><span class="spacer"></span>${admin || director ? '<button type="button" class="btn" data-act="as-xlsx">엑셀로 받기</button>' : ''}${admin ? '<button type="button" class="btn" data-act="sw-paste">붙여넣기로 가져오기</button><button type="button" class="btn primary" data-act="sw-edit">SW 추가</button>' : ''}</div>`;
@@ -2398,9 +2400,8 @@ document.addEventListener('click', e => {
     case 'year-del': if (!need()) break; if (!confirm(`${d.v}년 마감 자료를 삭제할까요?`)) break; for (const sfx of ['', 'e', 'c']) { delete S.archive['y' + d.v + sfx]; put('archive/y' + d.v + sfx, null); } if (String(ui.eduYear) === String(d.v)) ui.eduYear = ''; render(); toast('삭제했습니다'); break;
     case 'pmode': ui.peopleMode = d.v; ui.q = ''; render(); break;
     case 'as-edit': if (!need()) break; asDialog(d.id); break;
-    case 'asmode': ui.asMode = d.v; ui.asQ = ''; render(); break;
     case 'as-xlsx': if (!(admin || director)) { toast('연구소장·개발실장·관리자만 받을 수 있습니다', true); break; }
-      (async () => { try { const bytes = await XLSX.build(Export.asset(S, admin), null); saveFile(`${stamp()}_연구소 자산 현황.xlsx`, new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })); } catch (e) { toast('엑셀을 만들지 못했습니다: ' + e.message, true); } })(); break;
+      (async () => { try { const sw = route() === 'sw', bytes = await XLSX.build(Export.asset(S, admin, sw ? 'sw' : 'asset'), null); saveFile(`${stamp()}_연구소 ${sw ? 'SW 사용현황' : '자산 보유현황'}.xlsx`, new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })); } catch (e) { toast('엑셀을 만들지 못했습니다: ' + e.message, true); } })(); break;
     case 'sw-edit': if (!need()) break; swDialog(d.id); break;
     case 'sw-paste': if (!need()) break; swPasteDialog(); break;
     case 'sw-del': if (!need()) break; if (!confirm('이 SW를 삭제할까요?')) break; S.sw = S.sw.filter(x => x.id !== d.id); put('sw/' + d.id, null); closeDlg(); render(); toast('삭제했습니다'); break;
