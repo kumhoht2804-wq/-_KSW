@@ -299,6 +299,8 @@ th.pch{box-shadow:inset 0 -3px 0 var(--pc)}
 .eqtbl{table-layout:fixed;width:100%}
 .eqtbl td{text-align:center}
 .ohc tr.hl td{background:var(--sunk)}
+.hyear{display:inline-flex;align-items:center;gap:6px}
+.hyear select{height:28px;padding:0 6px;font-size:12px}
 .ostat2{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:start}
 .oext table{width:auto;min-width:220px}
 .oext th,.oext td{min-width:92px}
@@ -428,7 +430,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.03 14:04</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.03 15:31</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -1044,9 +1046,9 @@ const LS = { get: k => { try { return localStorage.getItem(k); } catch { return 
 let API_URL = DEFAULT_API || LS.get('lab_api') || '';
 
 // ---------- state ----------
-const S = { config: null, parts: [], people: [], grades: {}, courses: [], edu: {}, history: [], items: {}, archive: {} };
+const S = { config: null, parts: [], people: [], grades: {}, courses: [], edu: {}, history: [], items: {}, archive: {}, hr: [] };
 let C = null, admin = false, editor = false, leader = false, myTeam = '', offline = false, loadedOnce = false, auth = null;
-const ui = { assessMode: 'sum', part: null, eduMode: 'sum', eduYear: '', peopleMode: 'org', orgPhoto: LS.get('lab_orgphoto') !== '0', eduDept: '', q: '', team: '', lv: '', guideDept: '', guideType: '', setPart: null, drafts: {}, users: [], lockSet: false, setup: false, signup: false, signupDone: '' };
+const ui = { assessMode: 'sum', part: null, eduMode: 'sum', eduYear: '', hrYear: '', hrSt: '재직', hrTeam: '', hrQ: '', peopleMode: 'org', orgPhoto: LS.get('lab_orgphoto') !== '0', eduDept: '', q: '', team: '', lv: '', guideDept: '', guideType: '', setPart: null, drafts: {}, users: [], lockSet: false, setup: false, signup: false, signupDone: '' };
 try { auth = JSON.parse(LS.get('lab_auth') || 'null'); } catch { auth = null; }
 
 function rebuild() {
@@ -1075,7 +1077,7 @@ async function api(action, payload) {
   return d;
 }
 function applyDocs(docs) {
-  const by = { config: null, parts: [], people: [], grades: {}, courses: [], edu: {}, history: [], archive: {} };
+  const by = { config: null, parts: [], people: [], grades: {}, courses: [], edu: {}, history: [], archive: {}, hr: [] };
   for (const [path, data] of Object.entries(docs)) {
     const [col, id] = path.split('/');
     if (col === 'config') { if (id === 'main') by.config = { id, ...data }; }
@@ -1215,7 +1217,7 @@ function startSession(d) {
 function logout(silent) {
   if (auth && !silent) api('logout').catch(() => { });
   auth = null; LS.set('lab_auth', null); setRole(); ui.drafts = {}; ui.users = []; usersLoaded = false;
-  Object.assign(S, { config: null, parts: [], people: [], grades: {}, courses: [], edu: {}, history: [], archive: {} }); C = null; loadedOnce = false;
+  Object.assign(S, { config: null, parts: [], people: [], grades: {}, courses: [], edu: {}, history: [], archive: {}, hr: [] }); C = null; loadedOnce = false;
   whoUI(); syncUI(); checkSetup(); render();
 }
 async function checkSetup() {
@@ -1722,8 +1724,10 @@ function personIssues(p) {
   return out;
 }
 function vPeople() {
-  const seg = `<div class="seg" role="group" aria-label="보기"><button type="button" data-act="pmode" data-v="org" aria-pressed="${ui.peopleMode === 'org'}">조직도·현황</button><button type="button" data-act="pmode" data-v="list" aria-pressed="${ui.peopleMode === 'list'}">명단</button></div>`;
+  const seg = `<div class="seg" role="group" aria-label="보기"><button type="button" data-act="pmode" data-v="org" aria-pressed="${ui.peopleMode === 'org'}">조직도·현황</button><button type="button" data-act="pmode" data-v="list" aria-pressed="${ui.peopleMode === 'list'}">명단</button>${admin ? `<button type="button" data-act="pmode" data-v="hr" aria-pressed="${ui.peopleMode === 'hr'}">인사 기록</button>` : ''}</div>`;
+  if (ui.peopleMode === 'hr' && !admin) ui.peopleMode = 'org';
   if (ui.peopleMode === 'org') return vOrg(seg);
+  if (ui.peopleMode === 'hr') return vHR(seg);
   let h = `<div class="toolbar">${seg}<label class="field"><span>검색</span><input class="ci" data-act="f-q" value="${esc(ui.q)}" placeholder="이름·소속"></label><span class="spacer"></span>${admin ? '<button type="button" class="btn primary" data-act="person-edit">인원 추가</button>' : ''}</div>`;
   const mm = admin ? eduMismatch() : [];
   if (mm.length) h += `<div class="notice warn">평가 파트와 교육 상세부서가 맞지 않는 인원 ${mm.length}명: ${mm.map(p => `<b>${esc(p.name)}</b> (평가 ${esc(p.cat)} → 교육 ${esc(p.eduDept)})`).join(', ')}${admin ? ` <button type="button" class="btn sm primary" data-act="fix-edudept">평가 파트에 맞추기</button>` : ''}</div>`;
@@ -1883,13 +1887,20 @@ function vOrg(seg) {
   const sg = g => g == null ? '<td class="num muted">–</td>' : `<td class="num${g < 0 ? ' neg' : ''}">${g > 0 ? '+' + g : g}</td>`;
   const sumOf = (xs, f) => { const v = xs.map(x => val(x.k, f)).filter(v => v != null); return v.length ? v.reduce((a, b) => a + b, 0) : null; };
   const gapOf = xs => { const w = xs.filter(x => val(x.k, 'to') != null); return w.length ? w.reduce((a, x) => a + x.n - val(x.k, 'to'), 0) : null; };
+  if (admin) hrSync();
+  const hst = (admin && S.hr.length) ? hrCalc() : (o.hrStats || {}), hasH = Object.keys(hst).length;
+  const hy = String(ui.hrYear || new Date().getFullYear());
+  const hv = (t, f) => t ? (((hst[hy] || {})[t] || {})[f] || 0) : null;
   const ROWS = [['현원', null], ['TO', 'to'], ['TO 대비', 'gap'], ['퇴사', 'out'], ['충원', 'in']];
-  const body = (xs, withTotal) => ROWS.map(([lb, f]) => `<tr${f ? '' : ' class="hl"'}>${withTotal ? `<td>${lb}</td>` : ''}${withTotal ? (f === null ? `<td class="num"><b>${xs.reduce((a, x) => a + x.n, 0)}</b></td>` : f === 'gap' ? sg(gapOf(xs)) : num(sumOf(xs, f))) : ''}${xs.map(x => f === null ? `<td class="num"><b>${x.n}</b></td>` : f === 'gap' ? sg(gapOf([x])) : num(val(x.k, f))).join('')}</tr>`).join('');
+  const grp = xs => xs.reduce((a, x) => { const l = a.at(-1); if (l && l.t === (x.t || null) && x.t) l.n++; else a.push({ t: x.t || null, n: 1 }); return a; }, []);
+  const hrRow = (xs, f, withTotal) => { const G = grp(xs), tot = [...new Set(xs.map(x => x.t).filter(Boolean))].reduce((a, t) => a + hv(t, f), 0);
+    return (withTotal ? `<td class="num${f === 'out' && tot ? ' neg' : ''}">${tot}</td>` : '') + G.map(g => g.t ? `<td class="num${f === 'out' && hv(g.t, f) ? ' neg' : ''}" colspan="${g.n}">${hv(g.t, f) || '<span class="muted">0</span>'}</td>` : `<td class="num muted" colspan="${g.n}">–</td>`).join(''); };
+  const body = (xs, withTotal) => ROWS.map(([lb, f]) => `<tr${f ? '' : ' class="hl"'}>${withTotal ? `<td>${lb}</td>` : ''}${(f === 'out' || f === 'in') && hasH ? hrRow(xs, f, withTotal) : (withTotal ? (f === null ? `<td class="num"><b>${xs.reduce((a, x) => a + x.n, 0)}</b></td>` : f === 'gap' ? sg(gapOf(xs)) : num(sumOf(xs, f))) : '') + xs.map(x => f === null ? `<td class="num"><b>${x.n}</b></td>` : f === 'gap' ? sg(gapOf([x])) : num(val(x.k, f))).join('')}</tr>`).join('');
   const mcols = mainT.flatMap(t => parts(t).map(c => ({ t, c, k: t + '|' + c, n: L.filter(p => p.team === t && p.cat === c).length })));
-  const ecols = units.flatMap(u => [...teams.filter(t => (u.teams || []).includes(t)).flatMap(t => parts(t).map(c => ({ u, c, k: t + '|' + c, n: L.filter(p => p.team === t && p.cat === c).length }))),
+  const ecols = units.flatMap(u => [...teams.filter(t => (u.teams || []).includes(t)).flatMap(t => parts(t).map(c => ({ u, t, c, k: t + '|' + c, n: L.filter(p => p.team === t && p.cat === c).length }))),
     ...(extMembers(u).length ? [{ u, c: u.part || u.name, k: 'ext:' + u.name, n: extMembers(u).length }] : [])]);
   const ecolsU = units.map(u => ({ u, xs: ecols.filter(x => x.u === u) })).filter(g => g.xs.length);
-  h += `<section class="card"><div class="head"><h2>팀·파트별 인원 현황</h2><span class="sub">${esc(o.year || String(new Date().getFullYear()))}년</span></div><div class="ostat2">
+  h += `<section class="card"><div class="head"><h2>팀·파트별 인원 현황</h2>${hasH ? (() => { const ys = [...new Set([...Object.keys(hst), String(new Date().getFullYear())])].sort().reverse().slice(0, 6); return `<span class="hyear"><span class="sub">퇴사·충원</span><select class="ci" data-act="f-hryear">${ys.map(y => `<option${y === hy ? ' selected' : ''} value="${y}">${y}년</option>`).join('')}</select></span>`; })() : `<span class="sub">${esc(o.year || String(new Date().getFullYear()))}년</span>`}</div><div class="ostat2">
     <div class="tw free"><table class="eqtbl ohc"><thead>
     <tr><th rowspan="2">구분</th><th rowspan="2">합계</th>${mainT.map(t => `<th colspan="${parts(t).length}">${esc(t)}</th>`).join('')}</tr>
     <tr>${mcols.map(x => `<th class="pch pc${pidx(x.c)}">${esc(x.c)}</th>`).join('')}</tr></thead><tbody>${body(mcols, true)}</tbody></table></div>
@@ -1918,10 +1929,109 @@ function orgDialog() {
       <div class="field">명단의 팀 포함<div class="chk">${teams.map(t => `<label><input type="checkbox" name="u${i}-t-${esc(t)}"${(u.teams || []).includes(t) ? ' checked' : ''}> ${esc(t)}</label>`).join(' ')}</div></div>
       <label class="field">추가 파트명<input name="u${i}-part" value="${esc(u.part || '')}" placeholder="예: SW개발"></label>
       <label class="field" style="grid-column:span 2">추가 인원 (한 줄에 한 명 · 이름 직급)<textarea name="u${i}-members" rows="3" placeholder="이승우 수석&#10;정종의 수석">${esc(u.members || '')}</textarea></label></fieldset>`).join('')}
-    <h3 class="fsec">팀·파트별 TO · 퇴사 · 충원</h3>
-    <div style="grid-column:1/-1" class="tw free"><table class="eqtbl"><thead><tr><th>팀</th><th>파트</th><th>TO</th><th>퇴사</th><th>충원</th></tr></thead><tbody>
-      ${[...cols, ...o.exts.filter(u => u.name && extMembers(u).length).map(u => 'ext:' + u.name)].map(k => { const [t, c] = k.startsWith('ext:') ? [k.slice(4), (o.exts.find(u => 'ext:' + u.name === k) || {}).part || k.slice(4)] : k.split('|'); return `<tr><td>${esc(t)}</td><td>${esc(c)}</td>${['to', 'out', 'in'].map(f => `<td><input class="ci onum" type="number" min="0" name="n-${f}-${esc(k)}" value="${nv(k, f)}"></td>`).join('')}</tr>`; }).join('')}</tbody></table></div>
+    <h3 class="fsec">${S.hr.length ? '팀·파트별 TO' : '팀·파트별 TO · 퇴사 · 충원'}</h3>
+    <div style="grid-column:1/-1" class="tw free"><table class="eqtbl"><thead><tr><th>팀</th><th>파트</th>${S.hr.length ? '<th>TO</th>' : '<th>TO</th><th>퇴사</th><th>충원</th>'}</tr></thead><tbody>
+      ${[...cols, ...o.exts.filter(u => u.name && extMembers(u).length).map(u => 'ext:' + u.name)].map(k => { const [t, c] = k.startsWith('ext:') ? [k.slice(4), (o.exts.find(u => 'ext:' + u.name === k) || {}).part || k.slice(4)] : k.split('|'); return `<tr><td>${esc(t)}</td><td>${esc(c)}</td>${(S.hr.length ? ['to'] : ['to', 'out', 'in']).map(f => `<td><input class="ci onum" type="number" min="0" name="n-${f}-${esc(k)}" value="${nv(k, f)}"></td>`).join('')}</tr>`; }).join('')}</tbody></table></div>
     <div style="grid-column:1/-1;display:flex;gap:8px;justify-content:flex-end"><button type="button" class="btn" data-act="close">취소</button><button class="btn primary" type="submit">저장</button></div></form>`, true);
+}
+// ===== 인사 기록 (관리자 전용: 서버가 관리자에게만 보냄) =====
+const nkey = v => String(v || '').replace(/\s+/g, '');
+const hrStatus = h => h.moved ? '부서변동' : h.leave ? '퇴사' : '재직';
+const HR_HEADS = ['연구소장', '개발실장'];   // 조직도 책임자 (명단 밖)
+function hrLink(h) {
+  return S.people.find(p => nkey(p.name) === nkey(h.name)) || (h.join && S.people.find(p => p.team === h.team && p.join === h.join && p.rank === h.pos)) || null;
+}
+function hrTeams() { const ts = [...new Set(S.hr.map(h => h.team).filter(Boolean))]; const ord = S.config.teamOrder || []; return ts.sort((a, b) => (ord.indexOf(a) + 1 || 90 + (a === '모듈개발연구소' ? -50 : 0)) - (ord.indexOf(b) + 1 || 90 + (b === '모듈개발연구소' ? -50 : 0)) || a.localeCompare(b)); }
+// {연도: {팀: {in, out}}}
+function hrCalc() {
+  const st = {};
+  const add = (y, t, f) => { if (!y) return; ((st[y] = st[y] || {})[t] = st[y][t] || { in: 0, out: 0 })[f]++; };
+  for (const h of S.hr) { add(String(h.join || '').slice(0, 4), h.team, 'in'); if (h.leave) add(String(h.leave).slice(0, 4), h.team, 'out'); }
+  return st;
+}
+function hrActiveAt(dt) { return S.hr.filter(h => !h.moved && h.join && h.join <= dt && (!h.leave || h.leave > dt)); }
+function hrSync() {   // 관리자: 연도별 입·퇴사 집계를 조직 설정에 보관 (다른 계정은 집계만 봄)
+  if (!admin || !S.hr.length) return;
+  const o = orgCfg(), st = hrCalc();
+  if (JSON.stringify(o.hrStats || {}) !== JSON.stringify(st)) { o.hrStats = st; saveOrg(); }
+}
+function vHR(seg) {
+  const cur = new Date().getFullYear(), teams = hrTeams(), st = hrCalc();
+  const ys = Object.keys(st).map(Number).filter(y => y >= cur - 5 && y <= cur).sort();
+  let h = `<div class="toolbar">${seg}<label class="field"><span>상태</span><select class="ci" data-act="f-hrst">${['재직', '퇴사', '부서변동', '전체'].map(x => `<option${x === ui.hrSt ? ' selected' : ''}>${x}</option>`).join('')}</select></label>
+    <label class="field"><span>부서</span><select class="ci" data-act="f-hrteam"><option value="">전체</option>${teams.map(t => `<option${t === ui.hrTeam ? ' selected' : ''}>${esc(t)}</option>`).join('')}</select></label>
+    <label class="field"><span>검색</span><input class="ci" data-act="f-hrq" value="${esc(ui.hrQ)}" placeholder="이름·학교·전공"></label>
+    <span class="spacer"></span><button type="button" class="btn" data-act="hr-paste">붙여넣기로 가져오기</button><button type="button" class="btn primary" data-act="hr-edit">인원 추가</button></div>`;
+  if (!S.hr.length) return h + `<section class="card"><div class="empty">인사 기록이 없습니다. 엑셀에서 표(제목 줄 포함)를 복사해 <b>붙여넣기로 가져오기</b>로 넣어 주세요.</div></section>`;
+  // 연도별 입·퇴사
+  const cell = (y, t, f) => ((st[y] || {})[t] || {})[f] || 0;
+  h += `<section class="card"><div class="head"><h2>연도별 입·퇴사 현황</h2><span class="sub">최근 ${ys.length}년</span></div><div class="tw free"><table class="eqtbl ohc"><thead>
+    <tr><th rowspan="2">연도</th>${teams.map(t => `<th colspan="2">${esc(t)}</th>`).join('')}<th colspan="4">합계</th></tr>
+    <tr>${teams.map(() => '<th>입사</th><th>퇴사</th>').join('')}<th>입사</th><th>퇴사</th><th>증감</th><th>연말 인원</th></tr></thead><tbody>
+    ${ys.map(y => { const I = teams.reduce((a, t) => a + cell(y, t, 'in'), 0), O = teams.reduce((a, t) => a + cell(y, t, 'out'), 0), g = I - O, end = hrActiveAt(y === cur ? today() : y + '-12-31').length;
+      return `<tr><td><b>${y}</b>${y === cur ? ' <span class="muted small">진행 중</span>' : ''}</td>${teams.map(t => { const a = cell(y, t, 'in'), b = cell(y, t, 'out'); return `<td class="num${a ? '' : ' muted'}">${a || '–'}</td><td class="num${b ? ' neg' : ' muted'}">${b || '–'}</td>`; }).join('')}<td class="num"><b>${I}</b></td><td class="num${O ? ' neg' : ''}"><b>${O}</b></td><td class="num${g < 0 ? ' neg' : ''}">${g > 0 ? '+' + g : g}</td><td class="num"><b>${end}</b></td></tr>`; }).join('')}
+  </tbody></table></div>${S.hr.some(x => x.moved) ? `<div class="small muted">부서변동 ${S.hr.filter(x => x.moved).length}명은 날짜가 없어 연말 인원에서 빠집니다.</div>` : ''}</section>`;
+  // 명단과 맞춰 보기
+  const act = S.hr.filter(x => hrStatus(x) === '재직');
+  const noRoster = act.filter(x => !HR_HEADS.includes(x.pos) && !hrLink(x));
+  const noHr = S.people.filter(p => !act.some(x => hrLink(x) === p));
+  const leftIn = S.hr.filter(x => hrStatus(x) !== '재직' && hrLink(x) && !act.some(a => hrLink(a) === hrLink(x)));
+  const joinDiff = act.map(x => [x, hrLink(x)]).filter(([x, p]) => p && x.join && p.join !== x.join);
+  const iss = [];
+  if (noRoster.length) iss.push(`재직 중인데 인원 명단에 없음 ${noRoster.length}명: ${noRoster.map(x => `<b>${esc(x.name)}</b> (${esc(x.team)})`).join(', ')}`);
+  if (noHr.length) iss.push(`인원 명단에 있는데 재직 인사 기록이 없음 ${noHr.length}명: ${noHr.map(p => `<b>${esc(p.name)}</b> (${esc(p.team)})`).join(', ')}`);
+  if (leftIn.length) iss.push(`퇴사·부서변동인데 인원 명단에 남아 있음 ${leftIn.length}명: ${leftIn.map(x => `<b>${esc(x.name)}</b> (${esc(x.leave || '부서변동')})`).join(', ')}`);
+  if (joinDiff.length) iss.push(`명단 입사일과 발령일이 다름 ${joinDiff.length}명: ${joinDiff.map(([x, p]) => `<b>${esc(x.name)}</b> ${esc(p.join || '–')} → ${esc(x.join)}`).join(', ')} <button type="button" class="btn sm primary" data-act="hr-joinfix">명단 입사일을 발령일로 맞추기</button>`);
+  if (iss.length) h += `<div class="notice warn">${iss.join('<br>')}</div>`;
+  // 목록
+  const q = ui.hrQ.trim();
+  const rows = S.hr.filter(x => (ui.hrSt === '전체' || hrStatus(x) === ui.hrSt) && (!ui.hrTeam || x.team === ui.hrTeam) && (!q || [x.name, x.school, x.major, x.pos].some(v => String(v || '').includes(q))))
+    .sort((a, b) => (teams.indexOf(a.team) - teams.indexOf(b.team)) || ((S.config.rankOrder.indexOf(a.pos) + 1 || (HR_HEADS.includes(a.pos) ? 0 : 99)) - (S.config.rankOrder.indexOf(b.pos) + 1 || (HR_HEADS.includes(b.pos) ? 0 : 99))) || String(a.join).localeCompare(String(b.join)));
+  const yrs = (a, b) => { if (!a) return '–'; const d = (new Date(b || today()) - new Date(a)) / 31557600000; return d < 0 ? '–' : `${fmt1(d)}<span class="unit">년</span>`; };
+  h += `<section class="card"><div class="head"><h2>인사 기록</h2><span class="sub">${rows.length}명 · 전체 ${S.hr.length}명 (재직 ${act.length})</span></div><div class="tw"><table><thead><tr><th class="c">No</th><th>이름</th><th>구분</th><th>직위</th><th>부서</th><th>최종학교</th><th>전공</th><th>학위</th><th>발령일</th><th>퇴사일</th><th>근속</th><th>상태</th><th>명단</th><th></th></tr></thead><tbody>
+    ${rows.map((x, i) => { const s2 = hrStatus(x); return `<tr${s2 !== '재직' ? ' class="muted"' : ''}><td class="c num muted">${i + 1}</td><td><b>${esc(x.name)}</b></td><td>${esc(x.kind || '–')}</td><td>${esc(x.pos)}</td><td>${esc(x.team)}</td><td class="l">${esc(x.school || '–')}</td><td class="l">${esc(x.major || '–')}</td><td>${esc(x.degree || '–')}</td><td class="num">${esc(x.join || '–')}</td><td class="num">${esc(x.leave || (x.moved ? '부서변동' : '–'))}</td><td class="num">${x.moved ? '–' : yrs(x.join, x.leave)}</td><td><span class="tag ${s2 === '재직' ? 'ok' : s2 === '퇴사' ? 'bad' : ''}">${s2}</span></td><td>${hrLink(x) ? '●' : '<span class="muted">–</span>'}</td><td><button type="button" class="btn sm" data-act="hr-edit" data-id="${x.id}">수정</button></td></tr>`; }).join('')}
+  </tbody></table></div></section>`;
+  return h;
+}
+function hrDialog(id) {
+  const x = S.hr.find(r => r.id === id) || { name: '', kind: '전담연구원', pos: '연구원', team: S.config.teamOrder[0], school: '', major: '', degree: '학사', join: today(), leave: '', moved: false };
+  const stv = x.moved ? '부서변동' : x.leave ? '퇴사' : '재직';
+  const dl = (nm, arr) => `<datalist id="${nm}">${[...new Set(arr.filter(Boolean))].map(v => `<option value="${esc(v)}">`).join('')}</datalist>`;
+  openDlg(`<h2>${id ? '인사 기록 수정' : '인사 기록 추가'}</h2><form class="form" data-form="hr" data-id="${id || ''}" style="grid-template-columns:1fr 1fr 1fr">
+    <label class="field">이름<input name="name" value="${esc(x.name)}" required></label>
+    <label class="field">구분<input name="kind" list="dlKind" value="${esc(x.kind || '')}">${dl('dlKind', ['전담연구원', '연구보조원', '기업부설연구기관장', ...S.hr.map(r => r.kind)])}</label>
+    <label class="field">직위<input name="pos" list="dlPos" value="${esc(x.pos || '')}">${dl('dlPos', [...S.config.rankOrder, ...HR_HEADS, ...S.hr.map(r => r.pos)])}</label>
+    <label class="field">부서<input name="team" list="dlTeam" value="${esc(x.team || '')}">${dl('dlTeam', [...S.config.teamOrder, ...S.hr.map(r => r.team)])}</label>
+    <label class="field">최종학교<input name="school" value="${esc(x.school || '')}"></label>
+    <label class="field">전공<input name="major" value="${esc(x.major || '')}"></label>
+    <label class="field">최종학위<input name="degree" list="dlDeg" value="${esc(x.degree || '')}">${dl('dlDeg', ['전문학사', '학사', '석사', '박사', '졸업예정'])}</label>
+    <label class="field">발령일<input type="date" name="join" value="${esc(x.join || '')}"></label>
+    <label class="field">상태<select name="st">${['재직', '퇴사', '부서변동'].map(v => `<option${v === stv ? ' selected' : ''}>${v}</option>`).join('')}</select></label>
+    <label class="field">퇴사일 (퇴사일 때)<input type="date" name="leave" value="${esc(x.leave || '')}"></label>
+    <div class="err" id="hrerr" style="grid-column:1/-1"></div>
+    <div class="actions" style="grid-column:1/-1">${id ? `<button type="button" class="btn danger" data-act="hr-del" data-id="${id}">삭제</button><span class="spacer"></span>` : ''}<button type="button" class="btn" data-act="close">취소</button><button class="btn primary" type="submit">저장</button></div></form>`, true);
+}
+const HR_COLS = { name: ['이름', '성명'], kind: ['전담여부', '구분'], pos: ['직위', '직급'], team: ['부서', '소속'], school: ['최종학교명', '학교', '최종학교'], major: ['전공'], degree: ['최종학위', '학위'], join: ['발령일', '입사일'], leave: ['퇴사일'] };
+function hrParse(text) {
+  const lines = String(text || '').replace(/\r/g, '').split('\n').filter(l => l.trim());
+  if (!lines.length) throw new Error('붙여넣은 내용이 없습니다');
+  const hd = lines[0].split('\t').map(v => v.trim()), idx = {};
+  for (const [k, names] of Object.entries(HR_COLS)) idx[k] = hd.findIndex(v => names.includes(v));
+  if (idx.name < 0 || idx.join < 0) throw new Error('제목 줄(이름 · 발령일 등)까지 같이 복사해 주세요');
+  const day = v => { v = String(v || '').trim().replace(/[./]/g, '-'); const m = v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/); return m ? `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}` : ''; };
+  return lines.slice(1).map(l => l.split('\t')).map(c => { const g = k => idx[k] >= 0 ? String(c[idx[k]] ?? '').trim() : ''; const lv = g('leave');
+    return { name: g('name').replace(/\s{2,}/g, ' '), kind: g('kind'), pos: g('pos'), team: g('team'), school: g('school'), major: g('major'), degree: g('degree'), join: day(g('join')), leave: day(lv), moved: !!lv && !day(lv) && /변동|전출|이동/.test(lv) }; })
+    .filter(r => r.name);
+}
+function hrPasteDialog() {
+  openDlg(`<h2>인사 기록 붙여넣기</h2><form class="form" data-form="hrpaste" style="grid-template-columns:1fr">
+    <label class="field">엑셀에서 제목 줄(연번 · 이름 · 전담여부 · 직위 · 부서 · 최종학교명 · 전공 · 최종학위 · 발령일 · 퇴사일)부터 표 전체를 복사해 붙여넣기<textarea name="t" rows="12" style="width:100%;font:12px var(--font-num);border:1px solid var(--line);border-radius:6px;padding:8px" placeholder="여기에 Ctrl+V" required></textarea></label>
+    <div class="small muted">지금 인사 기록 ${S.hr.length}명을 붙여넣은 표로 <b>모두 바꿉니다</b>. 인원 명단·역량평가·교육 기록은 그대로입니다.</div>
+    <div class="err" id="hperr"></div>
+    <div class="actions"><span class="spacer"></span><button type="button" class="btn" data-act="close">취소</button><button class="btn primary" type="submit">가져오기</button></div></form>`, true);
+}
+async function putBatch(ops) {   // 여러 문서를 한 번에 저장 (40건씩)
+  for (let i = 0; i < ops.length; i += 40) await api('put', { ops: ops.slice(i, i + 40) });
 }
 function personDialog(id) {
   const p = S.people.find(x => x.id === id) || { team: S.config.teamOrder[0], name: '', rank: '연구원', cat: S.config.partOrder[0], eduDept: S.config.eduDeptMap[0]?.dept, edu: true, join: today(), note: '' };
@@ -2060,6 +2170,10 @@ document.addEventListener('click', e => {
     case 'year-view': ui.eduYear = d.v; ui.eduMode = 'sum'; render(); break;
     case 'year-del': if (!need()) break; if (!confirm(`${d.v}년 마감 자료를 삭제할까요?`)) break; for (const sfx of ['', 'e', 'c']) { delete S.archive['y' + d.v + sfx]; put('archive/y' + d.v + sfx, null); } if (String(ui.eduYear) === String(d.v)) ui.eduYear = ''; render(); toast('삭제했습니다'); break;
     case 'pmode': ui.peopleMode = d.v; ui.q = ''; render(); break;
+    case 'hr-edit': if (!need()) break; hrDialog(d.id); break;
+    case 'hr-paste': if (!need()) break; hrPasteDialog(); break;
+    case 'hr-del': if (!need()) break; if (!confirm('이 인사 기록을 삭제할까요?')) break; S.hr = S.hr.filter(x => x.id !== d.id); put('hr/' + d.id, null); closeDlg(); hrSync(); render(); toast('삭제했습니다'); break;
+    case 'hr-joinfix': if (!need()) break; { let n = 0; for (const x of S.hr) { if (hrStatus(x) !== '재직') continue; const p = hrLink(x); if (p && x.join && p.join !== x.join) { p.join = x.join; const { id, ...doc } = p; put('people/' + id, doc); n++; } } render(); toast(`${n}명의 입사일을 맞췄습니다`); break; }
     case 'org-photo': ui.orgPhoto = !ui.orgPhoto; LS.set('lab_orgphoto', ui.orgPhoto ? '1' : '0'); render(); break;
     case 'photo-pick': if (!need()) break; photoDialog(d.id); break;
     case 'photo-file': if (!need()) break; pickPhoto(d.id); break;
@@ -2123,6 +2237,9 @@ document.addEventListener('change', e => {
   else if (a === 'f-team') { ui.team = t.value; render(); }
   else if (a === 'f-lv') { ui.lv = t.value; render(); }
   else if (a === 'f-curp') { ui.curPerson = t.value; render(); }
+  else if (a === 'f-hrst') { ui.hrSt = t.value; render(); }
+  else if (a === 'f-hrteam') { ui.hrTeam = t.value; render(); }
+  else if (a === 'f-hryear') { ui.hrYear = t.value; render(); }
   else if (a === 'f-eyear') { ui.eduYear = t.value; render(); }
   else if (a === 'f-dept') { ui.eduDept = t.value; LS.set('lab_edudept', t.value); render(); }
   else if (a === 'f-gdept') { ui.guideDept = t.value; render(); }
@@ -2143,6 +2260,7 @@ document.addEventListener('change', e => {
 });
 let qTimer;
 document.addEventListener('input', e => {
+  if (e.target.dataset.act === 'f-hrq') { clearTimeout(qTimer); const v = e.target.value; qTimer = setTimeout(() => { ui.hrQ = v; const pos = e.target.selectionStart; render(); const el = document.querySelector('[data-act="f-hrq"]'); if (el) { el.focus(); el.setSelectionRange(pos, pos); } }, 250); }
   if (e.target.dataset.act === 'f-q') { clearTimeout(qTimer); const v = e.target.value; qTimer = setTimeout(() => { ui.q = v; const pos = e.target.selectionStart; render(); const el = document.querySelector('[data-act="f-q"]'); if (el) { el.focus(); el.setSelectionRange(pos, pos); } }, 250); }
 });
 document.addEventListener('submit', e => {
@@ -2175,6 +2293,23 @@ document.addEventListener('submit', e => {
     const name = v.name.trim(); if (!name || S.parts.find(p => p.name === name)) { toast('이미 있는 파트입니다', true); return; }
     const id = uid('pt'); const order = S.config.partOrder.indexOf(name); const doc = { name, order: order < 0 ? 99 : order, items: [] };
     S.parts.push({ id, ...doc }); put('parts/' + id, doc); ui.setPart = id; rebuild(); closeDlg(); render();
+  } else if (f.dataset.form === 'hr') {
+    if (!v.name.trim()) { $('#hrerr').textContent = '이름을 입력해 주세요.'; return; }
+    if (v.st === '퇴사' && !v.leave) { $('#hrerr').textContent = '퇴사일을 입력해 주세요.'; return; }
+    const id = f.dataset.id || uid('h'), old = S.hr.find(x => x.id === id);
+    const doc = { name: v.name.trim(), kind: v.kind.trim(), pos: v.pos.trim(), team: v.team.trim(), school: v.school.trim(), major: v.major.trim(), degree: v.degree.trim(), join: v.join || '', leave: v.st === '퇴사' ? v.leave : '', moved: v.st === '부서변동' };
+    if (old) Object.assign(old, doc); else S.hr.push({ id, ...doc });
+    put('hr/' + id, doc); closeDlg(); hrSync(); render(); toast('인사 기록을 저장했습니다');
+  } else if (f.dataset.form === 'hrpaste') {
+    let rows; try { rows = hrParse(v.t); } catch (x) { $('#hperr').textContent = x.message; return; }
+    if (!rows.length) { $('#hperr').textContent = '읽을 수 있는 줄이 없습니다.'; return; }
+    if (!confirm(`${rows.length}명(재직 ${rows.filter(r => !r.leave && !r.moved).length}명)으로 인사 기록을 모두 바꿀까요?`)) return;
+    const ops = [...S.hr.map(x => ({ path: 'hr/' + x.id, data: null }))];
+    const next = rows.map((r, i) => ({ id: 'h' + Date.now().toString(36) + i.toString(36).padStart(3, '0'), ...r }));
+    for (const x of next) { const { id, ...doc } = x; ops.push({ path: 'hr/' + id, data: doc }); }
+    const btn = f.querySelector('button[type=submit]'); btn.disabled = true; btn.textContent = '저장 중…';
+    putBatch(ops).then(() => { S.hr = next; closeDlg(); hrSync(); render(); toast(`인사 기록 ${next.length}명을 저장했습니다`); })
+      .catch(x => { btn.disabled = false; btn.textContent = '가져오기'; $('#hperr').textContent = '저장하지 못했습니다: ' + x.message; });
   } else if (f.dataset.form === 'org') {
     const o = orgCfg(); o.head = v.head.trim(); o.dev = v.dev.trim(); o.year = v.year.trim();
     for (const t of S.config.teamOrder) if (('lead-' + t) in v) o.leaders[t] = v['lead-' + t];
@@ -2191,7 +2326,7 @@ document.addEventListener('submit', e => {
 
 // ---------- export ----------
 function snapshotData() {
-  return { version: 1, exported: new Date().toISOString(), config: (({ id, ...c }) => c)(S.config), parts: S.parts, people: S.people, grades: S.grades, courses: S.courses, edu: S.edu, history: S.history, archive: S.archive };
+  return { version: 1, exported: new Date().toISOString(), config: (({ id, ...c }) => c)(S.config), parts: S.parts, people: S.people, grades: S.grades, courses: S.courses, edu: S.edu, history: S.history, archive: S.archive, hr: S.hr };
 }
 function saveFile(filename, data) {
   const url = URL.createObjectURL(data instanceof Blob ? data : new Blob([data], { type: 'application/json' }));
@@ -2229,6 +2364,7 @@ function docsFromData(data) {
   for (const c of data.courses) docs['courses/' + c.id] = strip(c);
   for (const [k, r] of Object.entries(data.edu || {})) docs['edu/' + k] = { r };
   for (const h of data.history || []) docs['history/' + h.id] = strip(h);
+  for (const h of data.hr || []) docs['hr/' + h.id] = strip(h);
   for (const [k, v] of Object.entries(data.archive || {})) if (/^y\d{4}[ec]?$/.test(k)) docs['archive/' + k] = v;
   return docs;
 }
