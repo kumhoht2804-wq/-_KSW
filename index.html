@@ -425,6 +425,7 @@ body.dense .toolbar{gap:8px}
     <div class="brand"><b>연구소 역량·교육 관리</b><span>역량평가 · 교육 수료 현황</span></div>
     <nav class="tabs" id="tabs">
       <a href="#people" data-route="people">인원</a>
+      <a href="#asset" data-route="asset">자산</a>
       <a href="#education" data-route="education">교육</a>
       <a href="#assess" data-route="assess">역량평가</a>
       <a href="#accounts" data-route="accounts" hidden>계정 관리</a>
@@ -443,7 +444,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.03 16:27</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.03 16:30</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -1059,9 +1060,9 @@ const LS = { get: k => { try { return localStorage.getItem(k); } catch { return 
 let API_URL = DEFAULT_API || LS.get('lab_api') || '';
 
 // ---------- state ----------
-const S = { config: null, parts: [], people: [], grades: {}, courses: [], edu: {}, history: [], items: {}, archive: {}, hr: [] };
+const S = { config: null, parts: [], people: [], grades: {}, courses: [], edu: {}, history: [], items: {}, archive: {}, hr: [], asset: [] };
 let C = null, admin = false, editor = false, leader = false, myTeam = '', offline = false, loadedOnce = false, auth = null;
-const ui = { assessMode: 'sum', part: null, eduMode: 'sum', eduYear: '', hrYear: '', hrSt: '재직', hrTeam: '', hrQ: '', peopleMode: 'org', orgPhoto: LS.get('lab_orgphoto') !== '0', eduDept: '', q: '', team: '', lv: '', guideDept: '', guideType: '', setPart: null, drafts: {}, users: [], lockSet: false, setup: false, signup: false, signupDone: '' };
+const ui = { assessMode: 'sum', part: null, eduMode: 'sum', eduYear: '', asAcct: '', asDept: '', asQ: '', hrYear: '', hrSt: '재직', hrTeam: '', hrQ: '', peopleMode: 'org', orgPhoto: LS.get('lab_orgphoto') !== '0', eduDept: '', q: '', team: '', lv: '', guideDept: '', guideType: '', setPart: null, drafts: {}, users: [], lockSet: false, setup: false, signup: false, signupDone: '' };
 try { auth = JSON.parse(LS.get('lab_auth') || 'null'); } catch { auth = null; }
 
 function rebuild() {
@@ -1090,7 +1091,7 @@ async function api(action, payload) {
   return d;
 }
 function applyDocs(docs) {
-  const by = { config: null, parts: [], people: [], grades: {}, courses: [], edu: {}, history: [], archive: {}, hr: [] };
+  const by = { config: null, parts: [], people: [], grades: {}, courses: [], edu: {}, history: [], archive: {}, hr: [], asset: [] };
   for (const [path, data] of Object.entries(docs)) {
     const [col, id] = path.split('/');
     if (col === 'config') { if (id === 'main') by.config = { id, ...data }; }
@@ -1120,7 +1121,7 @@ async function reload(manual) {
     // 받아오는 사이에 수정이 있었으면 이 응답은 예전 값이라 버리고 잠시 뒤 다시 받음
     if (seq !== writeSeq || busy || Date.now() - lastWrite < 3000) { loading = false; syncUI(); setTimeout(() => reload(), 4000); return; }
     applyDocs(d.docs);
-    if (admin && !busy) { freezeAuto(); initDelivery(); }
+    if (admin && !busy) { freezeAuto(); initDelivery(); initFsCourses(); }
     if (admin) for (const [pid, m] of Object.entries(S.edu)) if (Object.values(m).some(r => r && r.date)) { const m2 = {}; for (const [k, r] of Object.entries(m)) m2[k] = { note: r.note || '' }; S.edu[pid] = m2; put('edu/' + pid, { r: m2 }); } loadedOnce = true; offline = false; if (admin) loadUsers(true); if (manual) toast('최신 데이터로 새로 고쳤습니다'); }
   catch (e) { if (!e.auth) { offline = true; toast('서버에서 데이터를 받지 못했습니다: ' + e.message, true); } }
   loading = false; syncUI(); schedule();
@@ -1159,6 +1160,33 @@ function initDelivery() {
   for (const c of S.courses) { if (c.delivery) continue; c.delivery = (c.dept === '공통' && c.type === '필수' && C.cStage(c) === 1) ? '사내' : '사외'; const { id, ...doc } = c; ops.push({ path: 'courses/' + id, data: doc }); }
   S.config.deliveryInit = true; const { id, ...body } = S.config; ops.push({ path: 'config/main', data: body });
   putBatch(ops).then(() => { toast(`교육 ${ops.length - 1}건에 사내/사외를 처음 지정했습니다 (1단계 공통 = 사내)`); render(); }).catch(e => { S.config.deliveryInit = false; toast('사내/사외 지정 저장 실패: ' + e.message, true); });
+}
+// 기능안전 교육 과정 추가 (관리자 접속 시 1회) + 기능안전 인원은 기능안전 교육을 따름
+const FS_COURSES = [
+  ['책임/선임 연구원', '코칭·교육 기법', '현업 교육 과정 설계, 질문 기반 코칭, 산출물 피드백 방법, 심사 인터뷰 대비 코칭 방법론'],
+  ['책임/선임 연구원', '조직 표준 프로세스 체계 수립', 'PA 3.1/3.2 요구사항, 표준 프로세스와 테일러링 가이드라인, 프로세스 자산 라이브러리 구성'],
+  ['책임/선임 연구원', '기능안전 관리 체계 수립', '기능안전 관리 프로세스, 안전 계획·안전 사례(Safety Case) 구조, 확인 수단 계획과 독립성 체계'],
+  ['전임/주임 연구원', '요구사항 기반 템플릿 설계', '템플릿 구조와 설계 근거, 필수 작성 항목, 작성 가이드·예시 작성'],
+  ['전임/주임 연구원', '리뷰·검증 가이드 설계', 'ISO 26262 ASIL 등급별 검증·리뷰 기법, Review Report·체크리스트 설계 원칙'],
+  ['전임/주임 연구원', '기능안전 분석 방법론', 'HARA·FMEA(DFMEA)·FTA·DFA 방법론과 수행 가이드·판단 기준 정의'],
+  ['사원/연구원', 'ASPICE 기초', 'ASPICE 기본 개념, PAM 구조, Outcome·BP·GP 관계, Capability Level, 프로세스 흐름·R&R(RASIC), 입출력·진입/완료 기준'],
+  ['사원/연구원', 'ISO 26262 기초', 'ISO 26262 기본 개념, ASIL별 요구 수준, 필요 산출물'],
+  ['사원/연구원', '팀 표준 자산 이해', '사내 템플릿 체계와 구조, 형상 관리·추적성 규칙, 개정 이력 관리'],
+];
+function initFsCourses() {
+  if (!S.config || S.config.fsInit || !C) return;
+  const ops = []; let ord = Math.max(0, ...S.courses.map(c => c.order || 0));
+  for (const [rank, name, purpose] of FS_COURSES) {
+    if (S.courses.some(c => c.dept === '기능안전' && c.name === name)) continue;
+    const id = uid('c'), doc = { name, purpose, dept: '기능안전', rank, type: '필수', delivery: '사외', order: ++ord };
+    S.courses.push({ id, ...doc }); ops.push({ path: 'courses/' + id, data: doc });
+  }
+  const cfg = S.config, o = cfg.courseDeptOrder || (cfg.courseDeptOrder = []);
+  if (!o.includes('기능안전')) { const i = o.indexOf('SW'); o.splice(i < 0 ? o.length : i + 1, 0, '기능안전'); }
+  const m = (cfg.eduDeptMap || []).find(x => x.dept === '기능안전'); if (m) m.edu = '기능안전'; else (cfg.eduDeptMap = cfg.eduDeptMap || []).push({ dept: '기능안전', edu: '기능안전' });
+  cfg.fsInit = true; const { id, ...body } = cfg; ops.push({ path: 'config/main', data: body });
+  rebuild();
+  putBatch(ops).then(() => { toast(`기능안전 교육 ${ops.length - 1}건을 커리큘럼에 추가했습니다`); render(); }).catch(e => { cfg.fsInit = false; toast('기능안전 교육 추가 저장 실패: ' + e.message, true); });
 }
 // 교안 파일: 서버(구글 드라이브)에 올리고, 열 때는 로그인한 사람만 받아 감
 const fmtSize = n => n > 1048576 ? (n / 1048576).toFixed(1) + 'MB' : Math.max(1, Math.round(n / 1024)) + 'KB';
@@ -1263,7 +1291,7 @@ function startSession(d) {
 function logout(silent) {
   if (auth && !silent) api('logout').catch(() => { });
   auth = null; LS.set('lab_auth', null); setRole(); ui.drafts = {}; ui.users = []; usersLoaded = false;
-  Object.assign(S, { config: null, parts: [], people: [], grades: {}, courses: [], edu: {}, history: [], archive: {}, hr: [] }); C = null; loadedOnce = false;
+  Object.assign(S, { config: null, parts: [], people: [], grades: {}, courses: [], edu: {}, history: [], archive: {}, hr: [], asset: [] }); C = null; loadedOnce = false;
   whoUI(); syncUI(); checkSetup(); render();
 }
 async function checkSetup() {
@@ -1381,7 +1409,7 @@ function confirmDlg(msg, okLabel, fn) {
 }
 
 // ---------- routing ----------
-const ROUTES = ['people', 'education', 'assess', 'accounts'];
+const ROUTES = ['people', 'asset', 'education', 'assess', 'accounts'];
 const canSet = () => admin || director || leader;   // 기준 정보 보기 · 사진 보기 (팀장 이상)
 const orgPh = () => ui.orgPhoto && canSet();
 const route = () => { let h = location.hash.slice(1);
@@ -1421,7 +1449,7 @@ function renderInner() {
   const r = route();
   let html = '';
   if ((leader || scoped) && !S.people.some(p => p.team === myTeam)) html += `<div class="notice bad">${esc(auth.user.role)} 계정의 소속이 '${esc(myTeam || '미지정')}'인데, 인원 명단에 이 소속의 인원이 없어 볼 수 있는(수정할 수 있는) 사람이 없습니다. 관리자에게 계정 소속을 명단의 팀 이름(${esc((S.config.teamOrder || []).join(', '))})과 똑같이 바꿔 달라고 하세요.</div>`;
-  html += ({ assess: vAssess, education: vEdu, people: vPeople, accounts: vAccounts })[r]();
+  html += ({ assess: vAssess, education: vEdu, people: vPeople, asset: vAsset, accounts: vAccounts })[r]();
   v.innerHTML = html;
 }
 
@@ -1988,6 +2016,65 @@ function orgDialog() {
       ${[...cols, ...o.exts.filter(u => u.name && extMembers(u).length).map(u => 'ext:' + u.name)].map(k => { const [t, c] = k.startsWith('ext:') ? [k.slice(4), (o.exts.find(u => 'ext:' + u.name === k) || {}).part || k.slice(4)] : k.split('|'); return `<tr><td>${esc(t)}</td><td>${esc(c)}</td>${(S.hr.length ? ['to'] : ['to', 'out', 'in']).map(f => `<td><input class="ci onum" type="number" min="0" name="n-${f}-${esc(k)}" value="${nv(k, f)}"></td>`).join('')}</tr>`; }).join('')}</tbody></table></div>
     <div style="grid-column:1/-1;display:flex;gap:8px;justify-content:flex-end"><button type="button" class="btn" data-act="close">취소</button><button class="btn primary" type="submit">저장</button></div></form>`, true);
 }
+// ===== 자산 보유현황 (관리자 외에는 서버가 자산명·취득일·관리부서만 보냄) =====
+const won = n => n == null || n === '' ? '–' : Number(n).toLocaleString();
+const AS_COLS = { no: ['자산번호'], name: ['자산명'], date: ['취득일'], acct: ['취득계정'], vendor: ['취득처'], qty: ['취득수량', '수량'], cost: ['취득가액'], rest: ['잔존가액'], dept: ['관리부서'], fixed: ['고정자산 유무', '고정자산'], site: ['장소'], loc: ['위치'], note: ['비고'] };
+function asParse(text) {
+  const lines = String(text || '').replace(/\r/g, '').split('\n').filter(l => l.trim());
+  if (!lines.length) throw new Error('붙여넣은 내용이 없습니다');
+  const hd = lines[0].split('\t').map(v => v.trim()), idx = {};
+  for (const [k, names] of Object.entries(AS_COLS)) idx[k] = hd.findIndex(v => names.includes(v));
+  if (idx.name < 0 || idx.date < 0) throw new Error('제목 줄(자산번호 · 자산명 · 취득일 등)까지 같이 복사해 주세요');
+  const num = v => { v = String(v || '').replace(/[,\s원]/g, ''); return v === '' || isNaN(+v) ? null : +v; };
+  const day = v => { v = String(v || '').trim().replace(/[./]/g, '-'); const m = v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/); return m ? `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}` : v; };
+  return lines.slice(1).map(l => l.split('\t')).map(c => { const g = k => idx[k] >= 0 ? String(c[idx[k]] ?? '').trim() : '';
+    return { no: g('no'), name: g('name'), date: day(g('date')), acct: g('acct'), vendor: g('vendor'), qty: num(g('qty')), cost: num(g('cost')), rest: num(g('rest')), dept: g('dept'), fixed: g('fixed'), site: g('site'), loc: g('loc'), note: g('note') }; })
+    .filter(r => r.name);
+}
+function vAsset() {
+  const L = [...S.asset].sort((a, b) => String(b.date).localeCompare(String(a.date)) || String(a.no).localeCompare(String(b.no)));
+  const depts = [...new Set(L.map(a => a.dept).filter(Boolean))].sort(), accts = [...new Set(L.map(a => a.acct).filter(Boolean))];
+  const q = ui.asQ.trim();
+  const rows = L.filter(a => (!ui.asDept || a.dept === ui.asDept) && (!ui.asAcct || a.acct === ui.asAcct) && (!q || [a.name, a.no, a.vendor, a.loc].some(v => String(v || '').includes(q))));
+  let h = `<div class="toolbar"><div class="seg" role="group" aria-label="보기"><button type="button" aria-pressed="true">보유현황</button></div>
+    ${admin && accts.length ? `<label class="field"><span>계정</span><select class="ci" data-act="f-asacct"><option value="">전체</option>${accts.map(x => `<option${x === ui.asAcct ? ' selected' : ''}>${esc(x)}</option>`).join('')}</select></label>` : ''}
+    <label class="field"><span>관리부서</span><select class="ci" data-act="f-asdept"><option value="">전체</option>${depts.map(x => `<option${x === ui.asDept ? ' selected' : ''}>${esc(x)}</option>`).join('')}</select></label>
+    <label class="field"><span>검색</span><input class="ci" data-act="f-asq" value="${esc(ui.asQ)}" placeholder="${admin ? '자산명·자산번호·취득처·위치' : '자산명'}"></label>
+    <span class="spacer"></span>${admin ? '<button type="button" class="btn" data-act="as-paste">붙여넣기로 가져오기</button><button type="button" class="btn primary" data-act="as-edit">자산 추가</button>' : ''}</div>`;
+  if (!L.length) return h + `<section class="card"><div class="empty">${admin ? '등록된 자산이 없습니다. 엑셀에서 표(제목 줄 포함)를 복사해 <b>붙여넣기로 가져오기</b>로 넣어 주세요.' : '등록된 자산이 없습니다.'}</div></section>`;
+  if (admin) {
+    const sum = (xs, k) => xs.reduce((a, x) => a + (+x[k] || 0), 0);
+    h += `<div class="kpis"><div class="kpi"><span class="k">보유 자산</span><span class="v">${rows.length}<small>건</small></span></div>
+      <div class="kpi"><span class="k">수량</span><span class="v">${sum(rows, 'qty')}<small>개</small></span></div>
+      <div class="kpi"><span class="k">취득가액 합계</span><span class="v">${won(sum(rows, 'cost'))}<small>원</small></span></div>
+      <div class="kpi"><span class="k">잔존가액 합계</span><span class="v">${won(sum(rows, 'rest'))}<small>원</small></span></div></div>`;
+    h += `<section class="card"><div class="head"><h2>자산 보유현황</h2><span class="sub">${rows.length}건 / 전체 ${L.length}건</span></div><div class="tw"><table><thead><tr><th class="c">No</th><th>자산번호</th><th>자산명</th><th>취득일</th><th>취득계정</th><th>취득처</th><th>수량</th><th>취득가액</th><th>잔존가액</th><th>관리부서</th><th>고정자산</th><th>장소</th><th>위치</th><th>비고</th><th></th></tr></thead><tbody>
+      ${rows.map((a, i) => `<tr><td class="c num muted">${i + 1}</td><td class="num">${esc(a.no || '–')}</td><td class="l"><b>${esc(a.name)}</b></td><td class="num">${esc(a.date || '–')}</td><td>${esc(a.acct || '–')}</td><td class="l">${esc(a.vendor || '–')}</td><td class="num">${a.qty ?? '–'}</td><td class="num">${won(a.cost)}</td><td class="num">${won(a.rest)}</td><td>${esc(a.dept || '–')}</td><td>${esc(a.fixed || '–')}</td><td>${esc(a.site || '–')}</td><td>${esc(a.loc || '–')}</td><td class="l muted" style="white-space:normal;min-width:120px">${esc(a.note || '')}</td><td><button type="button" class="btn sm" data-act="as-edit" data-id="${a.id}">수정</button></td></tr>`).join('')}
+      </tbody></table></div></section>`;
+  } else {
+    h += `<section class="card"><div class="head"><h2>자산 보유현황</h2><span class="sub">${rows.length}건</span></div><div class="tw"><table class="eqtbl" style="table-layout:auto"><thead><tr><th class="c">No</th><th>자산명</th><th>취득일</th><th>관리부서</th></tr></thead><tbody>
+      ${rows.map((a, i) => `<tr><td class="c num muted">${i + 1}</td><td class="l"><b>${esc(a.name)}</b></td><td class="num">${esc(a.date || '–')}</td><td>${esc(a.dept || '–')}</td></tr>`).join('')}
+      </tbody></table></div></section>`;
+  }
+  return h;
+}
+function asDialog(id) {
+  const a = S.asset.find(x => x.id === id) || { no: '', name: '', date: today(), acct: '비품', vendor: '', qty: 1, cost: null, rest: null, dept: '연구소', fixed: 'O', site: '광주', loc: '', note: '' };
+  const f = (k, label, type = 'text', extra = '') => `<label class="field">${label}<input name="${k}" type="${type}" value="${esc(a[k] ?? '')}" ${extra}></label>`;
+  openDlg(`<h2>${id ? '자산 수정' : '자산 추가'}</h2><form class="form" data-form="asset" data-id="${id || ''}" style="grid-template-columns:1fr 1fr 1fr">
+    ${f('no', '자산번호')}<label class="field" style="grid-column:span 2">자산명<input name="name" value="${esc(a.name)}" required></label>
+    ${f('date', '취득일', 'date')}${f('acct', '취득계정', 'text', 'list="dlAcct"')}<datalist id="dlAcct"><option value="비품"><option value="공구와기구"></datalist>${f('vendor', '취득처')}
+    ${f('qty', '취득수량', 'number', 'min="0"')}${f('cost', '취득가액 (원)', 'number', 'min="0"')}${f('rest', '잔존가액 (원)', 'number', 'min="0"')}
+    ${f('dept', '관리부서')}<label class="field">고정자산<select name="fixed">${['O', 'X'].map(v => `<option${v === a.fixed ? ' selected' : ''}>${v}</option>`).join('')}</select></label>${f('site', '장소')}
+    ${f('loc', '위치')}<label class="field" style="grid-column:span 2">비고<input name="note" value="${esc(a.note || '')}"></label>
+    <div class="actions" style="grid-column:1/-1">${id ? `<button type="button" class="btn danger" data-act="as-del" data-id="${id}">삭제</button><span class="spacer"></span>` : ''}<button type="button" class="btn" data-act="close">취소</button><button class="btn primary" type="submit">저장</button></div></form>`, true);
+}
+function asPasteDialog() {
+  openDlg(`<h2>자산 붙여넣기</h2><form class="form" data-form="aspaste" style="grid-template-columns:1fr">
+    <label class="field">엑셀에서 제목 줄(자산번호 · 자산명 · 취득일 · … · 비고)부터 표 전체를 복사해 붙여넣기<textarea name="t" rows="12" style="width:100%;font:12px var(--font-num);border:1px solid var(--line);border-radius:6px;padding:8px" placeholder="여기에 Ctrl+V" required></textarea></label>
+    <div class="small muted">지금 자산 ${S.asset.length}건을 붙여넣은 표로 <b>모두 바꿉니다</b>.</div><div class="err" id="aperr"></div>
+    <div class="actions"><span class="spacer"></span><button type="button" class="btn" data-act="close">취소</button><button class="btn primary" type="submit">가져오기</button></div></form>`, true);
+}
 // ===== 인사 기록 (관리자 전용: 서버가 관리자에게만 보냄) =====
 const nkey = v => String(v || '').replace(/\s+/g, '');
 const hrStatus = h => h.moved ? '부서변동' : h.leave ? '퇴사' : '재직';
@@ -2224,6 +2311,9 @@ document.addEventListener('click', e => {
     case 'year-view': ui.eduYear = d.v; ui.eduMode = 'sum'; render(); break;
     case 'year-del': if (!need()) break; if (!confirm(`${d.v}년 마감 자료를 삭제할까요?`)) break; for (const sfx of ['', 'e', 'c']) { delete S.archive['y' + d.v + sfx]; put('archive/y' + d.v + sfx, null); } if (String(ui.eduYear) === String(d.v)) ui.eduYear = ''; render(); toast('삭제했습니다'); break;
     case 'pmode': ui.peopleMode = d.v; ui.q = ''; render(); break;
+    case 'as-edit': if (!need()) break; asDialog(d.id); break;
+    case 'as-paste': if (!need()) break; asPasteDialog(); break;
+    case 'as-del': if (!need()) break; if (!confirm('이 자산을 삭제할까요?')) break; S.asset = S.asset.filter(x => x.id !== d.id); put('asset/' + d.id, null); closeDlg(); render(); toast('삭제했습니다'); break;
     case 'course-info': courseInfo(d.id); break;
     case 'file-open': { const c = S.courses.find(x => x.id === d.id); if (c) openFile(c.file); break; }
     case 'cfile-del': if (!need()) break; $('#cfile').value = 'null'; $('#cfileName').innerHTML = '<span class="muted">없음</span>'; t.hidden = true; break;
@@ -2303,6 +2393,8 @@ document.addEventListener('change', e => {
   else if (a === 'f-team') { ui.team = t.value; render(); }
   else if (a === 'f-lv') { ui.lv = t.value; render(); }
   else if (a === 'f-curp') { ui.curPerson = t.value; render(); }
+  else if (a === 'f-asacct') { ui.asAcct = t.value; render(); }
+  else if (a === 'f-asdept') { ui.asDept = t.value; render(); }
   else if (a === 'f-hrst') { ui.hrSt = t.value; render(); }
   else if (a === 'f-hrteam') { ui.hrTeam = t.value; render(); }
   else if (a === 'f-hryear') { ui.hrYear = t.value; render(); }
@@ -2326,6 +2418,7 @@ document.addEventListener('change', e => {
 });
 let qTimer;
 document.addEventListener('input', e => {
+  if (e.target.dataset.act === 'f-asq') { clearTimeout(qTimer); const v = e.target.value; qTimer = setTimeout(() => { ui.asQ = v; const pos = e.target.selectionStart; render(); const el = document.querySelector('[data-act="f-asq"]'); if (el) { el.focus(); el.setSelectionRange(pos, pos); } }, 250); }
   if (e.target.dataset.act === 'f-hrq') { clearTimeout(qTimer); const v = e.target.value; qTimer = setTimeout(() => { ui.hrQ = v; const pos = e.target.selectionStart; render(); const el = document.querySelector('[data-act="f-hrq"]'); if (el) { el.focus(); el.setSelectionRange(pos, pos); } }, 250); }
   if (e.target.dataset.act === 'f-q') { clearTimeout(qTimer); const v = e.target.value; qTimer = setTimeout(() => { ui.q = v; const pos = e.target.selectionStart; render(); const el = document.querySelector('[data-act="f-q"]'); if (el) { el.focus(); el.setSelectionRange(pos, pos); } }, 250); }
 });
@@ -2362,6 +2455,21 @@ document.addEventListener('submit', e => {
     const name = v.name.trim(); if (!name || S.parts.find(p => p.name === name)) { toast('이미 있는 파트입니다', true); return; }
     const id = uid('pt'); const order = S.config.partOrder.indexOf(name); const doc = { name, order: order < 0 ? 99 : order, items: [] };
     S.parts.push({ id, ...doc }); put('parts/' + id, doc); ui.setPart = id; rebuild(); closeDlg(); render();
+  } else if (f.dataset.form === 'asset') {
+    const id = f.dataset.id || uid('a'), old = S.asset.find(x => x.id === id), n = k => v[k] === '' ? null : +v[k];
+    const doc = { no: v.no.trim(), name: v.name.trim(), date: v.date || '', acct: v.acct.trim(), vendor: v.vendor.trim(), qty: n('qty'), cost: n('cost'), rest: n('rest'), dept: v.dept.trim(), fixed: v.fixed, site: v.site.trim(), loc: v.loc.trim(), note: v.note.trim() };
+    if (old) Object.assign(old, doc); else S.asset.push({ id, ...doc });
+    put('asset/' + id, doc); closeDlg(); render(); toast('자산을 저장했습니다');
+  } else if (f.dataset.form === 'aspaste') {
+    let rows; try { rows = asParse(v.t); } catch (x) { $('#aperr').textContent = x.message; return; }
+    if (!rows.length) { $('#aperr').textContent = '읽을 수 있는 줄이 없습니다.'; return; }
+    if (!confirm(`자산 ${rows.length}건으로 모두 바꿀까요?`)) return;
+    const ops = S.asset.map(x => ({ path: 'asset/' + x.id, data: null }));
+    const next = rows.map((r, i) => ({ id: 'a' + Date.now().toString(36) + i.toString(36).padStart(3, '0'), ...r }));
+    for (const x of next) { const { id, ...doc } = x; ops.push({ path: 'asset/' + id, data: doc }); }
+    const btn = f.querySelector('button[type=submit]'); btn.disabled = true; btn.textContent = '저장 중…';
+    putBatch(ops).then(() => { S.asset = next; closeDlg(); render(); toast(`자산 ${next.length}건을 저장했습니다`); })
+      .catch(x => { btn.disabled = false; btn.textContent = '가져오기'; $('#aperr').textContent = '저장하지 못했습니다: ' + x.message; });
   } else if (f.dataset.form === 'hr') {
     if (!v.name.trim()) { $('#hrerr').textContent = '이름을 입력해 주세요.'; return; }
     if (v.st === '퇴사' && !v.leave) { $('#hrerr').textContent = '퇴사일을 입력해 주세요.'; return; }
@@ -2395,7 +2503,7 @@ document.addEventListener('submit', e => {
 
 // ---------- export ----------
 function snapshotData() {
-  return { version: 1, exported: new Date().toISOString(), config: (({ id, ...c }) => c)(S.config), parts: S.parts, people: S.people, grades: S.grades, courses: S.courses, edu: S.edu, history: S.history, archive: S.archive, hr: S.hr };
+  return { version: 1, exported: new Date().toISOString(), config: (({ id, ...c }) => c)(S.config), parts: S.parts, people: S.people, grades: S.grades, courses: S.courses, edu: S.edu, history: S.history, archive: S.archive, hr: S.hr, asset: S.asset };
 }
 function saveFile(filename, data) {
   const url = URL.createObjectURL(data instanceof Blob ? data : new Blob([data], { type: 'application/json' }));
@@ -2434,6 +2542,7 @@ function docsFromData(data) {
   for (const [k, r] of Object.entries(data.edu || {})) docs['edu/' + k] = { r };
   for (const h of data.history || []) docs['history/' + h.id] = strip(h);
   for (const h of data.hr || []) docs['hr/' + h.id] = strip(h);
+  for (const a of data.asset || []) docs['asset/' + a.id] = strip(a);
   for (const [k, v] of Object.entries(data.archive || {})) if (/^y\d{4}[ec]?$/.test(k)) docs['archive/' + k] = v;
   return docs;
 }
