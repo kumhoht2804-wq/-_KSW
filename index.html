@@ -303,6 +303,9 @@ th.pch{box-shadow:inset 0 -3px 0 var(--pc)}
 .swbar i{display:block;background:var(--pc);min-width:2px}
 .swbar i.free{background:var(--sunk)}
 .swt td .small{font-size:10.5px}
+.swk{display:flex;flex-wrap:wrap;gap:2px 8px;margin-top:3px;font-size:10.5px;color:var(--muted)}
+.swk span{display:inline-flex;align-items:center;gap:3px}
+.swk i{width:7px;height:7px;border-radius:2px;background:var(--pc)}
 .legend i.pc0,.legend i.pc1,.legend i.pc2,.legend i.pc3,.legend i.pc4,.legend i.pc5,.legend i.pc6,.legend i.pc7,.legend i.pc8,.legend i.pc9{background:var(--pc)}
 .hyear{display:inline-flex;align-items:center;gap:6px}
 .hyear select{height:28px;padding:0 6px;font-size:12px}
@@ -448,7 +451,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.03 17:34</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.03 17:40</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -869,15 +872,17 @@ const Export = (() => {
     if (only !== 'sw') out.push(s1);
     if (only === 'asset') return out;
     const SW = [...(S.sw || [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-    if (SW.length) {
+    if (SW.length && only !== 'asset') {
       const ord = S.config.teamOrder || [], teams = [...ord, ...new Set(SW.flatMap(x => Object.keys(x.use || {})).filter(t => !ord.includes(t)))].filter(t => SW.some(x => +(x.use || {})[t]));
       const s2 = new Sheet('SW 사용현황');
       s2.set(0, 0, 'SW 사용현황', T);
-      const hd = ['No', 'SW명', '공급사', '보유', '사용', '여유', '사용률', ...teams, '비고'];
-      hd.forEach((h, i) => { s2.set(2, i, h, H); s2.width(i, i === 1 ? 30 : i === 2 ? 16 : i === hd.length - 1 ? 24 : 11); });
+      const hd = ['No', '사용처', 'SW명', '보유 수량', '라이선스', '계약 시작', '계약 종료', '업체명', ...(full ? ['금액'] : []), '사용자', '사용률', ...teams, '비고'];
+      hd.forEach((h, i) => { s2.set(2, i, h, H); s2.width(i, h === 'SW명' ? 34 : h === '업체명' ? 20 : h === '비고' ? 22 : h === '금액' ? 14 : h.startsWith('계약') ? 12 : 10); });
+      const M = { border: true, h: 'right', fmt: '#,##0' };
       SW.forEach((x, r) => { const n = +x.qty || 0, u = Object.values(x.use || {}).reduce((a, k) => a + (+k || 0), 0);
-        [r + 1, x.name, x.vendor || '', n, u, n - u, n ? u / n : '', ...teams.map(t => +(x.use || {})[t] || ''), x.note || ''].forEach((v, i) => s2.set(3 + r, i, v, i === 6 ? { ...BC, fmt: '0%' } : i === 1 || i === hd.length - 1 ? B : BC)); });
-      s2.freeze = { row: 3, col: 2 };
+        const v = [r + 1, x.owner || '', x.name, n, x.lic || '', x.start || '', x.end || '', x.vendor || '', ...(full ? [x.cost ?? ''] : []), u || '', n && u ? u / n : '', ...teams.map(t => +(x.use || {})[t] || ''), x.note || ''];
+        v.forEach((val, i) => s2.set(3 + r, i, val, hd[i] === '금액' ? M : hd[i] === '사용률' ? { ...BC, fmt: '0%' } : ['SW명', '업체명', '비고'].includes(hd[i]) ? B : BC)); });
+      s2.freeze = { row: 3, col: 3 };
       out.push(s2);
     }
     return out;
@@ -1097,7 +1102,7 @@ let API_URL = DEFAULT_API || LS.get('lab_api') || '';
 // ---------- state ----------
 const S = { config: null, parts: [], people: [], grades: {}, courses: [], edu: {}, history: [], items: {}, archive: {}, hr: [], asset: [], sw: [] };
 let C = null, admin = false, editor = false, leader = false, myTeam = '', offline = false, loadedOnce = false, auth = null;
-const ui = { assessMode: 'sum', part: null, eduMode: 'sum', eduYear: '', asMode: 'list', asAcct: '', asDept: '', asQ: '', hrYear: '', hrSt: '재직', hrTeam: '', hrQ: '', peopleMode: 'org', orgPhoto: LS.get('lab_orgphoto') !== '0', eduDept: '', q: '', team: '', lv: '', guideDept: '', guideType: '', setPart: null, drafts: {}, users: [], lockSet: false, setup: false, signup: false, signupDone: '' };
+const ui = { assessMode: 'sum', part: null, eduMode: 'sum', eduYear: '', asMode: 'list', swOwner: '', swLic: '', asAcct: '', asDept: '', asQ: '', hrYear: '', hrSt: '재직', hrTeam: '', hrQ: '', peopleMode: 'org', orgPhoto: LS.get('lab_orgphoto') !== '0', eduDept: '', q: '', team: '', lv: '', guideDept: '', guideType: '', setPart: null, drafts: {}, users: [], lockSet: false, setup: false, signup: false, signupDone: '' };
 try { auth = JSON.parse(LS.get('lab_auth') || 'null'); } catch { auth = null; }
 
 function rebuild() {
@@ -2095,55 +2100,79 @@ function vAsset() {
   return h;
 }
 // ===== SW 사용현황: 보유 라이선스 / 팀별 사용자 =====
+// 엑셀에서 복사한 표(탭 구분) 읽기: 줄바꿈이 든 칸은 "…"로 묶여 옴
+function readTsv(text) {
+  const rows = []; let row = [], cell = '', q = false; const t = String(text || '').replace(/\r/g, '');
+  for (let i = 0; i < t.length; i++) { const ch = t[i];
+    if (q) { if (ch === '"') { if (t[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += ch; continue; }
+    if (ch === '"' && cell === '') { q = true; continue; }
+    if (ch === '\t') { row.push(cell); cell = ''; continue; }
+    if (ch === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; continue; }
+    cell += ch; }
+  if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
+  return rows.filter(r => r.some(c => String(c).trim())).map(r => r.map(c => String(c).replace(/\s*\n\s*/g, ' ').trim()));
+}
+const ymd = v => { v = String(v || '').trim(); const m = v.match(/^(\d{2,4})\s*[.\-/]\s*(\d{1,2})\s*[.\-/]\s*(\d{1,2})/); if (!m) return ''; const y = m[1].length === 2 ? '20' + m[1] : m[1]; return `${y}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`; };
 const swTeams = () => { const ord = S.config.teamOrder || [], extra = [...new Set(S.sw.flatMap(x => Object.keys(x.use || {})))].filter(t => !ord.includes(t)); return [...ord, ...extra]; };
 const swUsed = x => Object.values(x.use || {}).reduce((a, n) => a + (+n || 0), 0);
+const dLeft = d => d ? Math.ceil((new Date(d + 'T23:59:59') - new Date()) / 86400000) : null;
+function swState(x) { const k = dLeft(x.end); if (k == null) return ''; if (k < 0) return '<span class="tag bad">만료</span>'; if (k <= 60) return `<span class="tag warn">D-${k}</span>`; return ''; }
 function vSW() {
+  const T = swTeams(), L = [...S.sw].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  const owners = [...new Set(L.map(x => x.owner).filter(Boolean))], ord = ['연구소', ...(S.config.teamOrder || [])];
+  owners.sort((a, b) => (ord.indexOf(a) + 1 || 99) - (ord.indexOf(b) + 1 || 99));
+  const q = ui.asQ.trim(), rows = L.filter(x => (!ui.swOwner || x.owner === ui.swOwner) && (!ui.swLic || x.lic === ui.swLic) && (!q || [x.name, x.vendor, x.note].some(v => String(v || '').includes(q))));
   const aseg = `<div class="seg" role="group" aria-label="보기"><button type="button" aria-pressed="true">사용현황</button></div>`;
-  const T = swTeams(), L = [...S.sw].sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || String(a.name).localeCompare(String(b.name)));
-  const q = ui.asQ.trim(), rows = L.filter(x => !q || String(x.name).includes(q) || String(x.vendor || '').includes(q));
-  let h = `<div class="toolbar">${aseg}<label class="field"><span>검색</span><input class="ci" data-act="f-asq" value="${esc(ui.asQ)}" placeholder="SW명"></label><span class="spacer"></span>${admin || director ? '<button type="button" class="btn" data-act="as-xlsx">엑셀로 받기</button>' : ''}${admin ? '<button type="button" class="btn" data-act="sw-paste">붙여넣기로 가져오기</button><button type="button" class="btn primary" data-act="sw-edit">SW 추가</button>' : ''}</div>`;
-  if (!L.length) return h + `<section class="card"><div class="empty">${admin ? '등록된 SW가 없습니다. <b>SW 추가</b> 또는 <b>붙여넣기로 가져오기</b>(제목 줄: SW명 · 보유 · 팀 이름들)로 넣어 주세요.' : '등록된 SW가 없습니다.'}</div></section>`;
-  const own = rows.reduce((a, x) => a + (+x.qty || 0), 0), used = rows.reduce((a, x) => a + swUsed(x), 0);
-  const useT = T.filter(t => rows.some(x => +(x.use || {})[t]));
-  h += `<div class="kpis"><div class="kpi"><span class="k">SW 종류</span><span class="v">${rows.length}<small>종</small></span></div><div class="kpi"><span class="k">보유 라이선스</span><span class="v">${own}<small>개</small></span></div><div class="kpi"><span class="k">사용 중</span><span class="v">${used}<small>명</small></span></div><div class="kpi"><span class="k">전체 사용률</span><span class="v">${own ? Math.round(used / own * 100) : 0}<small>%</small></span></div></div>`;
-  const tc = t => 'pc' + (Math.max(0, T.indexOf(t)) % 10);
-  h += `<section class="card"><div class="head"><h2>SW 사용현황</h2><span class="sub">보유 대비 팀별 사용자 · 칸 아래 %는 보유 수량 대비</span></div><div class="tw"><table class="swt"><thead><tr><th class="c">No</th><th>SW명</th><th>보유</th><th>사용</th><th>여유</th><th style="min-width:150px">사용률</th><th style="min-width:180px">팀별 비율</th>${useT.map(t => `<th class="pch ${tc(t)}">${esc(t)}</th>`).join('')}${admin ? '<th></th>' : ''}</tr></thead><tbody>
-    ${rows.map((x, i) => { const n = +x.qty || 0, u = swUsed(x), r = n ? u / n : 0, free = n - u;
-      const bar = `<span class="swbar">${useT.map(t => { const k = +(x.use || {})[t] || 0; return k ? `<i class="${tc(t)}" style="flex:${k}" title="${esc(t)} ${k}명"></i>` : ''; }).join('')}${free > 0 ? `<i class="free" style="flex:${free}" title="여유 ${free}"></i>` : ''}</span>`;
-      return `<tr><td class="c num muted">${i + 1}</td><td class="l"><b>${esc(x.name)}</b>${x.vendor ? `<span class="muted small"> · ${esc(x.vendor)}</span>` : ''}${x.note ? `<div class="muted small">${esc(x.note)}</div>` : ''}</td><td class="num"><b>${n}</b></td><td class="num">${u}</td><td class="num${free < 0 ? ' neg' : ''}">${free}</td><td>${n ? `<span class="rate"><span class="meter ${r > 1 ? 'bad' : r >= .8 ? 'ok' : 'warn'}"><i style="width:${Math.min(1, r) * 100}%"></i></span><span class="num${r > 1 ? ' neg' : ''}">${Math.round(r * 100)}%</span></span>` : '<span class="muted">–</span>'}</td><td>${bar}</td>
-        ${useT.map(t => { const k = +(x.use || {})[t] || 0; return `<td class="num">${k ? `<b>${k}</b><div class="muted small">${n ? Math.round(k / n * 100) : 0}%</div>` : '<span class="muted">–</span>'}</td>`; }).join('')}${admin ? `<td><button type="button" class="btn sm" data-act="sw-edit" data-id="${x.id}">수정</button></td>` : ''}</tr>`; }).join('')}
-    </tbody></table></div>
-    <div class="legend">${useT.map(t => `<span><i class="${tc(t)}" style="background:var(--pc)"></i>${esc(t)}</span>`).join('')}<span><i style="background:var(--sunk);border:1px solid var(--line)"></i>여유</span></div></section>`;
+  let h = `<div class="toolbar">${aseg}<label class="field"><span>사용처</span><select class="ci" data-act="f-swown"><option value="">전체</option>${owners.map(o => `<option${o === ui.swOwner ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select></label>
+    <label class="field"><span>라이선스</span><select class="ci" data-act="f-swlic"><option value="">전체</option>${['영구', '기간제'].map(o => `<option${o === ui.swLic ? ' selected' : ''}>${o}</option>`).join('')}</select></label>
+    <label class="field"><span>검색</span><input class="ci" data-act="f-asq" value="${esc(ui.asQ)}" placeholder="SW명·업체명"></label><span class="spacer"></span>${admin || director ? '<button type="button" class="btn" data-act="as-xlsx">엑셀로 받기</button>' : ''}${admin ? '<button type="button" class="btn" data-act="sw-paste">붙여넣기로 가져오기</button><button type="button" class="btn primary" data-act="sw-edit">SW 추가</button>' : ''}</div>`;
+  if (!L.length) return h + `<section class="card"><div class="empty">${admin ? '등록된 SW가 없습니다. 엑셀 표(제목 줄: 사용처 · SW명 · 보유 수량 · 라이선스 · 계약기간 · 업체명 · 금액 · 비고)를 복사해 <b>붙여넣기로 가져오기</b>로 넣어 주세요.' : '등록된 SW가 없습니다.'}</div></section>`;
+  const own = rows.reduce((a, x) => a + (+x.qty || 0), 0), used = rows.reduce((a, x) => a + swUsed(x), 0), soon = rows.filter(x => { const k = dLeft(x.end); return k != null && k <= 60; }).length;
+  h += `<div class="kpis"><div class="kpi"><span class="k">SW 계약</span><span class="v">${rows.length}<small>건</small></span></div><div class="kpi"><span class="k">보유 라이선스</span><span class="v">${own}<small>개</small></span></div>
+    ${admin ? `<div class="kpi"><span class="k">계약 금액 합계</span><span class="v">${won(rows.reduce((a, x) => a + (+x.cost || 0), 0))}<small>원</small></span></div>` : ''}<div class="kpi"><span class="k">사용자 등록</span><span class="v">${used}<small>명</small></span></div>
+    <div class="kpi"><span class="k">만료·60일 이내</span><span class="v" style="color:${soon ? 'var(--bad)' : 'inherit'}">${soon}<small>건</small></span></div></div>`;
+  const useT = T.filter(t => rows.some(x => +(x.use || {})[t])), tc = t => 'pc' + (Math.max(0, T.indexOf(t)) % 10);
+  h += `<section class="card"><div class="head"><h2>SW 사용현황</h2><span class="sub">${rows.length}건</span></div><div class="tw"><table class="swt"><thead><tr><th class="c">No</th><th>사용처</th><th>SW명</th><th>라이선스</th><th>보유</th><th>계약기간</th><th>업체명</th>${admin ? '<th>금액</th>' : ''}<th>사용</th><th style="min-width:120px">사용률</th><th style="min-width:200px">팀별 사용자</th><th>비고</th>${admin ? '<th></th>' : ''}</tr></thead><tbody>
+    ${rows.map((x, i) => { const n = +x.qty || 0, u = swUsed(x), r = n ? u / n : 0, free = Math.max(0, n - u), ks = Object.entries(x.use || {}).filter(([, k]) => +k);
+      const bar = u ? `<span class="swbar" title="${esc(ks.map(([t, k]) => `${t} ${k}`).join(' · '))}">${ks.map(([t, k]) => `<i class="${tc(t)}" style="flex:${k}"></i>`).join('')}${free ? `<i class="free" style="flex:${free}"></i>` : ''}</span><div class="swk">${ks.map(([t, k]) => `<span><i class="${tc(t)}"></i>${esc(t.replace(/팀$/, ''))} ${k}</span>`).join('')}</div>` : '<span class="muted small">미등록</span>';
+      return `<tr><td class="c num muted">${i + 1}</td><td>${esc(x.owner || '–')}</td><td class="l"><b>${esc(x.name)}</b></td><td>${x.lic ? `<span class="tag ${x.lic === '영구' ? 'ok' : ''}">${esc(x.lic)}</span>` : '–'}</td><td class="num"><b>${n}</b></td>
+        <td class="num">${x.start || x.end ? `${esc(x.start || '')} ~ ${esc(x.end || '')} ${swState(x)}` : '–'}</td><td class="l">${esc(x.vendor || '–')}</td>${admin ? `<td class="num">${won(x.cost)}</td>` : ''}
+        <td class="num">${u || '–'}</td><td>${u ? `<span class="rate"><span class="meter ${r > 1 ? 'bad' : r >= .8 ? 'ok' : 'warn'}"><i style="width:${Math.min(1, r) * 100}%"></i></span><span class="num${r > 1 ? ' neg' : ''}">${Math.round(r * 100)}%</span></span>` : '<span class="muted">–</span>'}</td>
+        <td>${bar}</td><td class="l muted small" style="white-space:normal;min-width:90px">${esc(x.note || '')}</td>${admin ? `<td><button type="button" class="btn sm" data-act="sw-edit" data-id="${x.id}">수정</button></td>` : ''}</tr>`; }).join('')}
+    </tbody></table></div></section>`;
   return h;
 }
 function swDialog(id) {
-  const x = S.sw.find(r => r.id === id) || { name: '', vendor: '', qty: 1, use: {}, note: '' };
+  const x = S.sw.find(r => r.id === id) || { owner: '연구소', name: '', qty: 1, lic: '영구', start: '', end: '', vendor: '', cost: null, use: {}, note: '' };
+  const f = (k, label, type = 'text', extra = '') => `<label class="field">${label}<input name="${k}" type="${type}" value="${esc(x[k] ?? '')}" ${extra}></label>`;
   openDlg(`<h2>${id ? 'SW 수정' : 'SW 추가'}</h2><form class="form" data-form="sw" data-id="${id || ''}" style="grid-template-columns:repeat(4,1fr)">
+    <label class="field">사용처<input name="owner" list="dlOwn" value="${esc(x.owner || '')}"><datalist id="dlOwn">${['연구소', ...(S.config.teamOrder || [])].map(t => `<option value="${esc(t)}">`).join('')}</datalist></label>
     <label class="field" style="grid-column:span 2">SW명<input name="name" value="${esc(x.name)}" required></label>
-    <label class="field">공급사<input name="vendor" value="${esc(x.vendor || '')}"></label>
-    <label class="field">보유 수량<input name="qty" type="number" min="0" value="${esc(x.qty ?? '')}" required></label>
-    <h3 class="fsec">팀별 사용자 수</h3>
+    ${f('qty', '보유 수량', 'number', 'min="0" required')}
+    <label class="field">라이선스<select name="lic">${['영구', '기간제'].map(v => `<option${v === x.lic ? ' selected' : ''}>${v}</option>`).join('')}</select></label>
+    ${f('start', '계약 시작', 'date')}${f('end', '계약 종료', 'date')}${f('vendor', '업체명')}
+    ${f('cost', '금액 (원)', 'number', 'min="0"')}<label class="field" style="grid-column:span 3">비고<input name="note" value="${esc(x.note || '')}"></label>
+    <h3 class="fsec">팀별 사용자 수 <span class="muted small" style="font-weight:400">사용률 계산용 · 비워 두면 미등록</span></h3>
     ${swTeams().map(t => `<label class="field">${esc(t)}<input name="u-${esc(t)}" type="number" min="0" value="${esc((x.use || {})[t] ?? '')}" placeholder="0"></label>`).join('')}
-    <label class="field" style="grid-column:1/-1">비고<input name="note" value="${esc(x.note || '')}"></label>
     <div class="err" id="swerr" style="grid-column:1/-1"></div>
     <div class="actions" style="grid-column:1/-1">${id ? `<button type="button" class="btn danger" data-act="sw-del" data-id="${id}">삭제</button><span class="spacer"></span>` : ''}<button type="button" class="btn" data-act="close">취소</button><button class="btn primary" type="submit">저장</button></div></form>`, true);
 }
 function swParse(text) {
-  const lines = String(text || '').replace(/\r/g, '').split('\n').filter(l => l.trim());
-  if (lines.length < 2) throw new Error('제목 줄과 내용을 같이 복사해 주세요');
-  const hd = lines[0].split('\t').map(v => v.trim()), fi = names => hd.findIndex(v => names.includes(v));
-  const iN = fi(['SW명', 'SW', '소프트웨어', '자산명', '품명']), iQ = fi(['보유', '보유량', '보유수량', '보유 수량', '수량', '라이선스']), iV = fi(['공급사', '취득처', '제조사']), iR = fi(['비고']);
-  if (iN < 0 || iQ < 0) throw new Error('제목 줄에 SW명과 보유(수량)가 있어야 합니다');
-  const T = S.config.teamOrder || [], tcols = hd.map((v, i) => [v, i]).filter(([v, i]) => ![iN, iQ, iV, iR].includes(i) && v && !['No', '연번', '사용', '합계', '사용률', '여유'].includes(v))
-    .map(([v, i]) => [T.find(t => t === v || t.replace(/팀$/, '') === v.replace(/팀$/, '')) || v, i]);
-  const num = v => { v = String(v || '').replace(/[,\s]/g, ''); return v === '' || isNaN(+v) ? 0 : +v; };
-  return lines.slice(1).map(l => l.split('\t')).filter(c => String(c[iN] || '').trim()).map((c, k) => { const use = {}; for (const [t, i] of tcols) { const n = num(c[i]); if (n) use[t] = n; }
-    return { name: String(c[iN]).trim(), vendor: iV >= 0 ? String(c[iV] || '').trim() : '', qty: num(c[iQ]), use, note: iR >= 0 ? String(c[iR] || '').trim() : '', order: k + 1 }; });
+  const R = readTsv(text); if (R.length < 2) throw new Error('제목 줄과 내용을 같이 복사해 주세요');
+  const hd = R[0], fi = names => hd.findIndex(v => names.includes(v.replace(/\s+/g, '')));
+  const ix = { owner: fi(['사용처', '부서', '팀']), name: fi(['SW명', 'SW', '소프트웨어', '품명']), qty: fi(['보유수량', '보유', '수량', '보유량']), lic: fi(['라이선스', '라이센스', '구분']), period: fi(['계약기간', '기간']), vendor: fi(['업체명', '업체', '공급사', '취득처']), cost: fi(['금액', '계약금액', '취득가액']), note: fi(['비고']) };
+  if (ix.name < 0 || ix.qty < 0) throw new Error('제목 줄에 SW명과 보유 수량이 있어야 합니다');
+  const T = S.config.teamOrder || [], used = new Set(Object.values(ix).filter(i => i >= 0));
+  const tcols = hd.map((v, i) => [v, i]).filter(([v, i]) => !used.has(i) && v && T.some(t => t === v || t.replace(/팀$/, '') === v.replace(/팀$/, ''))).map(([v, i]) => [T.find(t => t === v || t.replace(/팀$/, '') === v.replace(/팀$/, '')), i]);
+  const num = v => { v = String(v || '').replace(/[,\s원]/g, ''); return v === '' || isNaN(+v) ? null : +v; };
+  return R.slice(1).filter(c => (c[ix.name] || '').trim()).map((c, k) => { const g = key => ix[key] >= 0 ? String(c[ix[key]] ?? '').trim() : ''; const [a, b] = g('period').split('~');
+    const use = {}; for (const [t, i] of tcols) { const n = num(c[i]); if (n) use[t] = n; }
+    return { owner: g('owner'), name: g('name'), qty: num(g('qty')) || 0, lic: g('lic'), start: ymd(a), end: ymd(b), vendor: g('vendor'), cost: num(g('cost')), use, note: g('note'), order: k + 1 }; });
 }
 function swPasteDialog() {
   openDlg(`<h2>SW 붙여넣기</h2><form class="form" data-form="swpaste" style="grid-template-columns:1fr">
-    <label class="field">엑셀 표를 제목 줄부터 복사해 붙여넣기 — 제목 줄 예: SW명 · 공급사 · 보유 · ${(S.config.teamOrder || []).slice(0, 3).map(esc).join(' · ')} · … · 비고 (팀 칸에는 사용자 수)<textarea name="t" rows="10" style="width:100%;font:12px var(--font-num);border:1px solid var(--line);border-radius:6px;padding:8px" placeholder="여기에 Ctrl+V" required></textarea></label>
-    <div class="small muted">지금 SW ${S.sw.length}건을 붙여넣은 표로 <b>모두 바꿉니다</b>.</div><div class="err" id="swperr"></div>
+    <label class="field">엑셀에서 제목 줄(사용처 · SW명 · 보유 수량 · 라이선스 · 계약기간 · 업체명 · 금액 · 비고)부터 표 전체를 복사해 붙여넣기<textarea name="t" rows="10" style="width:100%;font:12px var(--font-num);border:1px solid var(--line);border-radius:6px;padding:8px" placeholder="여기에 Ctrl+V" required></textarea></label>
+    <div class="small muted">지금 SW ${S.sw.length}건을 붙여넣은 표로 <b>모두 바꿉니다</b>. 같은 SW명·사용처에 넣어 둔 팀별 사용자 수는 그대로 옮겨집니다.</div><div class="err" id="swperr"></div>
     <div class="actions"><span class="spacer"></span><button type="button" class="btn" data-act="close">취소</button><button class="btn primary" type="submit">가져오기</button></div></form>`, true);
 }
 function asDialog(id) {
@@ -2486,6 +2515,8 @@ document.addEventListener('change', e => {
   else if (a === 'f-team') { ui.team = t.value; render(); }
   else if (a === 'f-lv') { ui.lv = t.value; render(); }
   else if (a === 'f-curp') { ui.curPerson = t.value; render(); }
+  else if (a === 'f-swown') { ui.swOwner = t.value; render(); }
+  else if (a === 'f-swlic') { ui.swLic = t.value; render(); }
   else if (a === 'f-asacct') { ui.asAcct = t.value; render(); }
   else if (a === 'f-asdept') { ui.asDept = t.value; render(); }
   else if (a === 'f-hrst') { ui.hrSt = t.value; render(); }
@@ -2551,13 +2582,15 @@ document.addEventListener('submit', e => {
   } else if (f.dataset.form === 'sw') {
     const id = f.dataset.id || uid('s'), old = S.sw.find(x => x.id === id), use = {};
     for (const [k, val] of Object.entries(v)) if (k.startsWith('u-') && +val > 0) use[k.slice(2)] = Math.round(+val);
-    const doc = { name: v.name.trim(), vendor: v.vendor.trim(), qty: Math.round(+v.qty || 0), use, note: v.note.trim(), order: old ? old.order : Math.max(0, ...S.sw.map(x => x.order || 0)) + 1 };
+    const doc = { owner: v.owner.trim(), name: v.name.trim(), qty: Math.round(+v.qty || 0), lic: v.lic, start: v.start || '', end: v.end || '', vendor: v.vendor.trim(), cost: v.cost === '' ? null : +v.cost, use, note: v.note.trim(), order: old ? old.order : Math.max(0, ...S.sw.map(x => x.order || 0)) + 1 };
     if (old) Object.assign(old, doc); else S.sw.push({ id, ...doc });
     put('sw/' + id, doc); closeDlg(); render(); toast('SW를 저장했습니다');
   } else if (f.dataset.form === 'swpaste') {
     let rows; try { rows = swParse(v.t); } catch (x) { $('#swperr').textContent = x.message; return; }
     if (!rows.length) { $('#swperr').textContent = '읽을 수 있는 줄이 없습니다.'; return; }
     if (!confirm(`SW ${rows.length}건으로 모두 바꿀까요?`)) return;
+    const prevUse = {}; for (const x of S.sw) if (Object.keys(x.use || {}).length) (prevUse[(x.owner || '') + '|' + x.name] = prevUse[(x.owner || '') + '|' + x.name] || []).push(x.use);
+    for (const r of rows) if (!Object.keys(r.use).length) { const q = prevUse[(r.owner || '') + '|' + r.name]; if (q && q.length) r.use = q.shift(); }
     const ops = S.sw.map(x => ({ path: 'sw/' + x.id, data: null })), next = rows.map((r, i) => ({ id: 's' + Date.now().toString(36) + i.toString(36).padStart(3, '0'), ...r }));
     for (const x of next) { const { id, ...doc } = x; ops.push({ path: 'sw/' + id, data: doc }); }
     putBatch(ops).then(() => { S.sw = next; closeDlg(); render(); toast(`SW ${next.length}건을 저장했습니다`); }).catch(x => { $('#swperr').textContent = '저장하지 못했습니다: ' + x.message; });
