@@ -266,6 +266,15 @@ table thead th{text-align:center!important}
 .onames .tg{display:flex;align-items:center;margin-left:-4px}
 .nwc{color:var(--dA);font-weight:600}
 .onames .rk{color:var(--muted);font-size:11px}
+.onames.ph{grid-template-columns:28px auto auto 26px;row-gap:3px}
+.onames .av{display:flex!important;align-items:center;line-height:0}
+.avb{width:26px;height:34px;border-radius:5px;overflow:hidden;border:1px solid var(--line);background:var(--sunk);padding:0;display:inline-flex;align-items:center;justify-content:center;color:var(--muted);font-size:11px}
+button.avb{cursor:pointer}button.avb:hover{border-color:var(--accent)}
+.avb img{width:100%;height:100%;object-fit:cover;display:block}
+.avb.empty b{font-weight:600}
+.onames.ph li>span:not(.av){line-height:34px}
+.pphoto{display:flex;align-items:center;gap:8px;margin-top:4px}
+.pphoto img{width:60px;height:80px;object-fit:cover;border-radius:6px;border:1px solid var(--line)}
 .onames li.leave .nm,.onames li.leave .rk{color:var(--muted);font-style:italic;font-weight:500}
 .nw{font-size:9px;font-weight:700;color:var(--ok);background:var(--ok-soft);border-radius:3px;padding:0 3px;line-height:14px}
 .olg{display:flex;gap:14px;justify-content:flex-end;font-size:11.5px;color:var(--muted)}
@@ -407,7 +416,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.03 11:48</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.03 12:01</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -1025,7 +1034,7 @@ let API_URL = DEFAULT_API || LS.get('lab_api') || '';
 // ---------- state ----------
 const S = { config: null, parts: [], people: [], grades: {}, courses: [], edu: {}, history: [], items: {} };
 let C = null, admin = false, editor = false, leader = false, myTeam = '', offline = false, loadedOnce = false, auth = null;
-const ui = { assessMode: 'part', part: null, eduMode: 'matrix', peopleMode: 'org', eduDept: '', q: '', team: '', lv: '', guideDept: '', guideType: '', setPart: null, drafts: {}, users: [], lockSet: false, setup: false, signup: false, signupDone: '' };
+const ui = { assessMode: 'part', part: null, eduMode: 'matrix', peopleMode: 'org', orgPhoto: LS.get('lab_orgphoto') !== '0', eduDept: '', q: '', team: '', lv: '', guideDept: '', guideType: '', setPart: null, drafts: {}, users: [], lockSet: false, setup: false, signup: false, signupDone: '' };
 try { auth = JSON.parse(LS.get('lab_auth') || 'null'); } catch { auth = null; }
 
 function rebuild() {
@@ -1686,15 +1695,43 @@ function orgLeader(team, L) {
 const isLeave = p => /휴직|공가/.test(p.note || '');
 const isNew = p => String(p.join || '').slice(0, 4) === String(new Date().getFullYear());
 const extMembers = u => String(u.members || '').split(/\n|,/).map(x => x.trim()).filter(Boolean).map(x => { const m = x.split(/\s+/); return { name: m[0], rank: m.slice(1).join(' ') }; });
-function orgName(p) {
+function avatar(p) {
+  const inner = p.photo ? `<img src="${esc(p.photo)}" alt="">` : `<b>${esc(String(p.name || '').trim().charAt(0))}</b>`;
+  return admin && p.id ? `<span class="av"><button type="button" class="avb${p.photo ? '' : ' empty'}" data-act="photo-pick" data-id="${p.id}" title="${esc(p.name)} 사진 ${p.photo ? '바꾸기' : '올리기'}">${inner}</button></span>`
+    : `<span class="av"><span class="avb${p.photo ? '' : ' empty'}">${inner}</span></span>`;
+}
+// 사진: 가운데를 3:4로 잘라 96×128 JPEG로 줄여 저장 (한 명당 약 5KB)
+function makePhoto(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onerror = () => rej(new Error('사진을 읽지 못했습니다'));
+    r.onload = () => { const im = new Image(); im.onerror = () => rej(new Error('이미지 파일이 아닙니다')); im.onload = () => {
+      const W = 96, H = 128, ar = W / H; let sw = im.width, sh = im.height, sx = 0, sy = 0;
+      if (sw / sh > ar) { sw = sh * ar; sx = (im.width - sw) / 2; } else { sh = sw / ar; sy = (im.height - sh) / 4; }
+      const c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d');
+      g.imageSmoothingQuality = 'high'; g.drawImage(im, sx, sy, sw, sh, 0, 0, W, H); res(c.toDataURL('image/jpeg', 0.78)); }; im.src = r.result; };
+    r.readAsDataURL(file);
+  });
+}
+function setPhoto(id, url) {
+  const p = S.people.find(x => x.id === id); if (!p) return;
+  if (url) p.photo = url; else delete p.photo;
+  const { id: _, ...doc } = p; put('people/' + id, doc); render();
+}
+function pickPhoto(id) {
+  const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*';
+  inp.onchange = async () => { const f = inp.files[0]; if (!f) return; try { setPhoto(id, await makePhoto(f)); toast('사진을 저장했습니다'); if ($('#dlg').open && $('#dlgBody [data-form=person]')) personDialog(id); } catch (e) { toast(e.message, true); } };
+  inp.click();
+}
+function orgName(p, ph) {
   const cls = [isLeave(p) && 'leave', isNew(p) && 'new'].filter(Boolean).join(' ');
-  return `<li class="${cls}" title="${esc(p.rank)}${isNew(p) ? ' · 올해 입사' : ''}${p.note ? ' · ' + esc(p.note) : ''}">${(n => `<span class="nm"><span class="sz" aria-hidden="true">가나다</span><span class="tx${n.length === 2 ? ' two' : ''}">${n.length === 2 ? `<span>${esc(n[0])}</span><span>${esc(n[1])}</span>` : esc(n)}</span></span>`)((isLeave(p) ? '*' : '') + String(p.name).replace(/\s+/g, ''))}<span class="rk">${esc(RSHORT(p.rank))}</span><span class="tg">${isNew(p) ? '<span class="nw">신규</span>' : ''}</span></li>`;
+  return `<li class="${cls}" title="${esc(p.rank)}${isNew(p) ? ' · 올해 입사' : ''}${p.note ? ' · ' + esc(p.note) : ''}">${ph ? avatar(p) : ''}${(n => `<span class="nm"><span class="sz" aria-hidden="true">가나다</span><span class="tx${n.length === 2 ? ' two' : ''}">${n.length === 2 ? `<span>${esc(n[0])}</span><span>${esc(n[1])}</span>` : esc(n)}</span></span>`)((isLeave(p) ? '*' : '') + String(p.name).replace(/\s+/g, ''))}<span class="rk">${esc(RSHORT(p.rank))}</span><span class="tg">${isNew(p) ? '<span class="nw">신규</span>' : ''}</span></li>`;
 }
 function vOrg(seg) {
   const o = orgCfg(), L = C.sortComp(S.people), teams = C.teams(L);
   const parts = t => [...new Set(L.filter(p => p.team === t).map(p => p.cat))].sort((a, b) => (S.config.partOrder.indexOf(a) + 1 || 99) - (S.config.partOrder.indexOf(b) + 1 || 99));
   const pidx = c => { const i = S.config.partOrder.indexOf(c); return i < 0 ? 9 : i % 10; };
-  const partBox = (c, PL, cls) => `<div class="op${cls === 'direct' ? ' direct' : ''}"><div class="ob part ${cls}"><b>${esc(c)}</b><em>${PL.length}</em></div><ul class="onames">${PL.map(orgName).join('')}</ul></div>`;
+  const partBox = (c, PL, cls) => { const P = ui.orgPhoto && cls !== 'direct'; return `<div class="op${cls === 'direct' ? ' direct' : ''}"><div class="ob part ${cls}"><b>${esc(c)}</b><em>${PL.length}</em></div><ul class="onames${P ? ' ph' : ''}">${PL.map(p => orgName(p, P)).join('')}</ul></div>`; };
   const teamHTML = t => {
     const TL = L.filter(p => p.team === t), ld = orgLeader(t, TL), ps = parts(t);
     return `<div class="ot" style="flex:${ps.length} 1 0"><div class="ob team"><b>${esc(t)}</b><small>${ld ? `${esc(ld.name)} ${esc(RSHORT(ld.rank))}` : '&nbsp;'}</small><em>${TL.length}</em></div>
@@ -1703,7 +1740,7 @@ function vOrg(seg) {
   const extTeams = new Set(units.flatMap(u => u.teams || []));
   const mainT = teams.filter(t => !extTeams.has(t));
   const np = T => T.reduce((a, t) => a + parts(t).length, 0);
-  let h = `<div class="toolbar">${seg}<span class="spacer"></span>${admin ? '<button type="button" class="btn" data-act="org-edit">조직 설정</button>' : ''}</div>`;
+  let h = `<div class="toolbar">${seg}<button type="button" class="btn" data-act="org-photo" aria-pressed="${!!ui.orgPhoto}">${ui.orgPhoto ? '사진 숨기기' : '사진 보기'}</button><span class="spacer"></span>${admin ? '<button type="button" class="btn" data-act="org-edit">조직 설정</button>' : ''}</div>`;
   const RL = L.filter(p => mainT.includes(p.team));   // 직급별 인원: 별도 조직(신사업본부·SW개발실 등) 제외
   const headIn = L.some(p => p.name.replace(/\s+/g, '') === String(o.head || '').trim().split(/\s+/)[0]);
   const exec = !scoped && String(o.head || '').trim() && !headIn ? 1 : 0;   // 임원 = 연구소장
@@ -1792,6 +1829,7 @@ function personDialog(id) {
     <label class="field">상세부서 (교육)${sel('eduDept', S.config.eduDeptMap.map(x => x.dept), p.eduDept)}</label>
     <label class="field" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" name="edu" ${p.edu ? 'checked' : ''}> 교육 수료 현황 대상</label>
     <label class="field">비고<input name="note" value="${esc(p.note)}"></label>
+    ${id ? `<div class="field" style="grid-column:1/-1">사진<div class="pphoto">${p.photo ? `<img src="${esc(p.photo)}" alt="">` : '<span class="muted small">없음</span>'}<button type="button" class="btn sm" data-act="photo-pick" data-id="${id}">${p.photo ? '바꾸기' : '올리기'}</button>${p.photo ? `<button type="button" class="btn sm danger" data-act="photo-del" data-id="${id}">지우기</button>` : ''}</div></div>` : ''}
     <div class="err" id="perr" style="grid-column:1/-1"></div>
     <div class="actions" style="grid-column:1/-1">${id ? `<button type="button" class="btn danger" data-act="person-del" data-id="${id}">삭제</button><span class="spacer"></span>` : ''}<button type="button" class="btn" data-act="close">취소</button><button class="btn primary" type="submit">저장</button></div></form>`);
 }
@@ -1899,6 +1937,9 @@ document.addEventListener('click', e => {
     case 'goto-part': { const p = S.parts.find(x => x.name === d.v); if (p) { ui.part = p.id; ui.assessMode = 'part'; render(); } break; }
     case 'emode': ui.eduMode = d.v; ui.q = ''; render(); break;
     case 'pmode': ui.peopleMode = d.v; ui.q = ''; render(); break;
+    case 'org-photo': ui.orgPhoto = !ui.orgPhoto; LS.set('lab_orgphoto', ui.orgPhoto ? '1' : '0'); render(); break;
+    case 'photo-pick': if (!need()) break; pickPhoto(d.id); break;
+    case 'photo-del': if (!need()) break; setPhoto(d.id, null); personDialog(d.id); toast('사진을 지웠습니다'); break;
     case 'org-edit': if (!need()) break; orgDialog(); break;
     case 'person-edu': personEdu(d.id); break;
     case 'toggle-rec': if (!canP(pById(d.p))) { toast('우리 팀 인원만 수정할 수 있습니다', true); break; } {
@@ -2001,6 +2042,7 @@ document.addEventListener('submit', e => {
     if (S.people.some(p => p.id !== id && p.name.replace(/\s+/g, '') === name.replace(/\s+/g, ''))) { $('#perr').textContent = '같은 이름이 이미 명단에 있습니다. 구분할 수 있게 이름을 바꿔 주세요.'; return; }
     const old = S.people.find(p => p.id === id);
     const doc = { team: v.team, name, rank: v.rank, cat: v.cat, eduDept: v.eduDept, edu: !!v.edu, join: v.join || '', note: v.note || '', order: old ? old.order : Math.max(0, ...S.people.map(p => p.order || 0)) + 1 };
+    if (old && old.photo) doc.photo = old.photo;
     if (old) Object.assign(old, doc); else S.people.push({ id, ...doc });
     put('people/' + id, doc); rebuild(); closeDlg(); render(); toast('인원 정보를 저장했습니다');
   } else if (f.dataset.form === 'part') {
