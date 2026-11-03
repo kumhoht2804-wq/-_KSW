@@ -234,14 +234,20 @@ table thead th{text-align:center!important}
 .ob.lead{min-width:150px;background:var(--accent-soft);border-color:transparent}
 .ob.lead b{color:var(--accent)}
 .otop{display:flex;flex-direction:column;align-items:center}
-.ovl{width:1px;height:14px;background:var(--muted);opacity:.5}
-.otop::after{content:'';width:1px;height:14px;background:var(--muted);opacity:.5}
+.ovl{width:1px;height:14px;background:color-mix(in srgb,var(--muted) 50%,transparent)}
+.otop::after{content:'';width:1px;height:14px;background:color-mix(in srgb,var(--muted) 50%,transparent)}
+.obr{display:flex}
+.org .obc{align-items:center}
+.obc>.oteams{align-self:stretch}
+.obr.one>.obc{padding-top:0}.obr.one>.obc::before,.obr.one>.obc::after{display:none}
+.obc.ext .ob,.obc.ext .onames{opacity:.62}
+.obc.ext .ob.lead{background:var(--sunk)}.obc.ext .ob.lead b{color:var(--muted)}
 .oteams{display:flex}
-.ot,.op{position:relative;padding:14px 4px 0;display:flex;flex-direction:column;align-items:stretch;min-width:0}
-.ot::before,.op::before{content:'';position:absolute;top:0;left:50%;height:14px;border-left:1px solid color-mix(in srgb,var(--muted) 50%,transparent)}
-.ot::after,.op::after{content:'';position:absolute;top:0;left:0;right:0;border-top:1px solid color-mix(in srgb,var(--muted) 50%,transparent)}
-.ot:first-child::after,.op:first-child::after{left:50%}
-.ot:last-child::after,.op:last-child::after{right:50%}
+.ot,.op,.obc{position:relative;padding:14px 4px 0;display:flex;flex-direction:column;align-items:stretch;min-width:0}
+.ot::before,.op::before,.obc::before{content:'';position:absolute;top:0;left:50%;height:14px;border-left:1px solid color-mix(in srgb,var(--muted) 50%,transparent)}
+.ot::after,.op::after,.obc::after{content:'';position:absolute;top:0;left:0;right:0;border-top:1px solid color-mix(in srgb,var(--muted) 50%,transparent)}
+.ot:first-child::after,.op:first-child::after,.obc:first-child::after{left:50%}
+.ot:last-child::after,.op:last-child::after,.obc:last-child::after{right:50%}
 .ot:only-child::after,.op:only-child::after{display:none}
 .oteams.solo .ot{padding-top:0}.oteams.solo .ot::before{display:none}
 .ob.team{background:var(--sunk);border-color:transparent;padding:7px 10px;min-height:46px;justify-content:center}
@@ -372,7 +378,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.03 11:05</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.03 11:13</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -1635,6 +1641,7 @@ function orgCfg() {
   if (o.head == null) o.head = '김기철 전무';
   if (o.dev == null) o.dev = '황성식 수석';
   o.leaders = o.leaders || {}; o.to = o.to || {};
+  if (!o.ext) o.ext = { name: '신사업본부', head: '정윤구 전무', teams: (S.config.teamOrder || []).filter(t => /광학/.test(t)) };
   return o;
 }
 function saveOrg() { const { id, ...body } = S.config; put('config/main', body); }
@@ -1655,13 +1662,22 @@ function vOrg(seg) {
   const parts = t => [...new Set(L.filter(p => p.team === t).map(p => p.cat))].sort((a, b) => (S.config.partOrder.indexOf(a) + 1 || 99) - (S.config.partOrder.indexOf(b) + 1 || 99));
   const pidx = c => { const i = S.config.partOrder.indexOf(c); return i < 0 ? 9 : i % 10; };
   let h = `<div class="toolbar">${seg}<span class="spacer"></span>${admin ? '<button type="button" class="btn" data-act="org-edit">조직 설정</button>' : ''}</div>`;
-  h += `<section class="card"><div class="head"><h2>조직도</h2><span class="sub">기준일 ${today()} · ${L.length}명</span></div><div class="orgw"><div class="org">`;
-  if (!scoped) h += `<div class="otop"><div class="ob lead"><b>연구소장</b><small>${esc(o.head || '–')}</small></div><div class="ovl"></div><div class="ob lead"><b>개발실장</b><small>${esc(o.dev || '–')}</small><em>${L.length}</em></div></div>`;
-  h += `<div class="oteams${scoped ? ' solo' : ''}">${teams.map(t => {
+  const teamHTML = t => {
     const TL = L.filter(p => p.team === t), ld = orgLeader(t, TL), ps = parts(t);
     return `<div class="ot" style="flex:${ps.length} 1 0"><div class="ob team"><b>${esc(t)}</b>${ld ? `<small>${esc(ld.name)} ${esc(RSHORT(ld.rank))}</small>` : ''}<em>${TL.length}</em></div>
       <div class="oparts">${ps.map(c => { const PL = TL.filter(p => p.cat === c && p !== ld);
-        return `<div class="op"><div class="ob part pc${pidx(c)}"><b>${esc(c)}</b><em>${PL.length}</em></div><ul class="onames">${PL.map(orgName).join('')}</ul></div>`; }).join('')}</div></div>`; }).join('')}</div></div></div>`;
+        return `<div class="op"><div class="ob part pc${pidx(c)}"><b>${esc(c)}</b><em>${PL.length}</em></div><ul class="onames">${PL.map(orgName).join('')}</ul></div>`; }).join('')}</div></div>`; };
+  const extT = teams.filter(t => (o.ext.teams || []).includes(t)), mainT = teams.filter(t => !extT.includes(t));
+  const np = T => T.reduce((a, t) => a + parts(t).length, 0) || 1;
+  h += `<section class="card"><div class="head"><h2>조직도</h2><span class="sub">기준일 ${today()} · ${L.length}명</span></div><div class="orgw"><div class="org">`;
+  if (scoped) h += `<div class="oteams solo">${teams.map(teamHTML).join('')}</div>`;
+  else {
+    const devN = L.filter(p => mainT.includes(p.team)).length, extN = L.length - devN;
+    h += `<div class="otop"><div class="ob lead"><b>연구소장</b><small>${esc(o.head || '–')}</small><em>${L.length}</em></div></div>
+    <div class="obr${extT.length ? '' : ' one'}"><div class="obc" style="flex:${np(mainT)} 1 0"><div class="ob lead"><b>개발실장</b><small>${esc(o.dev || '–')}</small><em>${devN}</em></div><div class="ovl"></div><div class="oteams">${mainT.map(teamHTML).join('')}</div></div>
+    ${extT.length ? `<div class="obc ext" style="flex:${np(extT)} 1 0"><div class="ob lead"><b>${esc(o.ext.name || '–')}</b><small>${esc(o.ext.head || '')}</small><em>${extN}</em></div><div class="ovl"></div><div class="oteams">${extT.map(teamHTML).join('')}</div></div>` : ''}</div>`;
+  }
+  h += `</div></div>`;
   const anyLeave = L.some(isLeave), anyNew = L.some(isNew);
   if (anyLeave || anyNew) h += `<div class="olg">${anyLeave ? '<span><b>*</b> 휴직</span>' : ''}${anyNew ? '<span><span class="nw">신규</span> 올해 입사</span>' : ''}</div>`;
   h += `</section>`;
@@ -1694,7 +1710,10 @@ function orgDialog() {
   openDlg(`<h2>조직 설정</h2><form class="form" data-form="org" style="grid-template-columns:1fr 1fr">
     <label class="field">연구소장<input name="head" value="${esc(o.head)}"></label>
     <label class="field">개발실장<input name="dev" value="${esc(o.dev)}"></label>
-    <label class="field">현황 연도<input name="year" value="${esc(o.year || String(new Date().getFullYear()))}"></label><span></span>
+    <label class="field">별도 조직명<input name="extName" value="${esc(o.ext.name || '')}"></label>
+    <label class="field">별도 조직 책임자<input name="extHead" value="${esc(o.ext.head || '')}"></label>
+    <label class="field">현황 연도<input name="year" value="${esc(o.year || String(new Date().getFullYear()))}"></label>
+    <div class="field">별도 조직 소속 팀<div class="chk">${C.teams(L).map(t => `<label><input type="checkbox" name="ext-${esc(t)}"${(o.ext.teams || []).includes(t) ? ' checked' : ''}> ${esc(t)}</label>`).join(' ')}</div></div>
     ${C.teams(L).map(t => { const TL = L.filter(p => p.team === t), cur = orgLeader(t, TL);
       return `<label class="field">${esc(t)} 팀장<select name="lead-${esc(t)}"><option value="">없음</option>${TL.map(p => `<option value="${p.id}"${cur === p ? ' selected' : ''}>${esc(p.name)} ${esc(RSHORT(p.rank))}</option>`).join('')}</select></label>`; }).join('')}
     <div style="grid-column:1/-1;display:flex;gap:8px;justify-content:flex-end"><button type="button" class="btn" data-act="close">취소</button><button class="btn primary" type="submit">저장</button></div></form>`);
@@ -1930,6 +1949,7 @@ document.addEventListener('submit', e => {
     S.parts.push({ id, ...doc }); put('parts/' + id, doc); ui.setPart = id; rebuild(); closeDlg(); render();
   } else if (f.dataset.form === 'org') {
     const o = orgCfg(); o.head = v.head.trim(); o.dev = v.dev.trim(); o.year = v.year.trim();
+    o.ext = { name: v.extName.trim(), head: v.extHead.trim(), teams: S.config.teamOrder.filter(t => ('ext-' + t) in v) };
     for (const t of S.config.teamOrder) if (('lead-' + t) in v) o.leaders[t] = v['lead-' + t];
     saveOrg(); closeDlg(); render(); toast('조직 정보를 저장했습니다');
   } else if (f.dataset.form === 'hist') {
