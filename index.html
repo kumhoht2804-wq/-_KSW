@@ -256,11 +256,11 @@ table thead th{text-align:center!important}
 .ob.part b{font-size:12.5px}
 .op.direct .ob.part{visibility:hidden}
 .op.direct::before{height:49px;z-index:1}
-.onames{list-style:none;margin:5px 0 0;padding:6px 4px;border:1px solid var(--line);border-radius:7px;align-self:stretch;display:grid;grid-template-columns:auto auto;justify-content:center;align-content:start;column-gap:10px;row-gap:1px}
+.onames{list-style:none;margin:5px 0 0;padding:6px 4px;border:1px solid var(--line);border-radius:7px;align-self:stretch;display:grid;grid-template-columns:auto auto 26px;justify-content:center;align-content:start;column-gap:8px;row-gap:1px}
 .onames li{display:contents;font-size:12px;white-space:nowrap}
 .onames li>span{display:block;line-height:19px;white-space:nowrap}
 .onames .nm{font-weight:600;font-size:12px;min-width:3.3em;text-align:justify;text-align-last:justify}
-.onames li.new .nm{color:var(--dA)}
+.onames .tg{display:flex;align-items:center;margin-left:-4px}
 .nwc{color:var(--dA);font-weight:600}
 .onames .rk{color:var(--muted);font-size:11px}
 .onames li.leave .nm,.onames li.leave .rk{color:var(--muted);font-style:italic;font-weight:500}
@@ -273,12 +273,15 @@ th.pch{box-shadow:inset 0 -3px 0 var(--pc)}
 .eqtbl{table-layout:fixed;width:100%}
 .eqtbl td{text-align:center}
 .ohc tr.hl td{background:var(--sunk)}
-.orgcard{position:relative}
-.orankw{position:absolute;top:12px;right:16px;z-index:2}
-.orank{border-collapse:collapse;font-size:11.5px;background:var(--surface)}
-.orank th,.orank td{border:1px solid var(--line);padding:2px 9px;text-align:center;white-space:nowrap}
+.org{position:relative}
+.orankw{position:absolute;top:0;right:0;z-index:2}
+.orank{border-collapse:collapse;font-size:11px;background:var(--surface)}
+.orank th,.orank td{border:1px solid var(--line);padding:1px 12px;min-width:52px;line-height:17px;text-align:center;white-space:nowrap}
 .orank thead th{background:var(--sunk);font-weight:600;color:var(--muted)}
-.orank tr.muted td{color:var(--muted)}
+.orank td small{font-size:10px;color:var(--muted);margin-left:4px}
+.olead{align-self:stretch;display:flex;flex-direction:column;align-items:flex-start}
+.olead>*{margin-left:var(--x);transform:translateX(-50%)}
+.olead>.ob.lead{width:170px}
 .ostat{grid-template-columns:minmax(0,1fr) minmax(0,2.2fr);align-items:start}
 @media (max-width:1300px){.ostat{grid-template-columns:1fr}}
 .onum{width:100%;max-width:80px;text-align:center;height:28px;padding:0 4px}
@@ -398,7 +401,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.03 11:30</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.03 11:34</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -1679,7 +1682,7 @@ const isNew = p => String(p.join || '').slice(0, 4) === String(new Date().getFul
 const extMembers = u => String(u.members || '').split(/\n|,/).map(x => x.trim()).filter(Boolean).map(x => { const m = x.split(/\s+/); return { name: m[0], rank: m.slice(1).join(' ') }; });
 function orgName(p) {
   const cls = [isLeave(p) && 'leave', isNew(p) && 'new'].filter(Boolean).join(' ');
-  return `<li class="${cls}" title="${esc(p.rank)}${isNew(p) ? ' · 올해 입사' : ''}${p.note ? ' · ' + esc(p.note) : ''}"><span class="nm">${isLeave(p) ? '*' : ''}${esc((n => n.length === 2 ? n[0] + ' ' + n[1] : n)(String(p.name).replace(/\s+/g, '')))}</span><span class="rk">${esc(RSHORT(p.rank))}</span></li>`;
+  return `<li class="${cls}" title="${esc(p.rank)}${isNew(p) ? ' · 올해 입사' : ''}${p.note ? ' · ' + esc(p.note) : ''}"><span class="nm">${isLeave(p) ? '*' : ''}${esc((n => n.length === 2 ? n[0] + ' ' + n[1] : n)(String(p.name).replace(/\s+/g, '')))}</span><span class="rk">${esc(RSHORT(p.rank))}</span><span class="tg">${isNew(p) ? '<span class="nw">신규</span>' : ''}</span></li>`;
 }
 function vOrg(seg) {
   const o = orgCfg(), L = C.sortComp(S.people), teams = C.teams(L);
@@ -1695,27 +1698,38 @@ function vOrg(seg) {
   const mainT = teams.filter(t => !extTeams.has(t));
   const np = T => T.reduce((a, t) => a + parts(t).length, 0);
   let h = `<div class="toolbar">${seg}<span class="spacer"></span>${admin ? '<button type="button" class="btn" data-act="org-edit">조직 설정</button>' : ''}</div>`;
-  const ranks = [...S.config.rankOrder.filter(r => L.some(p => p.rank === r)), ...[...new Set(L.map(p => p.rank))].filter(r => !S.config.rankOrder.includes(r))];
-  const rn = L.length || 1;
-  const rankTbl = `<table class="orank"><thead><tr><th>직급</th>${ranks.map(r => `<th>${esc(RSHORT(r))}</th>`).join('')}<th>합계</th></tr></thead><tbody>
-    <tr><td>인원</td>${ranks.map(r => `<td>${L.filter(p => p.rank === r).length}</td>`).join('')}<td><b>${L.length}</b></td></tr>
-    <tr class="muted"><td>비율</td>${ranks.map(r => `<td>${Math.round(L.filter(p => p.rank === r).length / rn * 100)}%</td>`).join('')}<td>100%</td></tr></tbody></table>`;
-  h += `<section class="card orgcard"><div class="head"><h2>조직도</h2><span class="sub">기준일 ${today()}</span>${scoped ? `<span class="spacer"></span>${rankTbl}` : ''}</div>${scoped ? '' : `<div class="orankw">${rankTbl}</div>`}<div class="orgw"><div class="org">`;
+  const RL = L.filter(p => mainT.includes(p.team));   // 직급별 인원: 별도 조직(신사업본부·SW개발실 등) 제외
+  // 연구소장·개발실장이 명단에 없으면 직급에 더함 (전무·상무 등은 임원)
+  const tops = scoped ? [] : [o.head, o.dev].map(x => String(x || '').trim().split(/\s+/)).filter(a => a[0] && !L.some(p => p.name.replace(/\s+/g, '') === a[0])).map(a => a.slice(1).join(' '));
+  const shortOf = r => RSHORT(r);
+  const rkShort = [...S.config.rankOrder.filter(r => RL.some(p => p.rank === r) || tops.includes(shortOf(r))), ...[...new Set(RL.map(p => p.rank))].filter(r => !S.config.rankOrder.includes(r))];
+  const extra = r => tops.filter(x => x === shortOf(r) || x === r).length;
+  const exec = tops.filter(x => !rkShort.some(r => x === shortOf(r) || x === r)).length;
+  const rcols = [...(exec ? [{ k: '임원', n: exec }] : []), ...rkShort.map(r => ({ k: shortOf(r), n: RL.filter(p => p.rank === r).length + extra(r) }))];
+  const rtot = rcols.reduce((a, c) => a + c.n, 0) || 1;
+  const rankTbl = `<table class="orank"><thead><tr><th>직급</th>${rcols.map(c => `<th>${esc(c.k)}</th>`).join('')}<th>합계</th></tr></thead><tbody>
+    <tr><td>인원</td>${rcols.map(c => `<td>${c.n}<small>${Math.round(c.n / rtot * 100)}%</small></td>`).join('')}<td><b>${rcols.reduce((a, c) => a + c.n, 0)}</b></td></tr></tbody></table>`;
+  h += `<section class="card orgcard"><div class="head"><h2>조직도</h2><span class="sub">기준일 ${today()}</span>${scoped ? `<span class="spacer"></span>${rankTbl}` : ''}</div><div class="orgw"><div class="org">${scoped ? '' : `<div class="orankw">${rankTbl}</div>`}`;
   if (scoped) h += `<div class="oteams solo">${teams.map(teamHTML).join('')}</div>`;
   else {
     const cols = [{ w: Math.max(1, np(mainT)) }, ...units.map(u => { const T = teams.filter(t => (u.teams || []).includes(t)), M = extMembers(u); return { u, T, M, w: Math.max(1, np(T) + (M.length ? 1 : 0)) }; })];
     const tot = cols.reduce((a, c) => a + c.w, 0); let acc = 0; const ctr = cols.map(c => { const x = (acc + c.w / 2) / tot * 100; acc += c.w; return x; });
     const devN = L.filter(p => mainT.includes(p.team)).length;
+    // 개발실장 세로선이 팀 세로선과 한 줄이 되도록: 양 끝 팀의 가운데에 가장 가까운 팀 위치에 맞춤
+    const ws = mainT.map(t => Math.max(1, parts(t).length)), W = ws.reduce((a, b) => a + b, 0) || 1;
+    let pre = 0; const cs = ws.map(w => { const c = (pre + w / 2) / W; pre += w; return c; });
+    const mid = cs.length ? (cs[0] + cs.at(-1)) / 2 : .5, snap = cs.length ? cs.reduce((a, c) => Math.abs(c - mid) < Math.abs(a - mid) ? c : a, cs[0]) : .5;
+    ctr[0] = snap * cols[0].w / tot * 100;
     h += `<div class="obr">${units.length ? `<i class="ohl" style="left:${ctr[0]}%;right:${100 - ctr.at(-1)}%"></i>` : ''}
-      <div class="obc main" style="flex:${cols[0].w} 1 0"><div class="ob lead"><b>연구소장</b><small>${esc(o.head || '–')}</small></div><i class="ovl"></i>
-        <div class="ob lead"><b>개발실장</b><small>${esc(o.dev || '–')}</small><em>${devN}</em></div><i class="ovl"></i><div class="oteams">${mainT.map(teamHTML).join('')}</div></div>
+      <div class="obc main" style="flex:${cols[0].w} 1 0"><div class="olead" style="--x:${snap * 100}%"><div class="ob lead"><b>연구소장</b><small>${esc(o.head || '–')}</small></div><i class="ovl"></i>
+        <div class="ob lead"><b>개발실장</b><small>${esc(o.dev || '–')}</small><em>${devN}</em></div><i class="ovl"></i></div><div class="oteams">${mainT.map(teamHTML).join('')}</div></div>
       ${cols.slice(1).map(c => { const n = c.T.reduce((a, t) => a + L.filter(p => p.team === t).length, 0) + c.M.length;
         return `<div class="obc ext" style="flex:${c.w} 1 0"><div class="ob lead"><b>${esc(c.u.name)}</b><small>${esc(c.u.head || '') || '&nbsp;'}</small><em>${n}</em></div><i class="ovl"></i>
         <div class="oteams">${c.T.map(teamHTML).join('')}${c.M.length ? `<div class="ot" style="flex:1 1 0"><div class="ob team"><b>${esc(c.u.part || c.u.name)}</b><small>&nbsp;</small><em>${c.M.length}</em></div><div class="oparts">${partBox(c.u.part || c.u.name, c.M, 'direct')}</div></div>` : ''}</div></div>`; }).join('')}</div>`;
   }
   h += `</div></div>`;
   const anyLeave = L.some(isLeave), anyNew = L.some(isNew);
-  if (anyLeave || anyNew) h += `<div class="olg">${anyLeave ? '<span><b>*</b> 휴직</span>' : ''}${anyNew ? '<span><b class="nwc">파란 이름</b> 올해 입사</span>' : ''}</div>`;
+  if (anyLeave || anyNew) h += `<div class="olg">${anyLeave ? '<span><b>*</b> 휴직</span>' : ''}${anyNew ? '<span><span class="nw">신규</span> 올해 입사</span>' : ''}</div>`;
   h += `</section>`;
   // 팀·파트별 현황 (출력 전용, 입력은 조직 설정)
   const cols = teams.flatMap(t => parts(t).map(c => ({ t, c, k: t + '|' + c, n: L.filter(p => p.team === t && p.cat === c).length })));
