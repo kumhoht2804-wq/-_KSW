@@ -299,6 +299,11 @@ th.pch{box-shadow:inset 0 -3px 0 var(--pc)}
 .eqtbl{table-layout:fixed;width:100%}
 .eqtbl td{text-align:center}
 .ohc tr.hl td{background:var(--sunk)}
+.swbar{display:flex;height:12px;border-radius:6px;overflow:hidden;background:var(--sunk);min-width:150px}
+.swbar i{display:block;background:var(--pc);min-width:2px}
+.swbar i.free{background:var(--sunk)}
+.swt td .small{font-size:10.5px}
+.legend i.pc0,.legend i.pc1,.legend i.pc2,.legend i.pc3,.legend i.pc4,.legend i.pc5,.legend i.pc6,.legend i.pc7,.legend i.pc8,.legend i.pc9{background:var(--pc)}
 .hyear{display:inline-flex;align-items:center;gap:6px}
 .hyear select{height:28px;padding:0 6px;font-size:12px}
 .ostat2{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:start}
@@ -442,7 +447,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.03 17:00</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.03 17:27</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -1058,9 +1063,9 @@ const LS = { get: k => { try { return localStorage.getItem(k); } catch { return 
 let API_URL = DEFAULT_API || LS.get('lab_api') || '';
 
 // ---------- state ----------
-const S = { config: null, parts: [], people: [], grades: {}, courses: [], edu: {}, history: [], items: {}, archive: {}, hr: [], asset: [] };
+const S = { config: null, parts: [], people: [], grades: {}, courses: [], edu: {}, history: [], items: {}, archive: {}, hr: [], asset: [], sw: [] };
 let C = null, admin = false, editor = false, leader = false, myTeam = '', offline = false, loadedOnce = false, auth = null;
-const ui = { assessMode: 'sum', part: null, eduMode: 'sum', eduYear: '', asAcct: '', asDept: '', asQ: '', hrYear: '', hrSt: '재직', hrTeam: '', hrQ: '', peopleMode: 'org', orgPhoto: LS.get('lab_orgphoto') !== '0', eduDept: '', q: '', team: '', lv: '', guideDept: '', guideType: '', setPart: null, drafts: {}, users: [], lockSet: false, setup: false, signup: false, signupDone: '' };
+const ui = { assessMode: 'sum', part: null, eduMode: 'sum', eduYear: '', asMode: 'list', asAcct: '', asDept: '', asQ: '', hrYear: '', hrSt: '재직', hrTeam: '', hrQ: '', peopleMode: 'org', orgPhoto: LS.get('lab_orgphoto') !== '0', eduDept: '', q: '', team: '', lv: '', guideDept: '', guideType: '', setPart: null, drafts: {}, users: [], lockSet: false, setup: false, signup: false, signupDone: '' };
 try { auth = JSON.parse(LS.get('lab_auth') || 'null'); } catch { auth = null; }
 
 function rebuild() {
@@ -1089,7 +1094,7 @@ async function api(action, payload) {
   return d;
 }
 function applyDocs(docs) {
-  const by = { config: null, parts: [], people: [], grades: {}, courses: [], edu: {}, history: [], archive: {}, hr: [], asset: [] };
+  const by = { config: null, parts: [], people: [], grades: {}, courses: [], edu: {}, history: [], archive: {}, hr: [], asset: [], sw: [] };
   for (const [path, data] of Object.entries(docs)) {
     const [col, id] = path.split('/');
     if (col === 'config') { if (id === 'main') by.config = { id, ...data }; }
@@ -1289,7 +1294,7 @@ function startSession(d) {
 function logout(silent) {
   if (auth && !silent) api('logout').catch(() => { });
   auth = null; LS.set('lab_auth', null); setRole(); ui.drafts = {}; ui.users = []; usersLoaded = false;
-  Object.assign(S, { config: null, parts: [], people: [], grades: {}, courses: [], edu: {}, history: [], archive: {}, hr: [], asset: [] }); C = null; loadedOnce = false;
+  Object.assign(S, { config: null, parts: [], people: [], grades: {}, courses: [], edu: {}, history: [], archive: {}, hr: [], asset: [], sw: [] }); C = null; loadedOnce = false;
   whoUI(); syncUI(); checkSetup(); render();
 }
 async function checkSetup() {
@@ -2034,10 +2039,12 @@ function vAsset() {
   const depts = [...new Set(L.map(a => a.dept).filter(Boolean))].sort(), accts = [...new Set(L.map(a => a.acct).filter(Boolean))];
   const q = ui.asQ.trim();
   const rows = L.filter(a => (!ui.asDept || a.dept === ui.asDept) && (!ui.asAcct || a.acct === ui.asAcct) && (!q || [a.name, a.no, a.vendor, a.loc].some(v => String(v || '').includes(q))));
-  let h = `<div class="toolbar"><div class="seg" role="group" aria-label="보기"><button type="button" aria-pressed="true">보유현황</button></div>
+  const aseg = `<div class="seg" role="group" aria-label="보기"><button type="button" data-act="asmode" data-v="list" aria-pressed="${ui.asMode === 'list'}">보유현황</button><button type="button" data-act="asmode" data-v="sw" aria-pressed="${ui.asMode === 'sw'}">SW 사용현황</button></div>`;
+  if (ui.asMode === 'sw') return vSW(aseg);
+  let h = `<div class="toolbar">${aseg}
     ${admin && accts.length ? `<label class="field"><span>계정</span><select class="ci" data-act="f-asacct"><option value="">전체</option>${accts.map(x => `<option${x === ui.asAcct ? ' selected' : ''}>${esc(x)}</option>`).join('')}</select></label>` : ''}
     <label class="field"><span>관리부서</span><select class="ci" data-act="f-asdept"><option value="">전체</option>${depts.map(x => `<option${x === ui.asDept ? ' selected' : ''}>${esc(x)}</option>`).join('')}</select></label>
-    <label class="field"><span>검색</span><input class="ci" data-act="f-asq" value="${esc(ui.asQ)}" placeholder="${admin ? '자산명·자산번호·취득처·위치' : '자산명'}"></label>
+    <label class="field"><span>검색</span><input class="ci" data-act="f-asq" value="${esc(ui.asQ)}" placeholder="${admin ? '자산명·자산번호·취득처·위치' : '자산명·자산번호'}"></label>
     <span class="spacer"></span>${admin ? '<button type="button" class="btn" data-act="as-paste">붙여넣기로 가져오기</button><button type="button" class="btn primary" data-act="as-edit">자산 추가</button>' : ''}</div>`;
   if (!L.length) return h + `<section class="card"><div class="empty">${admin ? '등록된 자산이 없습니다. 엑셀에서 표(제목 줄 포함)를 복사해 <b>붙여넣기로 가져오기</b>로 넣어 주세요.' : '등록된 자산이 없습니다.'}</div></section>`;
   if (admin) {
@@ -2050,11 +2057,62 @@ function vAsset() {
       ${rows.map((a, i) => `<tr><td class="c num muted">${i + 1}</td><td class="num">${esc(a.no || '–')}</td><td class="l"><b>${esc(a.name)}</b></td><td class="num">${esc(a.date || '–')}</td><td>${esc(a.acct || '–')}</td><td class="l">${esc(a.vendor || '–')}</td><td class="num">${a.qty ?? '–'}</td><td class="num">${won(a.cost)}</td><td class="num">${won(a.rest)}</td><td>${esc(a.dept || '–')}</td><td>${esc(a.fixed || '–')}</td><td>${esc(a.site || '–')}</td><td>${esc(a.loc || '–')}</td><td class="l muted" style="white-space:normal;min-width:120px">${esc(a.note || '')}</td><td><button type="button" class="btn sm" data-act="as-edit" data-id="${a.id}">수정</button></td></tr>`).join('')}
       </tbody></table></div></section>`;
   } else {
-    h += `<section class="card"><div class="head"><h2>자산 보유현황</h2><span class="sub">${rows.length}건</span></div><div class="tw"><table class="eqtbl" style="table-layout:auto"><thead><tr><th class="c">No</th><th>자산명</th><th>취득일</th><th>관리부서</th></tr></thead><tbody>
-      ${rows.map((a, i) => `<tr><td class="c num muted">${i + 1}</td><td class="l"><b>${esc(a.name)}</b></td><td class="num">${esc(a.date || '–')}</td><td>${esc(a.dept || '–')}</td></tr>`).join('')}
+    h += `<section class="card"><div class="head"><h2>자산 보유현황</h2><span class="sub">${rows.length}건</span></div><div class="tw"><table class="eqtbl" style="table-layout:auto"><thead><tr><th class="c">No</th><th>자산번호</th><th>자산명</th><th>취득일</th><th>관리부서</th></tr></thead><tbody>
+      ${rows.map((a, i) => `<tr><td class="c num muted">${i + 1}</td><td class="num">${esc(a.no || '–')}</td><td class="l"><b>${esc(a.name)}</b></td><td class="num">${esc(a.date || '–')}</td><td>${esc(a.dept || '–')}</td></tr>`).join('')}
       </tbody></table></div></section>`;
   }
   return h;
+}
+// ===== SW 사용현황: 보유 라이선스 / 팀별 사용자 =====
+const swTeams = () => { const ord = S.config.teamOrder || [], extra = [...new Set(S.sw.flatMap(x => Object.keys(x.use || {})))].filter(t => !ord.includes(t)); return [...ord, ...extra]; };
+const swUsed = x => Object.values(x.use || {}).reduce((a, n) => a + (+n || 0), 0);
+function vSW(aseg) {
+  const T = swTeams(), L = [...S.sw].sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || String(a.name).localeCompare(String(b.name)));
+  const q = ui.asQ.trim(), rows = L.filter(x => !q || String(x.name).includes(q) || String(x.vendor || '').includes(q));
+  let h = `<div class="toolbar">${aseg}<label class="field"><span>검색</span><input class="ci" data-act="f-asq" value="${esc(ui.asQ)}" placeholder="SW명"></label><span class="spacer"></span>${admin ? '<button type="button" class="btn" data-act="sw-paste">붙여넣기로 가져오기</button><button type="button" class="btn primary" data-act="sw-edit">SW 추가</button>' : ''}</div>`;
+  if (!L.length) return h + `<section class="card"><div class="empty">${admin ? '등록된 SW가 없습니다. <b>SW 추가</b> 또는 <b>붙여넣기로 가져오기</b>(제목 줄: SW명 · 보유 · 팀 이름들)로 넣어 주세요.' : '등록된 SW가 없습니다.'}</div></section>`;
+  const own = rows.reduce((a, x) => a + (+x.qty || 0), 0), used = rows.reduce((a, x) => a + swUsed(x), 0);
+  const useT = T.filter(t => rows.some(x => +(x.use || {})[t]));
+  h += `<div class="kpis"><div class="kpi"><span class="k">SW 종류</span><span class="v">${rows.length}<small>종</small></span></div><div class="kpi"><span class="k">보유 라이선스</span><span class="v">${own}<small>개</small></span></div><div class="kpi"><span class="k">사용 중</span><span class="v">${used}<small>명</small></span></div><div class="kpi"><span class="k">전체 사용률</span><span class="v">${own ? Math.round(used / own * 100) : 0}<small>%</small></span></div></div>`;
+  const tc = t => 'pc' + (Math.max(0, T.indexOf(t)) % 10);
+  h += `<section class="card"><div class="head"><h2>SW 사용현황</h2><span class="sub">보유 대비 팀별 사용자 · 칸 아래 %는 보유 수량 대비</span></div><div class="tw"><table class="swt"><thead><tr><th class="c">No</th><th>SW명</th><th>보유</th><th>사용</th><th>여유</th><th style="min-width:150px">사용률</th><th style="min-width:180px">팀별 비율</th>${useT.map(t => `<th class="pch ${tc(t)}">${esc(t)}</th>`).join('')}${admin ? '<th></th>' : ''}</tr></thead><tbody>
+    ${rows.map((x, i) => { const n = +x.qty || 0, u = swUsed(x), r = n ? u / n : 0, free = n - u;
+      const bar = `<span class="swbar">${useT.map(t => { const k = +(x.use || {})[t] || 0; return k ? `<i class="${tc(t)}" style="flex:${k}" title="${esc(t)} ${k}명"></i>` : ''; }).join('')}${free > 0 ? `<i class="free" style="flex:${free}" title="여유 ${free}"></i>` : ''}</span>`;
+      return `<tr><td class="c num muted">${i + 1}</td><td class="l"><b>${esc(x.name)}</b>${x.vendor ? `<span class="muted small"> · ${esc(x.vendor)}</span>` : ''}${x.note ? `<div class="muted small">${esc(x.note)}</div>` : ''}</td><td class="num"><b>${n}</b></td><td class="num">${u}</td><td class="num${free < 0 ? ' neg' : ''}">${free}</td><td>${n ? `<span class="rate"><span class="meter ${r > 1 ? 'bad' : r >= .8 ? 'ok' : 'warn'}"><i style="width:${Math.min(1, r) * 100}%"></i></span><span class="num${r > 1 ? ' neg' : ''}">${Math.round(r * 100)}%</span></span>` : '<span class="muted">–</span>'}</td><td>${bar}</td>
+        ${useT.map(t => { const k = +(x.use || {})[t] || 0; return `<td class="num">${k ? `<b>${k}</b><div class="muted small">${n ? Math.round(k / n * 100) : 0}%</div>` : '<span class="muted">–</span>'}</td>`; }).join('')}${admin ? `<td><button type="button" class="btn sm" data-act="sw-edit" data-id="${x.id}">수정</button></td>` : ''}</tr>`; }).join('')}
+    </tbody></table></div>
+    <div class="legend">${useT.map(t => `<span><i class="${tc(t)}" style="background:var(--pc)"></i>${esc(t)}</span>`).join('')}<span><i style="background:var(--sunk);border:1px solid var(--line)"></i>여유</span></div></section>`;
+  return h;
+}
+function swDialog(id) {
+  const x = S.sw.find(r => r.id === id) || { name: '', vendor: '', qty: 1, use: {}, note: '' };
+  openDlg(`<h2>${id ? 'SW 수정' : 'SW 추가'}</h2><form class="form" data-form="sw" data-id="${id || ''}" style="grid-template-columns:repeat(4,1fr)">
+    <label class="field" style="grid-column:span 2">SW명<input name="name" value="${esc(x.name)}" required></label>
+    <label class="field">공급사<input name="vendor" value="${esc(x.vendor || '')}"></label>
+    <label class="field">보유 수량<input name="qty" type="number" min="0" value="${esc(x.qty ?? '')}" required></label>
+    <h3 class="fsec">팀별 사용자 수</h3>
+    ${swTeams().map(t => `<label class="field">${esc(t)}<input name="u-${esc(t)}" type="number" min="0" value="${esc((x.use || {})[t] ?? '')}" placeholder="0"></label>`).join('')}
+    <label class="field" style="grid-column:1/-1">비고<input name="note" value="${esc(x.note || '')}"></label>
+    <div class="err" id="swerr" style="grid-column:1/-1"></div>
+    <div class="actions" style="grid-column:1/-1">${id ? `<button type="button" class="btn danger" data-act="sw-del" data-id="${id}">삭제</button><span class="spacer"></span>` : ''}<button type="button" class="btn" data-act="close">취소</button><button class="btn primary" type="submit">저장</button></div></form>`, true);
+}
+function swParse(text) {
+  const lines = String(text || '').replace(/\r/g, '').split('\n').filter(l => l.trim());
+  if (lines.length < 2) throw new Error('제목 줄과 내용을 같이 복사해 주세요');
+  const hd = lines[0].split('\t').map(v => v.trim()), fi = names => hd.findIndex(v => names.includes(v));
+  const iN = fi(['SW명', 'SW', '소프트웨어', '자산명', '품명']), iQ = fi(['보유', '보유량', '보유수량', '보유 수량', '수량', '라이선스']), iV = fi(['공급사', '취득처', '제조사']), iR = fi(['비고']);
+  if (iN < 0 || iQ < 0) throw new Error('제목 줄에 SW명과 보유(수량)가 있어야 합니다');
+  const T = S.config.teamOrder || [], tcols = hd.map((v, i) => [v, i]).filter(([v, i]) => ![iN, iQ, iV, iR].includes(i) && v && !['No', '연번', '사용', '합계', '사용률', '여유'].includes(v))
+    .map(([v, i]) => [T.find(t => t === v || t.replace(/팀$/, '') === v.replace(/팀$/, '')) || v, i]);
+  const num = v => { v = String(v || '').replace(/[,\s]/g, ''); return v === '' || isNaN(+v) ? 0 : +v; };
+  return lines.slice(1).map(l => l.split('\t')).filter(c => String(c[iN] || '').trim()).map((c, k) => { const use = {}; for (const [t, i] of tcols) { const n = num(c[i]); if (n) use[t] = n; }
+    return { name: String(c[iN]).trim(), vendor: iV >= 0 ? String(c[iV] || '').trim() : '', qty: num(c[iQ]), use, note: iR >= 0 ? String(c[iR] || '').trim() : '', order: k + 1 }; });
+}
+function swPasteDialog() {
+  openDlg(`<h2>SW 붙여넣기</h2><form class="form" data-form="swpaste" style="grid-template-columns:1fr">
+    <label class="field">엑셀 표를 제목 줄부터 복사해 붙여넣기 — 제목 줄 예: SW명 · 공급사 · 보유 · ${(S.config.teamOrder || []).slice(0, 3).map(esc).join(' · ')} · … · 비고 (팀 칸에는 사용자 수)<textarea name="t" rows="10" style="width:100%;font:12px var(--font-num);border:1px solid var(--line);border-radius:6px;padding:8px" placeholder="여기에 Ctrl+V" required></textarea></label>
+    <div class="small muted">지금 SW ${S.sw.length}건을 붙여넣은 표로 <b>모두 바꿉니다</b>.</div><div class="err" id="swperr"></div>
+    <div class="actions"><span class="spacer"></span><button type="button" class="btn" data-act="close">취소</button><button class="btn primary" type="submit">가져오기</button></div></form>`, true);
 }
 function asDialog(id) {
   const a = S.asset.find(x => x.id === id) || { no: '', name: '', date: today(), acct: '비품', vendor: '', qty: 1, cost: null, rest: null, dept: '연구소', fixed: 'O', site: '광주', loc: '', note: '' };
@@ -2310,6 +2368,10 @@ document.addEventListener('click', e => {
     case 'year-del': if (!need()) break; if (!confirm(`${d.v}년 마감 자료를 삭제할까요?`)) break; for (const sfx of ['', 'e', 'c']) { delete S.archive['y' + d.v + sfx]; put('archive/y' + d.v + sfx, null); } if (String(ui.eduYear) === String(d.v)) ui.eduYear = ''; render(); toast('삭제했습니다'); break;
     case 'pmode': ui.peopleMode = d.v; ui.q = ''; render(); break;
     case 'as-edit': if (!need()) break; asDialog(d.id); break;
+    case 'asmode': ui.asMode = d.v; ui.asQ = ''; render(); break;
+    case 'sw-edit': if (!need()) break; swDialog(d.id); break;
+    case 'sw-paste': if (!need()) break; swPasteDialog(); break;
+    case 'sw-del': if (!need()) break; if (!confirm('이 SW를 삭제할까요?')) break; S.sw = S.sw.filter(x => x.id !== d.id); put('sw/' + d.id, null); closeDlg(); render(); toast('삭제했습니다'); break;
     case 'as-paste': if (!need()) break; asPasteDialog(); break;
     case 'as-del': if (!need()) break; if (!confirm('이 자산을 삭제할까요?')) break; S.asset = S.asset.filter(x => x.id !== d.id); put('asset/' + d.id, null); closeDlg(); render(); toast('삭제했습니다'); break;
     case 'course-info': courseInfo(d.id); break;
@@ -2453,6 +2515,19 @@ document.addEventListener('submit', e => {
     const name = v.name.trim(); if (!name || S.parts.find(p => p.name === name)) { toast('이미 있는 파트입니다', true); return; }
     const id = uid('pt'); const order = S.config.partOrder.indexOf(name); const doc = { name, order: order < 0 ? 99 : order, items: [] };
     S.parts.push({ id, ...doc }); put('parts/' + id, doc); ui.setPart = id; rebuild(); closeDlg(); render();
+  } else if (f.dataset.form === 'sw') {
+    const id = f.dataset.id || uid('s'), old = S.sw.find(x => x.id === id), use = {};
+    for (const [k, val] of Object.entries(v)) if (k.startsWith('u-') && +val > 0) use[k.slice(2)] = Math.round(+val);
+    const doc = { name: v.name.trim(), vendor: v.vendor.trim(), qty: Math.round(+v.qty || 0), use, note: v.note.trim(), order: old ? old.order : Math.max(0, ...S.sw.map(x => x.order || 0)) + 1 };
+    if (old) Object.assign(old, doc); else S.sw.push({ id, ...doc });
+    put('sw/' + id, doc); closeDlg(); render(); toast('SW를 저장했습니다');
+  } else if (f.dataset.form === 'swpaste') {
+    let rows; try { rows = swParse(v.t); } catch (x) { $('#swperr').textContent = x.message; return; }
+    if (!rows.length) { $('#swperr').textContent = '읽을 수 있는 줄이 없습니다.'; return; }
+    if (!confirm(`SW ${rows.length}건으로 모두 바꿀까요?`)) return;
+    const ops = S.sw.map(x => ({ path: 'sw/' + x.id, data: null })), next = rows.map((r, i) => ({ id: 's' + Date.now().toString(36) + i.toString(36).padStart(3, '0'), ...r }));
+    for (const x of next) { const { id, ...doc } = x; ops.push({ path: 'sw/' + id, data: doc }); }
+    putBatch(ops).then(() => { S.sw = next; closeDlg(); render(); toast(`SW ${next.length}건을 저장했습니다`); }).catch(x => { $('#swperr').textContent = '저장하지 못했습니다: ' + x.message; });
   } else if (f.dataset.form === 'asset') {
     const id = f.dataset.id || uid('a'), old = S.asset.find(x => x.id === id), n = k => v[k] === '' ? null : +v[k];
     const doc = { no: v.no.trim(), name: v.name.trim(), date: v.date || '', acct: v.acct.trim(), vendor: v.vendor.trim(), qty: n('qty'), cost: n('cost'), rest: n('rest'), dept: v.dept.trim(), fixed: v.fixed, site: v.site.trim(), loc: v.loc.trim(), note: v.note.trim() };
@@ -2501,7 +2576,7 @@ document.addEventListener('submit', e => {
 
 // ---------- export ----------
 function snapshotData() {
-  return { version: 1, exported: new Date().toISOString(), config: (({ id, ...c }) => c)(S.config), parts: S.parts, people: S.people, grades: S.grades, courses: S.courses, edu: S.edu, history: S.history, archive: S.archive, hr: S.hr, asset: S.asset };
+  return { version: 1, exported: new Date().toISOString(), config: (({ id, ...c }) => c)(S.config), parts: S.parts, people: S.people, grades: S.grades, courses: S.courses, edu: S.edu, history: S.history, archive: S.archive, hr: S.hr, asset: S.asset, sw: S.sw };
 }
 function saveFile(filename, data) {
   const url = URL.createObjectURL(data instanceof Blob ? data : new Blob([data], { type: 'application/json' }));
@@ -2541,6 +2616,7 @@ function docsFromData(data) {
   for (const h of data.history || []) docs['history/' + h.id] = strip(h);
   for (const h of data.hr || []) docs['hr/' + h.id] = strip(h);
   for (const a of data.asset || []) docs['asset/' + a.id] = strip(a);
+  for (const a of data.sw || []) docs['sw/' + a.id] = strip(a);
   for (const [k, v] of Object.entries(data.archive || {})) if (/^y\d{4}[ec]?$/.test(k)) docs['archive/' + k] = v;
   return docs;
 }
