@@ -275,6 +275,13 @@ button.avb{cursor:pointer}button.avb:hover{border-color:var(--accent)}
 .avb.empty svg{width:18px;height:24px;fill:var(--line)}
 button.avb.empty{border-style:dashed}
 .onames.ph li>span:not(.av){line-height:34px}
+.ob.hasav{flex-direction:row;justify-content:center;gap:8px;text-align:left}
+.ob.hasav .obt{display:flex;flex-direction:column;align-items:flex-start;min-width:0}
+.ob .obt{display:flex;flex-direction:column;align-items:center}
+.ob.lead .bav{width:30px;height:38px}
+.ob.team .bav{width:26px;height:34px}
+.ob.lead.hasav{width:calc(100% - 8px);max-width:190px}
+.olead>.ob.lead.hasav{width:190px}
 .pdrop{display:flex;align-items:center;justify-content:center;gap:16px;min-height:150px;border:2px dashed var(--line);border-radius:10px;padding:16px;text-align:center;outline:none;margin:6px 0 12px}
 .pdrop:focus,.pdrop.over{border-color:var(--accent);background:var(--accent-soft)}
 .pdrop img{width:90px;height:120px;object-fit:cover;border-radius:6px;border:1px solid var(--line)}
@@ -423,7 +430,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.03 13:06</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.03 13:18</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -1709,34 +1716,47 @@ function avatar(p) {
     : `<span class="av"><span class="avb${p.photo ? '' : ' empty'}">${inner}</span></span>`;
 }
 // 사진: 가운데를 3:4로 잘라 96×128 JPEG로 줄여 저장 (한 명당 약 5KB)
-function makePhoto(file) {
+function makePhoto(file, W = 96) {
   return new Promise((res, rej) => {
     const r = new FileReader();
     r.onerror = () => rej(new Error('사진을 읽지 못했습니다'));
     r.onload = () => { const im = new Image(); im.onerror = () => rej(new Error('이미지 파일이 아닙니다')); im.onload = () => {
-      const W = 96, H = 128, ar = W / H; let sw = im.width, sh = im.height, sx = 0, sy = 0;
+      const H = Math.round(W * 4 / 3), ar = W / H; let sw = im.width, sh = im.height, sx = 0, sy = 0;
       if (sw / sh > ar) { sw = sh * ar; sx = (im.width - sw) / 2; } else { sh = sw / ar; sy = (im.height - sh) / 4; }
       const c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d');
       g.imageSmoothingQuality = 'high'; g.drawImage(im, sx, sy, sw, sh, 0, 0, W, H); res(c.toDataURL('image/jpeg', 0.78)); }; im.src = r.result; };
     r.readAsDataURL(file);
   });
 }
+// 사진 대상: 명단 인원(id) 또는 조직 책임자('org:head' · 'org:dev' · 'org:ext:조직명' — 조직 설정에 저장)
+const orgKey = id => String(id).startsWith('org:') ? id.slice(4) : null;
+function photoOf(id) { const k = orgKey(id); return k ? (orgCfg().photos || {})[k] : S.people.find(x => x.id === id)?.photo; }
+function photoName(id) { const k = orgKey(id), o = orgCfg(); if (!k) return S.people.find(x => x.id === id)?.name || ''; return k === 'head' ? `연구소장 ${o.head || ''}` : k === 'dev' ? `개발실장 ${o.dev || ''}` : `${k.slice(4)} ${(o.exts.find(u => 'ext:' + u.name === k) || {}).head || ''}`; }
 function setPhoto(id, url) {
+  const k = orgKey(id);
+  if (k) { const o = orgCfg(); o.photos = o.photos || {}; if (url) o.photos[k] = url; else delete o.photos[k]; saveOrg(); render(); return; }
   const p = S.people.find(x => x.id === id); if (!p) return;
   if (url) p.photo = url; else delete p.photo;
   const { id: _, ...doc } = p; put('people/' + id, doc); render();
 }
+// 상자 안 사진 (책임자·팀장)
+function boxAvatar(id, src) {
+  const inner = src ? `<img src="${esc(src)}" alt="">` : admin ? '<b class="plus">+</b>' : '<svg viewBox="0 0 24 32" aria-hidden="true"><circle cx="12" cy="11" r="5"/><path d="M3 30c0-6 4-10 9-10s9 4 9 10z"/></svg>';
+  return admin ? `<button type="button" class="avb bav${src ? '' : ' empty'}" data-act="photo-pick" data-id="${esc(id)}" title="${esc(photoName(id))} 사진 · 마우스를 올리고 Ctrl+V로 붙여넣기 가능">${inner}</button>`
+    : `<span class="avb bav${src ? '' : ' empty'}">${inner}</span>`;
+}
 // 사진 넣기 창: Ctrl+V 붙여넣기 · 끌어다 놓기 · 파일 고르기
 function photoDialog(id) {
-  const p = S.people.find(x => x.id === id); if (!p) return;
-  openDlg(`<div data-photo="${id}"><h2>${esc(p.name)} 사진</h2>
-    <div class="pdrop" data-drop="${id}" tabindex="0">${p.photo ? `<img src="${esc(p.photo)}" alt="">` : ''}<div><b>Ctrl+V</b>로 붙여넣기<br><span class="muted small">또는 사진을 여기로 끌어다 놓기</span></div></div>
+  const ph = photoOf(id), nm = photoName(id); if (!nm.trim()) return;
+  const p = { photo: ph };
+  openDlg(`<div data-photo="${esc(id)}"><h2>${esc(nm)} 사진</h2>
+    <div class="pdrop" data-drop="${esc(id)}" tabindex="0">${p.photo ? `<img src="${esc(p.photo)}" alt="">` : ''}<div><b>Ctrl+V</b>로 붙여넣기<br><span class="muted small">또는 사진을 여기로 끌어다 놓기</span></div></div>
     <div class="actions">${p.photo ? `<button type="button" class="btn danger" data-act="photo-del" data-id="${id}">지우기</button>` : ''}<span class="spacer"></span>${navigator.clipboard?.read ? `<button type="button" class="btn primary" data-act="photo-clip" data-id="${id}">복사한 그림 붙여넣기</button>` : ''}<button type="button" class="btn" data-act="photo-file" data-id="${id}">파일 고르기</button><button type="button" class="btn" data-act="close">닫기</button></div></div>`);
   setTimeout(() => $('#dlgBody .pdrop')?.focus(), 30);
 }
 async function applyPhoto(id, file) {
   if (!file || !/^image\//.test(file.type)) { toast('이미지가 아닙니다', true); return; }
-  try { setPhoto(id, await makePhoto(file)); toast('사진을 저장했습니다'); if ($('#dlgBody [data-photo]')) closeDlg(); else if ($('#dlg').open && $('#dlgBody [data-form=person]')) personDialog(id); } catch (e) { toast(e.message, true); }
+  try { setPhoto(id, await makePhoto(file, orgKey(id) ? 72 : 96)); toast('사진을 저장했습니다'); if ($('#dlgBody [data-photo]')) closeDlg(); else if ($('#dlg').open && $('#dlgBody [data-form=person]')) personDialog(id); } catch (e) { toast(e.message, true); }
 }
 let hoverPhoto = null;
 document.addEventListener('mouseover', e => { const b = e.target.closest?.('button.avb[data-id]'); hoverPhoto = b ? b.dataset.id : null; });
@@ -1772,7 +1792,7 @@ function vOrg(seg) {
   const partBox = (c, PL, cls) => { const P = ui.orgPhoto && cls !== 'direct'; return `<div class="op${cls === 'direct' ? ' direct' : ''}"><div class="ob part ${cls}"><b>${esc(c)}</b><em>${PL.length}</em></div><ul class="onames${P ? ' ph' : ''}">${PL.map(p => orgName(p, P)).join('')}</ul></div>`; };
   const teamHTML = t => {
     const TL = L.filter(p => p.team === t), ld = orgLeader(t, TL), ps = parts(t);
-    return `<div class="ot" style="flex:${ps.length} 1 0"><div class="ob team"><b>${esc(t)}</b><small>${ld ? `${esc(ld.name)} ${esc(RSHORT(ld.rank))}` : '&nbsp;'}</small><em>${TL.length}</em></div>
+    return `<div class="ot" style="flex:${ps.length} 1 0"><div class="ob team${ld && ui.orgPhoto ? ' hasav' : ''}">${ld && ui.orgPhoto ? boxAvatar(ld.id, ld.photo) : ''}<div class="obt"><b>${esc(t)}</b><small>${ld ? `${esc(ld.name)} ${esc(RSHORT(ld.rank))}` : '&nbsp;'}</small></div><em>${TL.length}</em></div>
       <div class="oparts">${ps.map(c => partBox(c, TL.filter(p => p.cat === c && p !== ld), 'pc' + pidx(c))).join('')}</div></div>`; };
   const units = scoped ? [] : o.exts.filter(u => u.name);
   const extTeams = new Set(units.flatMap(u => u.teams || []));
@@ -1799,10 +1819,10 @@ function vOrg(seg) {
     const mid = cs.length ? (cs[0] + cs.at(-1)) / 2 : .5, snap = cs.length ? cs.reduce((a, c) => Math.abs(c - mid) < Math.abs(a - mid) ? c : a, cs[0]) : .5;
     ctr[0] = snap * cols[0].w / tot * 100;
     h += `<div class="obr">${units.length ? `<i class="ohl" style="left:${ctr[0]}%;right:${100 - ctr.at(-1)}%"></i>` : ''}
-      <div class="obc main" style="flex:${cols[0].w} 1 0"><div class="olead" style="--x:${snap * 100}%"><div class="ob lead"><b>연구소장</b><small>${esc(o.head || '–')}</small></div><i class="ovl"></i>
-        <div class="ob lead"><b>개발실장</b><small>${esc(o.dev || '–')}</small><em>${devN}</em></div><i class="ovl"></i></div><div class="oteams">${mainT.map(teamHTML).join('')}</div></div>
+      <div class="obc main" style="flex:${cols[0].w} 1 0"><div class="olead" style="--x:${snap * 100}%"><div class="ob lead${ui.orgPhoto ? ' hasav' : ''}">${ui.orgPhoto ? boxAvatar('org:head', (o.photos || {}).head) : ''}<div class="obt"><b>연구소장</b><small>${esc(o.head || '–')}</small></div></div><i class="ovl"></i>
+        <div class="ob lead${ui.orgPhoto ? ' hasav' : ''}">${ui.orgPhoto ? boxAvatar('org:dev', (o.photos || {}).dev) : ''}<div class="obt"><b>개발실장</b><small>${esc(o.dev || '–')}</small></div><em>${devN}</em></div><i class="ovl"></i></div><div class="oteams">${mainT.map(teamHTML).join('')}</div></div>
       ${cols.slice(1).map(c => { const n = c.T.reduce((a, t) => a + L.filter(p => p.team === t).length, 0) + c.M.length;
-        return `<div class="obc ext" style="flex:${c.w} 1 0"><div class="ob lead"><b>${esc(c.u.name)}</b><small>${esc(c.u.head || '') || '&nbsp;'}</small><em>${n}</em></div><i class="ovl"></i>
+        return `<div class="obc ext" style="flex:${c.w} 1 0"><div class="ob lead${ui.orgPhoto ? ' hasav' : ''}">${ui.orgPhoto ? boxAvatar('org:ext:' + c.u.name, (o.photos || {})['ext:' + c.u.name]) : ''}<div class="obt"><b>${esc(c.u.name)}</b><small>${esc(c.u.head || '') || '&nbsp;'}</small></div><em>${n}</em></div><i class="ovl"></i>
         <div class="oteams">${c.T.map(teamHTML).join('')}${c.M.length ? `<div class="ot" style="flex:1 1 0"><div class="ob team"><b>${esc(c.u.part || c.u.name)}</b><small>&nbsp;</small><em>${c.M.length}</em></div><div class="oparts">${partBox(c.u.part || c.u.name, c.M, 'direct')}</div></div>` : ''}</div></div>`; }).join('')}</div>`;
   }
   h += `</div></div>`;
