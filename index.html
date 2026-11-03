@@ -276,6 +276,10 @@ th.pch{box-shadow:inset 0 -3px 0 var(--pc)}
 .eqtbl{table-layout:fixed;width:100%}
 .eqtbl td{text-align:center}
 .ohc tr.hl td{background:var(--sunk)}
+.ostat2{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:start}
+.oext table{width:auto;min-width:220px}
+.oext th,.oext td{min-width:92px}
+@media (max-width:1100px){.ostat2{grid-template-columns:1fr}}
 .orgcard{position:relative}
 .orankw{position:absolute;top:12px;right:16px;z-index:2}
 .orank{border-collapse:collapse;font-size:11px;background:var(--surface)}
@@ -403,7 +407,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.03 11:39</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.03 11:48</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -1730,22 +1734,26 @@ function vOrg(seg) {
   const anyLeave = L.some(isLeave), anyNew = L.some(isNew);
   if (anyLeave || anyNew) h += `<div class="olg">${anyLeave ? '<span><b>*</b> 휴직</span>' : ''}${anyNew ? '<span><span class="nw">신규</span> 올해 입사</span>' : ''}</div>`;
   h += `</section>`;
-  // 팀·파트별 현황 (출력 전용, 입력은 조직 설정)
-  const cols = teams.flatMap(t => parts(t).map(c => ({ t, c, k: t + '|' + c, n: L.filter(p => p.team === t && p.cat === c).length })));
+  // 팀·파트별 현황 (출력 전용, 입력은 조직 설정) — 개발실장 라인 / 별도 조직은 오른쪽 표로 분리
   const val = (k, f) => (o.to[k] || {})[f];
-  const sum = f => { const xs = cols.map(x => val(x.k, f)).filter(v => v != null); return xs.length ? xs.reduce((a, b) => a + b, 0) : null; };
   const num = v => v == null ? '<td class="num muted">–</td>' : `<td class="num">${v}</td>`;
   const sg = g => g == null ? '<td class="num muted">–</td>' : `<td class="num${g < 0 ? ' neg' : ''}">${g > 0 ? '+' + g : g}</td>`;
+  const sumOf = (xs, f) => { const v = xs.map(x => val(x.k, f)).filter(v => v != null); return v.length ? v.reduce((a, b) => a + b, 0) : null; };
   const gapOf = xs => { const w = xs.filter(x => val(x.k, 'to') != null); return w.length ? w.reduce((a, x) => a + x.n - val(x.k, 'to'), 0) : null; };
-  h += `<section class="card"><div class="head"><h2>팀·파트별 인원 현황</h2><span class="sub">${esc(o.year || String(new Date().getFullYear()))}년</span></div><div class="tw free"><table class="eqtbl ohc"><thead>
-    <tr><th rowspan="2">구분</th><th rowspan="2">합계</th>${teams.map(t => `<th colspan="${parts(t).length}">${esc(t)}</th>`).join('')}</tr>
-    <tr>${cols.map(x => `<th class="pch pc${pidx(x.c)}">${esc(x.c)}</th>`).join('')}</tr></thead><tbody>
-    <tr class="hl"><td>현원</td><td class="num"><b>${L.length}</b></td>${cols.map(x => `<td class="num"><b>${x.n}</b></td>`).join('')}</tr>
-    <tr><td>TO</td>${num(sum('to'))}${cols.map(x => num(val(x.k, 'to'))).join('')}</tr>
-    <tr><td>과부족</td>${sg(gapOf(cols))}${cols.map(x => sg(gapOf([x]))).join('')}</tr>
-    <tr><td>퇴사</td>${num(sum('out'))}${cols.map(x => num(val(x.k, 'out'))).join('')}</tr>
-    <tr><td>충원</td>${num(sum('in'))}${cols.map(x => num(val(x.k, 'in'))).join('')}</tr>
-  </tbody></table></div></section>`;
+  const ROWS = [['현원', null], ['TO', 'to'], ['TO 대비', 'gap'], ['퇴사', 'out'], ['충원', 'in']];
+  const body = (xs, withTotal) => ROWS.map(([lb, f]) => `<tr${f ? '' : ' class="hl"'}>${withTotal ? `<td>${lb}</td>` : ''}${withTotal ? (f === null ? `<td class="num"><b>${xs.reduce((a, x) => a + x.n, 0)}</b></td>` : f === 'gap' ? sg(gapOf(xs)) : num(sumOf(xs, f))) : ''}${xs.map(x => f === null ? `<td class="num"><b>${x.n}</b></td>` : f === 'gap' ? sg(gapOf([x])) : num(val(x.k, f))).join('')}</tr>`).join('');
+  const mcols = mainT.flatMap(t => parts(t).map(c => ({ t, c, k: t + '|' + c, n: L.filter(p => p.team === t && p.cat === c).length })));
+  const ecols = units.flatMap(u => [...teams.filter(t => (u.teams || []).includes(t)).flatMap(t => parts(t).map(c => ({ u, c, k: t + '|' + c, n: L.filter(p => p.team === t && p.cat === c).length }))),
+    ...(extMembers(u).length ? [{ u, c: u.part || u.name, k: 'ext:' + u.name, n: extMembers(u).length }] : [])]);
+  const ecolsU = units.map(u => ({ u, xs: ecols.filter(x => x.u === u) })).filter(g => g.xs.length);
+  h += `<section class="card"><div class="head"><h2>팀·파트별 인원 현황</h2><span class="sub">${esc(o.year || String(new Date().getFullYear()))}년</span></div><div class="ostat2">
+    <div class="tw free"><table class="eqtbl ohc"><thead>
+    <tr><th rowspan="2">구분</th><th rowspan="2">합계</th>${mainT.map(t => `<th colspan="${parts(t).length}">${esc(t)}</th>`).join('')}</tr>
+    <tr>${mcols.map(x => `<th class="pch pc${pidx(x.c)}">${esc(x.c)}</th>`).join('')}</tr></thead><tbody>${body(mcols, true)}</tbody></table></div>
+    ${ecolsU.length ? `<div class="tw free oext"><table class="eqtbl ohc"><thead>
+    <tr>${ecolsU.map(g => `<th colspan="${g.xs.length}">${esc(g.u.name)}</th>`).join('')}</tr>
+    <tr>${ecolsU.flatMap(g => g.xs).map(x => `<th class="pch pc9">${esc(x.c)}</th>`).join('')}</tr></thead><tbody>${body(ecolsU.flatMap(g => g.xs), false)}</tbody></table></div>` : ''}
+  </div></section>`;
   return h;
 }
 function orgDialog() {
@@ -1769,7 +1777,7 @@ function orgDialog() {
       <label class="field" style="grid-column:span 2">추가 인원 (한 줄에 한 명 · 이름 직급)<textarea name="u${i}-members" rows="3" placeholder="이승우 수석&#10;정종의 수석">${esc(u.members || '')}</textarea></label></fieldset>`).join('')}
     <h3 class="fsec">팀·파트별 TO · 퇴사 · 충원</h3>
     <div style="grid-column:1/-1" class="tw free"><table class="eqtbl"><thead><tr><th>팀</th><th>파트</th><th>TO</th><th>퇴사</th><th>충원</th></tr></thead><tbody>
-      ${cols.map(k => { const [t, c] = k.split('|'); return `<tr><td>${esc(t)}</td><td>${esc(c)}</td>${['to', 'out', 'in'].map(f => `<td><input class="ci onum" type="number" min="0" name="n-${f}-${esc(k)}" value="${nv(k, f)}"></td>`).join('')}</tr>`; }).join('')}</tbody></table></div>
+      ${[...cols, ...o.exts.filter(u => u.name && extMembers(u).length).map(u => 'ext:' + u.name)].map(k => { const [t, c] = k.startsWith('ext:') ? [k.slice(4), (o.exts.find(u => 'ext:' + u.name === k) || {}).part || k.slice(4)] : k.split('|'); return `<tr><td>${esc(t)}</td><td>${esc(c)}</td>${['to', 'out', 'in'].map(f => `<td><input class="ci onum" type="number" min="0" name="n-${f}-${esc(k)}" value="${nv(k, f)}"></td>`).join('')}</tr>`; }).join('')}</tbody></table></div>
     <div style="grid-column:1/-1;display:flex;gap:8px;justify-content:flex-end"><button type="button" class="btn" data-act="close">취소</button><button class="btn primary" type="submit">저장</button></div></form>`, true);
 }
 function personDialog(id) {
