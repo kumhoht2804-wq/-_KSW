@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>연구소 역량·교육 관리</title>
+<title>금호HT 모듈개발연구소</title>
 <meta name="author" content="KSW">
 <meta name="copyright" content="© KSW">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
@@ -409,11 +409,9 @@ body.dense .toolbar{gap:8px}
   <div class="bar">
     <div class="brand"><b>연구소 역량·교육 관리</b><span>역량평가 · 교육 수료 현황</span></div>
     <nav class="tabs" id="tabs">
-      <a href="#dashboard" data-route="dashboard">종합</a>
-      <a href="#assess" data-route="assess">역량평가</a>
-      <a href="#education" data-route="education">교육 수료</a>
       <a href="#people" data-route="people">인원</a>
-      <a href="#settings" data-route="settings" hidden>기준 정보</a>
+      <a href="#education" data-route="education">교육 수료</a>
+      <a href="#assess" data-route="assess">역량평가</a>
       <a href="#accounts" data-route="accounts" hidden>계정 관리</a>
     </nav>
     <div class="spacer"></div>
@@ -430,7 +428,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.03 13:21</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.03 13:49</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -1048,7 +1046,7 @@ let API_URL = DEFAULT_API || LS.get('lab_api') || '';
 // ---------- state ----------
 const S = { config: null, parts: [], people: [], grades: {}, courses: [], edu: {}, history: [], items: {} };
 let C = null, admin = false, editor = false, leader = false, myTeam = '', offline = false, loadedOnce = false, auth = null;
-const ui = { assessMode: 'part', part: null, eduMode: 'matrix', peopleMode: 'org', orgPhoto: LS.get('lab_orgphoto') !== '0', eduDept: '', q: '', team: '', lv: '', guideDept: '', guideType: '', setPart: null, drafts: {}, users: [], lockSet: false, setup: false, signup: false, signupDone: '' };
+const ui = { assessMode: 'sum', part: null, eduMode: 'sum', peopleMode: 'org', orgPhoto: LS.get('lab_orgphoto') !== '0', eduDept: '', q: '', team: '', lv: '', guideDept: '', guideType: '', setPart: null, drafts: {}, users: [], lockSet: false, setup: false, signup: false, signupDone: '' };
 try { auth = JSON.parse(LS.get('lab_auth') || 'null'); } catch { auth = null; }
 
 function rebuild() {
@@ -1334,8 +1332,13 @@ function confirmDlg(msg, okLabel, fn) {
 }
 
 // ---------- routing ----------
-const ROUTES = ['dashboard', 'assess', 'education', 'people', 'settings', 'accounts'];
-const route = () => { const h = location.hash.slice(1); return ROUTES.includes(h) && (h !== 'accounts' || admin) && (h !== 'settings' || admin || director || leader) ? h : 'dashboard'; };
+const ROUTES = ['people', 'education', 'assess', 'accounts'];
+const canSet = () => admin || director || leader;   // 기준 정보 보기 · 사진 보기 (팀장 이상)
+const orgPh = () => ui.orgPhoto && canSet();
+const route = () => { let h = location.hash.slice(1);
+  if (h === 'dashboard') { ui.assessMode = 'sum'; h = 'assess'; history.replaceState(null, '', '#assess'); }   // 예전 주소
+  if (h === 'settings') { ui.assessMode = canSet() ? 'set' : 'sum'; h = 'assess'; history.replaceState(null, '', '#assess'); }
+  return ROUTES.includes(h) && (h !== 'accounts' || admin) ? h : 'people'; };
 window.addEventListener('hashchange', () => { render(); window.scrollTo(0, 0); });
 
 // ---------- render ----------
@@ -1369,7 +1372,7 @@ function renderInner() {
   const r = route();
   let html = '';
   if ((leader || scoped) && !S.people.some(p => p.team === myTeam)) html += `<div class="notice bad">${esc(auth.user.role)} 계정의 소속이 '${esc(myTeam || '미지정')}'인데, 인원 명단에 이 소속의 인원이 없어 볼 수 있는(수정할 수 있는) 사람이 없습니다. 관리자에게 계정 소속을 명단의 팀 이름(${esc((S.config.teamOrder || []).join(', '))})과 똑같이 바꿔 달라고 하세요.</div>`;
-  html += ({ dashboard: vDash, assess: vAssess, education: vEdu, people: vPeople, settings: vSettings, accounts: vAccounts })[r]();
+  html += ({ assess: vAssess, education: vEdu, people: vPeople, accounts: vAccounts })[r]();
   v.innerHTML = html;
 }
 
@@ -1408,23 +1411,25 @@ function stackBar(counts, total) {
   return `<div class="stack">${Object.entries(counts).filter(([, n]) => n).map(([lv, n]) => `<span style="width:${n / total * 100}%;background:${LVCOL[lv]};color:${LVINK[lv]}" title="Level ${lv}: ${n}명">${n}</span>`).join('')}</div>`;
 }
 function meter(rate) { const c = rate == null ? '' : rate >= 1 ? 'ok' : rate < .5 ? 'bad' : 'warn'; return `<span class="rate"><span class="meter ${c}"><i style="width:${Math.min(1, rate || 0) * 100}%"></i></span><span class="num">${pct(rate)}</span></span>`; }
-function vDash() {
+function vDash(kind) {
   const cs = compStats(), es = eduStats();
   const lvls = [...S.config.levels.map(l => l.lv), '미달'];
   const cnt = L => Object.fromEntries(lvls.map(l => [l, L.filter(x => x.c.lv === l).length]));
   const teams = C.teams(S.people);
   const miss = cs.done.filter(x => x.c.lv === '미달').length;
-  let h = `<div class="kpis">
+  let h = kind === 'edu' ? '' : `<div class="kpis">
     <div class="kpi"><span class="k">평가 대상</span><span class="v">${cs.tg.length}<small>명</small></span></div>
     <div class="kpi"><span class="k">평가 완료</span><span class="v">${cs.done.length}<small>명</small></span></div>
     <div class="kpi"><span class="k">평균 종합 점수</span><span class="v">${fmt1(cs.avg)}<small>/ 100</small></span></div>
     <div class="kpi"><span class="k">Level 미달</span><span class="v" style="color:${miss ? 'var(--bad)' : 'inherit'}">${miss}<small>명</small></span></div>
+  </div>`;
+  if (kind === 'edu') h += `<div class="kpis">
     <div class="kpi edu"><span class="k">교육 대상</span><span class="v">${es.ppl.length}<small>명</small></span></div>
     <div class="kpi edu"><span class="k">평균 필수 이수율</span><span class="v">${pct(es.avg)}</span></div>
     <div class="kpi edu"><span class="k">필수 교육 완료</span><span class="v">${es.full}<small>명</small></span></div>
   </div>`;
-  h += `<div class="grid g2">`;
   // team table
+  if (kind !== 'edu') {
   h += `<section class="card"><div class="head"><h2>팀별 역량평가 현황</h2><span class="sub">Level 기준 ${S.config.levels.map(l => `${l.lv} ${l.min}점↑`).join(' · ')}</span></div>
   <div class="tw free"><table><thead><tr><th>소속</th><th class="r">대상</th><th class="r">완료</th><th class="r">평균</th><th style="min-width:200px">Level 구성</th>${lvls.map(l => `<th class="c">${l}</th>`).join('')}</tr></thead><tbody>`;
   for (const t of teams) {
@@ -1443,7 +1448,9 @@ function vDash() {
     return `<figure class="donut${gi === 0 ? ' all' : ''}">${svg}<figcaption><b>${esc(name)}</b><span>${n}명</span></figcaption>
       <div class="dleg">${(() => { const it = l => `<span${c[l] ? '' : ' class="z"'}><i style="background:${LVSOLID[l]}"></i>${l}<em>${c[l]}${l === '미달' ? '명' : ''}</em></span>`, L2 = lvls.filter(l => l !== '미달'); return `<div>${L2.slice(0, 3).map(it).join('')}</div><div>${[...L2.slice(3), '미달'].map(it).join('')}</div>`; })()}</div></figure>`; }).join('')}</div>`;
   h += `</section>`;
+  }
   // edu by team
+  if (kind === 'edu') {
   h += `<section class="card"><div class="head"><h2>팀별 필수 교육 이수율</h2></div><div class="hbars">`;
   for (const t of teams) {
     const a = es.withT.filter(x => x.p.team === t); if (!a.length) continue;
@@ -1458,9 +1465,10 @@ function vDash() {
     const r = tot ? dn / tot : 0, col = r >= 1 ? 'var(--dB)' : r < .5 ? 'var(--dX)' : 'var(--dC)';
     const svg = ring([{ v: r, color: col, title: `${name}: 필수 ${tot}건 중 ${dn}건 이수` }, { v: 1 - r, color: 'transparent' }], `${Math.round(r * 100)}<tspan class="du">%</tspan>`, '이수율', { round: r > 0 && r < 1 });
     return `<figure class="donut${gi === 0 ? ' all' : ''}">${svg}<figcaption><b>${esc(name)}</b><span>${L.length}명</span></figcaption>
-      <div class="dleg"><div><span><i class="dg"></i>대상<em>${tot}</em></span><span${dn ? '' : ' class="z"'}><i style="background:${col}"></i>이수<em>${dn}</em></span></div><div><span${tot - dn ? '' : ' class="z"'}><i class="dg dd"></i>미이수<em>${tot - dn}</em></span><span${full ? '' : ' class="z"'}><i style="background:var(--dB)"></i>완료<em>${full}명</em></span></div></div></figure>`; }).join('')}</div></section></div>`;
+      <div class="dleg"><div><span><i class="dg"></i>대상<em>${tot}</em></span><span${dn ? '' : ' class="z"'}><i style="background:${col}"></i>이수<em>${dn}</em></span></div><div><span${tot - dn ? '' : ' class="z"'}><i class="dg dd"></i>미이수<em>${tot - dn}</em></span><span${full ? '' : ' class="z"'}><i style="background:var(--dB)"></i>완료<em>${full}명</em></span></div></div></figure>`; }).join('')}</div></section>`;
+  }
   // level criteria
-  h += `<section class="card"><div class="head"><h2>종합 Level 기준</h2><span class="sub" style="margin-right:14px">직급별 체류기간 ${STAY.map(([r, y]) => `${r} ${y}년`).join(' · ')}</span><span class="sub">Knowledge 50 + Skill 50 = 100점 · 등급 반영률 ${S.config.grades.slice().reverse().map(g => `${g.g} ${Math.round(g.step / S.config.grades.length * 100)}%`).join(' · ')}</span></div>
+  if (kind !== 'edu') h += `<section class="card"><div class="head"><h2>종합 Level 기준</h2><span class="sub" style="margin-right:14px">직급별 체류기간 ${STAY.map(([r, y]) => `${r} ${y}년`).join(' · ')}</span><span class="sub">Knowledge 50 + Skill 50 = 100점 · 등급 반영률 ${S.config.grades.slice().reverse().map(g => `${g.g} ${Math.round(g.step / S.config.grades.length * 100)}%`).join(' · ')}</span></div>
   <div class="tw free"><table class="lvtbl"><colgroup><col><col><col><col><col class="w"></colgroup><thead><tr><th>Level</th><th>숙련도</th><th>종합 점수</th><th>참고 직급</th><th>설명</th></tr></thead><tbody>${S.config.levels.map(l => `<tr><td>${lvTag(l.lv)}</td><td>${esc(l.label.replace(/\n/g, ' '))}</td><td class="num">${l.min}점 이상</td><td>${esc((l.ref || '').replace(/\n/g, ' ').replace(/\s*\d.*$/, ''))}</td><td class="l" style="white-space:normal">${esc(l.desc || '').replace(/\n/g, '<br>')}</td></tr>`).join('')}</tbody></table></div></section>`;
   return h;
 }
@@ -1469,7 +1477,10 @@ function vDash() {
 function vAssess() {
   const parts = S.parts.filter(p => (p.items || []).length && (!scoped || S.people.some(x => x.cat === p.name)));
   if (!ui.part || !parts.find(p => p.id === ui.part)) ui.part = (leader && parts.find(canPart) || parts[0])?.id;
-  let h = `<div class="toolbar"><div class="seg" role="group" aria-label="보기"><button type="button" data-act="amode" data-v="part" aria-pressed="${ui.assessMode === 'part'}">파트별 입력</button><button type="button" data-act="amode" data-v="all" aria-pressed="${ui.assessMode === 'all'}">전체 평가현황</button></div>`;
+  if (ui.assessMode === 'set' && !canSet()) ui.assessMode = 'sum';
+  let h = `<div class="toolbar"><div class="seg" role="group" aria-label="보기"><button type="button" data-act="amode" data-v="sum" aria-pressed="${ui.assessMode === 'sum'}">종합</button><button type="button" data-act="amode" data-v="part" aria-pressed="${ui.assessMode === 'part'}">파트별 입력</button><button type="button" data-act="amode" data-v="all" aria-pressed="${ui.assessMode === 'all'}">전체 평가현황</button>${canSet() ? `<button type="button" data-act="amode" data-v="set" aria-pressed="${ui.assessMode === 'set'}">기준 정보</button>` : ''}</div>`;
+  if (ui.assessMode === 'sum') return h + '</div>' + vDash('comp');
+  if (ui.assessMode === 'set') return h + '</div>' + vSettings('comp');
   if (ui.assessMode === 'part') {
     h += `<div class="chips">${parts.map(p => { const n = S.people.filter(x => x.cat === p.name); const d = n.filter(x => C.comp(x).T != null).length; return `<button type="button" class="pchip" data-act="part" data-v="${p.id}" aria-pressed="${p.id === ui.part}">${esc(p.name)}<span class="c">${d}/${n.length}</span></button>`; }).join('')}</div></div>`;
     const part = S.parts.find(p => p.id === ui.part);
@@ -1512,10 +1523,14 @@ function vAssess() {
 function deptOptions() { return S.config.eduDeptMap.map(x => x.dept).filter(d => S.people.some(p => p.eduDept === d && eduActive(p))); }
 function vEdu() {
   let h = `<div class="toolbar"><div class="seg" role="group" aria-label="보기">
+    <button type="button" data-act="emode" data-v="sum" aria-pressed="${ui.eduMode === 'sum'}">종합</button>
     <button type="button" data-act="emode" data-v="matrix" aria-pressed="${ui.eduMode === 'matrix'}">부서별 수료 현황</button>
     <button type="button" data-act="emode" data-v="records" aria-pressed="${ui.eduMode === 'records'}">이수 기록</button>
     <button type="button" data-act="emode" data-v="curri" aria-pressed="${ui.eduMode === 'curri'}">교육 커리큘럼</button>
-    <button type="button" data-act="emode" data-v="guide" aria-pressed="${ui.eduMode === 'guide'}">교육 가이드</button></div>`;
+    <button type="button" data-act="emode" data-v="guide" aria-pressed="${ui.eduMode === 'guide'}">교육 가이드</button>${canSet() ? `<button type="button" data-act="emode" data-v="set" aria-pressed="${ui.eduMode === 'set'}">기준 정보</button>` : ''}</div>`;
+  if (ui.eduMode === 'set' && !canSet()) ui.eduMode = 'sum';
+  if (ui.eduMode === 'sum') return h + '</div>' + vDash('edu');
+  if (ui.eduMode === 'set') return h + '</div>' + vSettings('edu');
   if (ui.eduMode === 'curri') return h + vCurri();
   if (ui.eduMode === 'matrix') {
     const opts = deptOptions();
@@ -1789,16 +1804,16 @@ function vOrg(seg) {
   const o = orgCfg(), L = C.sortComp(S.people), teams = C.teams(L);
   const parts = t => [...new Set(L.filter(p => p.team === t).map(p => p.cat))].sort((a, b) => (S.config.partOrder.indexOf(a) + 1 || 99) - (S.config.partOrder.indexOf(b) + 1 || 99));
   const pidx = c => { const i = S.config.partOrder.indexOf(c); return i < 0 ? 9 : i % 10; };
-  const partBox = (c, PL, cls) => { const P = ui.orgPhoto && cls !== 'direct'; return `<div class="op${cls === 'direct' ? ' direct' : ''}"><div class="ob part ${cls}"><b>${esc(c)}</b><em>${PL.length}</em></div><ul class="onames${P ? ' ph' : ''}">${PL.map(p => orgName(p, P)).join('')}</ul></div>`; };
+  const partBox = (c, PL, cls) => { const P = orgPh() && cls !== 'direct'; return `<div class="op${cls === 'direct' ? ' direct' : ''}"><div class="ob part ${cls}"><b>${esc(c)}</b><em>${PL.length}</em></div><ul class="onames${P ? ' ph' : ''}">${PL.map(p => orgName(p, P)).join('')}</ul></div>`; };
   const teamHTML = t => {
     const TL = L.filter(p => p.team === t), ld = orgLeader(t, TL), ps = parts(t);
-    return `<div class="ot" style="flex:${ps.length} 1 0"><div class="ob team${ld && ui.orgPhoto ? ' hasav' : ''}">${ld && ui.orgPhoto ? boxAvatar(ld.id, ld.photo) : ''}<div class="obt"><b>${esc(t)}</b><small>${ld ? `${esc(ld.name)} ${esc(RSHORT(ld.rank))}` : '&nbsp;'}</small></div><em>${TL.length}</em></div>
+    return `<div class="ot" style="flex:${ps.length} 1 0"><div class="ob team${ld && orgPh() ? ' hasav' : ''}">${ld && orgPh() ? boxAvatar(ld.id, ld.photo) : ''}<div class="obt"><b>${esc(t)}</b><small>${ld ? `${esc(ld.name)} ${esc(RSHORT(ld.rank))}` : '&nbsp;'}</small></div><em>${TL.length}</em></div>
       <div class="oparts">${ps.map(c => partBox(c, TL.filter(p => p.cat === c && p !== ld), 'pc' + pidx(c))).join('')}</div></div>`; };
   const units = scoped ? [] : o.exts.filter(u => u.name);
   const extTeams = new Set(units.flatMap(u => u.teams || []));
   const mainT = teams.filter(t => !extTeams.has(t));
   const np = T => T.reduce((a, t) => a + parts(t).length, 0);
-  let h = `<div class="toolbar">${seg}<button type="button" class="btn" data-act="org-photo" aria-pressed="${!!ui.orgPhoto}">${ui.orgPhoto ? '사진 숨기기' : '사진 보기'}</button><span class="spacer"></span>${admin ? '<button type="button" class="btn" data-act="org-edit">조직 설정</button>' : ''}</div>`;
+  let h = `<div class="toolbar">${seg}${canSet() ? `<button type="button" class="btn" data-act="org-photo" aria-pressed="${!!ui.orgPhoto}">${ui.orgPhoto ? '사진 숨기기' : '사진 보기'}</button>` : ''}<span class="spacer"></span>${admin ? '<button type="button" class="btn" data-act="org-edit">조직 설정</button>' : ''}</div>`;
   const RL = L.filter(p => mainT.includes(p.team));   // 직급별 인원: 별도 조직(신사업본부·SW개발실 등) 제외
   const headIn = L.some(p => p.name.replace(/\s+/g, '') === String(o.head || '').trim().split(/\s+/)[0]);
   const exec = !scoped && String(o.head || '').trim() && !headIn ? 1 : 0;   // 임원 = 연구소장
@@ -1819,10 +1834,10 @@ function vOrg(seg) {
     const mid = cs.length ? (cs[0] + cs.at(-1)) / 2 : .5, snap = cs.length ? cs.reduce((a, c) => Math.abs(c - mid) < Math.abs(a - mid) ? c : a, cs[0]) : .5;
     ctr[0] = snap * cols[0].w / tot * 100;
     h += `<div class="obr">${units.length ? `<i class="ohl" style="left:${ctr[0]}%;right:${100 - ctr.at(-1)}%"></i>` : ''}
-      <div class="obc main" style="flex:${cols[0].w} 1 0"><div class="olead" style="--x:${snap * 100}%"><div class="ob lead${ui.orgPhoto ? ' hasav' : ''}">${ui.orgPhoto ? boxAvatar('org:head', (o.photos || {}).head) : ''}<div class="obt"><b>연구소장</b><small>${esc(o.head || '–')}</small></div></div><i class="ovl"></i>
-        <div class="ob lead${ui.orgPhoto ? ' hasav' : ''}">${ui.orgPhoto ? boxAvatar('org:dev', (o.photos || {}).dev) : ''}<div class="obt"><b>개발실장</b><small>${esc(o.dev || '–')}</small></div><em>${devN}</em></div><i class="ovl"></i></div><div class="oteams">${mainT.map(teamHTML).join('')}</div></div>
+      <div class="obc main" style="flex:${cols[0].w} 1 0"><div class="olead" style="--x:${snap * 100}%"><div class="ob lead${orgPh() ? ' hasav' : ''}">${orgPh() ? boxAvatar('org:head', (o.photos || {}).head) : ''}<div class="obt"><b>연구소장</b><small>${esc(o.head || '–')}</small></div></div><i class="ovl"></i>
+        <div class="ob lead${orgPh() ? ' hasav' : ''}">${orgPh() ? boxAvatar('org:dev', (o.photos || {}).dev) : ''}<div class="obt"><b>개발실장</b><small>${esc(o.dev || '–')}</small></div><em>${devN}</em></div><i class="ovl"></i></div><div class="oteams">${mainT.map(teamHTML).join('')}</div></div>
       ${cols.slice(1).map(c => { const n = c.T.reduce((a, t) => a + L.filter(p => p.team === t).length, 0) + c.M.length;
-        return `<div class="obc ext" style="flex:${c.w} 1 0"><div class="ob lead${ui.orgPhoto ? ' hasav' : ''}">${ui.orgPhoto ? boxAvatar('org:ext:' + c.u.name, (o.photos || {})['ext:' + c.u.name]) : ''}<div class="obt"><b>${esc(c.u.name)}</b><small>${esc(c.u.head || '') || '&nbsp;'}</small></div><em>${n}</em></div><i class="ovl"></i>
+        return `<div class="obc ext" style="flex:${c.w} 1 0"><div class="ob lead${orgPh() ? ' hasav' : ''}">${orgPh() ? boxAvatar('org:ext:' + c.u.name, (o.photos || {})['ext:' + c.u.name]) : ''}<div class="obt"><b>${esc(c.u.name)}</b><small>${esc(c.u.head || '') || '&nbsp;'}</small></div><em>${n}</em></div><i class="ovl"></i>
         <div class="oteams">${c.T.map(teamHTML).join('')}${c.M.length ? `<div class="ot" style="flex:1 1 0"><div class="ob team"><b>${esc(c.u.part || c.u.name)}</b><small>&nbsp;</small><em>${c.M.length}</em></div><div class="oparts">${partBox(c.u.part || c.u.name, c.M, 'direct')}</div></div>` : ''}</div></div>`; }).join('')}</div>`;
   }
   h += `</div></div>`;
@@ -1894,7 +1909,8 @@ function personDialog(id) {
 
 // ===== 기준 정보 =====
 function draft(key, init) { if (!ui.drafts[key]) ui.drafts[key] = JSON.parse(JSON.stringify(init())); return ui.drafts[key]; }
-function vSettings() {
+function vSettings(kind) {
+  if (kind === 'edu') return vSettingsEdu();
   if (!ui.setPart || !S.parts.find(p => p.id === ui.setPart)) ui.setPart = (S.parts.find(canPart) || S.parts[0])?.id;
   const part = S.parts.find(p => p.id === ui.setPart);
   let dis = part && canPart(part) ? '' : 'disabled';
@@ -1925,20 +1941,12 @@ function vSettings() {
   dis = admin ? '' : 'disabled';
   const cfg = draft('cfg', () => S.config);
   const N = cfg.grades.length;
-  h += `<div class="grid g2"><section class="card"><div class="head"><h2>등급 반영률 · Level 기준</h2></div>
+  h += `<section class="card"><div class="head"><h2>등급 반영률 · Level 기준</h2></div>
     <div class="tw free"><table><thead><tr><th>등급</th><th class="r">단계</th><th class="r">반영률</th><th class="r">예시 (배점 10점)</th></tr></thead><tbody>
     ${cfg.grades.slice().reverse().map(g => { const i = cfg.grades.indexOf(g); return `<tr><td><span class="g g-${g.g}">${g.g}</span></td><td class="r"><input class="ci num" style="width:60px;text-align:right" type="number" min="0" data-act="cfg-step" data-i="${i}" value="${g.step}" ${dis}></td><td class="r num">${pct(g.step / N)}</td><td class="r num">${fmt1(10 * g.step / N)}</td></tr>`; }).join('')}</tbody></table></div>
     <div class="tw free"><table><thead><tr><th>Level</th><th>숙련도</th><th class="r">최소 점수</th><th>전 항목 동일 등급일 때</th></tr></thead><tbody>
     ${cfg.levels.map((l, i) => `<tr><td>${lvTag(l.lv)}</td><td>${esc(l.label.replace(/\n/g, ' '))}</td><td class="r"><input class="ci num" style="width:60px;text-align:right" type="number" min="0" max="100" data-act="cfg-lv" data-i="${i}" value="${l.min}" ${dis}></td><td class="small muted">${cfg.grades.slice().reverse().filter(g => { const t = 100 * g.step / N; const ls = [...cfg.levels].sort((a, b) => b.min - a.min); const hit = ls.find(x => t >= x.min); return hit && hit.lv === l.lv; }).map(g => `전 항목 ${g.g} = ${fmt1(100 * g.step / N)}점`).join(', ') || '–'}</td></tr>`).join('')}</tbody></table></div></section>`;
-  // edu settings
-  h += `<section class="card"><div class="head"><h2>교육 설정</h2></div>
-    <div class="grid" style="grid-template-columns:1fr 1fr">
-    <div class="tw free"><table><thead><tr><th>직급</th><th class="r">교육 단계</th></tr></thead><tbody>${cfg.rankStage.map((x, i) => `<tr><td>${esc(x.rank)}</td><td class="r"><input class="ci num" style="width:56px;text-align:right" type="number" min="1" max="9" data-act="cfg-rs" data-i="${i}" value="${x.stage}" ${dis}></td></tr>`).join('')}</tbody></table></div>
-    <div class="tw free"><table><thead><tr><th>상세부서</th><th>적용 교육부서</th></tr></thead><tbody>${cfg.eduDeptMap.map((x, i) => `<tr><td>${esc(x.dept)}</td><td><input class="ci" style="width:90px" data-act="cfg-dm" data-i="${i}" value="${esc(x.edu)}" ${dis}></td></tr>`).join('')}</tbody></table></div>
-    </div>
-    <div class="tw free"><table><thead><tr><th>가이드 직급 표기</th><th class="r">교육 단계</th></tr></thead><tbody>${cfg.guideStage.map((x, i) => `<tr><td>${esc(x.label)}</td><td class="r"><input class="ci num" style="width:56px;text-align:right" type="number" min="1" max="9" data-act="cfg-gs" data-i="${i}" value="${x.stage}" ${dis}></td></tr>`).join('')}</tbody></table></div>
-    
-    </section></div>`;
+
   h += `<section class="card"><div class="head"><h2>표시 순서</h2><span class="sub">쉼표로 구분</span></div><div class="form" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr))">
     <label class="field">소속<input data-act="cfg-list" data-k="teamOrder" value="${esc(cfg.teamOrder.join(', '))}" ${dis}></label>
     <label class="field">평가 파트<input data-act="cfg-list" data-k="partOrder" value="${esc(cfg.partOrder.join(', '))}" ${dis}></label>
@@ -1951,6 +1959,21 @@ function vSettings() {
     ${hist.map(x => `<tr><td>${esc(x.ver)}</td><td class="r num">${esc(x.rev)}</td><td class="num">${esc(x.date)}</td><td>${esc(x.author)}</td><td class="l">${esc(x.change)}</td><td class="l">${esc(x.note)}</td>${admin ? `<td><button type="button" class="btn sm danger" data-act="hist-del" data-id="${x.id}">삭제</button></td>` : ''}</tr>`).join('')}</tbody></table></div>
     ${admin ? `<form class="form" data-form="hist"><label class="field">Ver<input name="ver" value="${esc(hist.at(-1)?.ver || 'V1.0')}"></label><label class="field">Rev<input name="rev" type="number" value="${(+(hist.at(-1)?.rev ?? -1)) + 1}"></label><label class="field">날짜<input name="date" type="date" value="${today()}"></label><label class="field">작성자<input name="author" placeholder="부서/성명"></label><label class="field" style="grid-column:span 2">제/개정사항<input name="change" required></label><div><button class="btn primary" type="submit">이력 추가</button></div></form>` : ''}</section>`;
   if (admin) h += `<section class="card"><div class="head"><h2>데이터 불러오기 · 백업</h2></div><p class="small muted" style="margin:0">한 파일만 넣으면 나머지 데이터는 유지됩니다.</p><div class="toolbar"><label class="btn primary">원본 엑셀 불러오기 (.xlsx)<input type="file" accept=".xlsx" multiple data-act="import-xlsx" hidden></label><button type="button" class="btn" data-act="export-json">백업 내려받기 (.json)</button><label class="btn">백업 파일 불러오기 (.json)<input type="file" accept=".json" data-act="import-json" hidden></label></div></section>`;
+  return h;
+}
+
+function vSettingsEdu() {
+  const dis = admin ? '' : 'disabled';
+  const cfg = draft('cfg', () => S.config);
+  let h = '';
+  h += `<section class="card"><div class="head"><h2>교육 설정</h2></div>
+    <div class="grid" style="grid-template-columns:1fr 1fr">
+    <div class="tw free"><table><thead><tr><th>직급</th><th class="r">교육 단계</th></tr></thead><tbody>${cfg.rankStage.map((x, i) => `<tr><td>${esc(x.rank)}</td><td class="r"><input class="ci num" style="width:56px;text-align:right" type="number" min="1" max="9" data-act="cfg-rs" data-i="${i}" value="${x.stage}" ${dis}></td></tr>`).join('')}</tbody></table></div>
+    <div class="tw free"><table><thead><tr><th>상세부서</th><th>적용 교육부서</th></tr></thead><tbody>${cfg.eduDeptMap.map((x, i) => `<tr><td>${esc(x.dept)}</td><td><input class="ci" style="width:90px" data-act="cfg-dm" data-i="${i}" value="${esc(x.edu)}" ${dis}></td></tr>`).join('')}</tbody></table></div>
+    </div>
+    <div class="tw free"><table><thead><tr><th>가이드 직급 표기</th><th class="r">교육 단계</th></tr></thead><tbody>${cfg.guideStage.map((x, i) => `<tr><td>${esc(x.label)}</td><td class="r"><input class="ci num" style="width:56px;text-align:right" type="number" min="1" max="9" data-act="cfg-gs" data-i="${i}" value="${x.stage}" ${dis}></td></tr>`).join('')}</tbody></table></div>
+    
+    ${admin ? `<div class="toolbar"><span class="spacer"></span><button type="button" class="btn" data-act="cfg-reset">되돌리기</button><button type="button" class="btn primary" data-act="cfg-save">기준 저장</button></div>` : ''}</section>`;
   return h;
 }
 
