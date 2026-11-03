@@ -259,7 +259,10 @@ table thead th{text-align:center!important}
 .onames{list-style:none;margin:5px 0 0;padding:6px 4px;border:1px solid var(--line);border-radius:7px;align-self:stretch;display:grid;grid-template-columns:auto auto 26px;justify-content:center;align-content:start;column-gap:8px;row-gap:1px}
 .onames li{display:contents;font-size:12px;white-space:nowrap}
 .onames li>span{display:block;line-height:19px;white-space:nowrap}
-.onames .nm{font-weight:600;font-size:12px;min-width:3.3em;text-align:justify;text-align-last:justify}
+.onames .nm{font-weight:600;font-size:12px;display:grid}
+.onames .nm>span{grid-area:1/1}
+.onames .nm .sz{visibility:hidden;height:0;overflow:hidden}
+.onames .nm .tx.two{display:flex;justify-content:space-between}
 .onames .tg{display:flex;align-items:center;margin-left:-4px}
 .nwc{color:var(--dA);font-weight:600}
 .onames .rk{color:var(--muted);font-size:11px}
@@ -273,12 +276,11 @@ th.pch{box-shadow:inset 0 -3px 0 var(--pc)}
 .eqtbl{table-layout:fixed;width:100%}
 .eqtbl td{text-align:center}
 .ohc tr.hl td{background:var(--sunk)}
-.org{position:relative}
-.orankw{position:absolute;top:0;right:0;z-index:2}
+.orgcard{position:relative}
+.orankw{position:absolute;top:12px;right:16px;z-index:2}
 .orank{border-collapse:collapse;font-size:11px;background:var(--surface)}
 .orank th,.orank td{border:1px solid var(--line);padding:1px 12px;min-width:52px;line-height:17px;text-align:center;white-space:nowrap}
 .orank thead th{background:var(--sunk);font-weight:600;color:var(--muted)}
-.orank td small{font-size:10px;color:var(--muted);margin-left:4px}
 .olead{align-self:stretch;display:flex;flex-direction:column;align-items:flex-start}
 .olead>*{margin-left:var(--x);transform:translateX(-50%)}
 .olead>.ob.lead{width:170px}
@@ -401,7 +403,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.03 11:34</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.03 11:39</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -1682,7 +1684,7 @@ const isNew = p => String(p.join || '').slice(0, 4) === String(new Date().getFul
 const extMembers = u => String(u.members || '').split(/\n|,/).map(x => x.trim()).filter(Boolean).map(x => { const m = x.split(/\s+/); return { name: m[0], rank: m.slice(1).join(' ') }; });
 function orgName(p) {
   const cls = [isLeave(p) && 'leave', isNew(p) && 'new'].filter(Boolean).join(' ');
-  return `<li class="${cls}" title="${esc(p.rank)}${isNew(p) ? ' · 올해 입사' : ''}${p.note ? ' · ' + esc(p.note) : ''}"><span class="nm">${isLeave(p) ? '*' : ''}${esc((n => n.length === 2 ? n[0] + ' ' + n[1] : n)(String(p.name).replace(/\s+/g, '')))}</span><span class="rk">${esc(RSHORT(p.rank))}</span><span class="tg">${isNew(p) ? '<span class="nw">신규</span>' : ''}</span></li>`;
+  return `<li class="${cls}" title="${esc(p.rank)}${isNew(p) ? ' · 올해 입사' : ''}${p.note ? ' · ' + esc(p.note) : ''}">${(n => `<span class="nm"><span class="sz" aria-hidden="true">가나다</span><span class="tx${n.length === 2 ? ' two' : ''}">${n.length === 2 ? `<span>${esc(n[0])}</span><span>${esc(n[1])}</span>` : esc(n)}</span></span>`)((isLeave(p) ? '*' : '') + String(p.name).replace(/\s+/g, ''))}<span class="rk">${esc(RSHORT(p.rank))}</span><span class="tg">${isNew(p) ? '<span class="nw">신규</span>' : ''}</span></li>`;
 }
 function vOrg(seg) {
   const o = orgCfg(), L = C.sortComp(S.people), teams = C.teams(L);
@@ -1699,17 +1701,14 @@ function vOrg(seg) {
   const np = T => T.reduce((a, t) => a + parts(t).length, 0);
   let h = `<div class="toolbar">${seg}<span class="spacer"></span>${admin ? '<button type="button" class="btn" data-act="org-edit">조직 설정</button>' : ''}</div>`;
   const RL = L.filter(p => mainT.includes(p.team));   // 직급별 인원: 별도 조직(신사업본부·SW개발실 등) 제외
-  // 연구소장·개발실장이 명단에 없으면 직급에 더함 (전무·상무 등은 임원)
-  const tops = scoped ? [] : [o.head, o.dev].map(x => String(x || '').trim().split(/\s+/)).filter(a => a[0] && !L.some(p => p.name.replace(/\s+/g, '') === a[0])).map(a => a.slice(1).join(' '));
-  const shortOf = r => RSHORT(r);
-  const rkShort = [...S.config.rankOrder.filter(r => RL.some(p => p.rank === r) || tops.includes(shortOf(r))), ...[...new Set(RL.map(p => p.rank))].filter(r => !S.config.rankOrder.includes(r))];
-  const extra = r => tops.filter(x => x === shortOf(r) || x === r).length;
-  const exec = tops.filter(x => !rkShort.some(r => x === shortOf(r) || x === r)).length;
-  const rcols = [...(exec ? [{ k: '임원', n: exec }] : []), ...rkShort.map(r => ({ k: shortOf(r), n: RL.filter(p => p.rank === r).length + extra(r) }))];
-  const rtot = rcols.reduce((a, c) => a + c.n, 0) || 1;
+  const headIn = L.some(p => p.name.replace(/\s+/g, '') === String(o.head || '').trim().split(/\s+/)[0]);
+  const exec = !scoped && String(o.head || '').trim() && !headIn ? 1 : 0;   // 임원 = 연구소장
+  const rcols = [...(exec ? [{ k: '임원', n: exec }] : []), ...[...S.config.rankOrder.filter(r => RL.some(p => p.rank === r)), ...[...new Set(RL.map(p => p.rank))].filter(r => !S.config.rankOrder.includes(r))].map(r => ({ k: RSHORT(r), n: RL.filter(p => p.rank === r).length }))];
+  const rtot = rcols.reduce((a, c) => a + c.n, 0), rn = rtot || 1;
   const rankTbl = `<table class="orank"><thead><tr><th>직급</th>${rcols.map(c => `<th>${esc(c.k)}</th>`).join('')}<th>합계</th></tr></thead><tbody>
-    <tr><td>인원</td>${rcols.map(c => `<td>${c.n}<small>${Math.round(c.n / rtot * 100)}%</small></td>`).join('')}<td><b>${rcols.reduce((a, c) => a + c.n, 0)}</b></td></tr></tbody></table>`;
-  h += `<section class="card orgcard"><div class="head"><h2>조직도</h2><span class="sub">기준일 ${today()}</span>${scoped ? `<span class="spacer"></span>${rankTbl}` : ''}</div><div class="orgw"><div class="org">${scoped ? '' : `<div class="orankw">${rankTbl}</div>`}`;
+    <tr><td>인원</td>${rcols.map(c => `<td>${c.n}</td>`).join('')}<td><b>${rtot}</b></td></tr>
+    <tr class="muted"><td>비율</td>${rcols.map(c => `<td>${Math.round(c.n / rn * 100)}%</td>`).join('')}<td>100%</td></tr></tbody></table>`;
+  h += `<section class="card orgcard"><div class="head"><h2>조직도</h2><span class="sub">기준일 ${today()}</span>${scoped ? `<span class="spacer"></span>${rankTbl}` : ''}</div>${scoped ? '' : `<div class="orankw">${rankTbl}</div>`}<div class="orgw"><div class="org">`;
   if (scoped) h += `<div class="oteams solo">${teams.map(teamHTML).join('')}</div>`;
   else {
     const cols = [{ w: Math.max(1, np(mainT)) }, ...units.map(u => { const T = teams.filter(t => (u.teams || []).includes(t)), M = extMembers(u); return { u, T, M, w: Math.max(1, np(T) + (M.length ? 1 : 0)) }; })];
