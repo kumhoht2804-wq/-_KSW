@@ -423,7 +423,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.03 12:59</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.03 13:06</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -1731,7 +1731,7 @@ function photoDialog(id) {
   const p = S.people.find(x => x.id === id); if (!p) return;
   openDlg(`<div data-photo="${id}"><h2>${esc(p.name)} 사진</h2>
     <div class="pdrop" data-drop="${id}" tabindex="0">${p.photo ? `<img src="${esc(p.photo)}" alt="">` : ''}<div><b>Ctrl+V</b>로 붙여넣기<br><span class="muted small">또는 사진을 여기로 끌어다 놓기</span></div></div>
-    <div class="actions">${p.photo ? `<button type="button" class="btn danger" data-act="photo-del" data-id="${id}">지우기</button>` : ''}<span class="spacer"></span><button type="button" class="btn" data-act="photo-file" data-id="${id}">파일 고르기</button><button type="button" class="btn" data-act="close">닫기</button></div></div>`);
+    <div class="actions">${p.photo ? `<button type="button" class="btn danger" data-act="photo-del" data-id="${id}">지우기</button>` : ''}<span class="spacer"></span>${navigator.clipboard?.read ? `<button type="button" class="btn primary" data-act="photo-clip" data-id="${id}">복사한 그림 붙여넣기</button>` : ''}<button type="button" class="btn" data-act="photo-file" data-id="${id}">파일 고르기</button><button type="button" class="btn" data-act="close">닫기</button></div></div>`);
   setTimeout(() => $('#dlgBody .pdrop')?.focus(), 30);
 }
 async function applyPhoto(id, file) {
@@ -1744,9 +1744,14 @@ document.addEventListener('paste', e => {
   if (!admin) return;
   const box = $('#dlg').open ? $('#dlgBody [data-photo]') : null, id = box ? box.dataset.photo : hoverPhoto;
   if (!id) return;
-  const it = [...(e.clipboardData?.items || [])].find(i => i.type.startsWith('image/'));
-  if (!it) { if (box) toast('클립보드에 이미지가 없습니다', true); return; }
-  e.preventDefault(); applyPhoto(id, it.getAsFile());
+  const cd = e.clipboardData; if (!cd) return;
+  const it = [...(cd.items || [])].find(i => i.kind === 'file' && i.type.startsWith('image/'));
+  const f = it ? it.getAsFile() : [...(cd.files || [])].find(x => x.type.startsWith('image/'));
+  if (f) { e.preventDefault(); applyPhoto(id, f); return; }
+  // 웹·문서에서 복사해 HTML로만 들어온 그림 (data: 주소)
+  const m = (cd.getData('text/html') || '').match(/<img[^>]+src="(data:image\/[^"]+)"/i);
+  if (m) { e.preventDefault(); fetch(m[1]).then(r => r.blob()).then(bl => applyPhoto(id, new File([bl], 'p', { type: bl.type }))); return; }
+  if (box) toast('복사된 그림을 찾지 못했습니다. 그림에서 오른쪽 클릭 → 이미지 복사 후 다시 붙여넣어 주세요', true);
 });
 document.addEventListener('dragover', e => { const z = e.target.closest?.('[data-drop],button.avb[data-id]'); if (z && admin) { e.preventDefault(); z.classList.add('over'); } });
 document.addEventListener('dragleave', e => { e.target.closest?.('[data-drop],button.avb[data-id]')?.classList.remove('over'); });
@@ -1973,6 +1978,7 @@ document.addEventListener('click', e => {
     case 'org-photo': ui.orgPhoto = !ui.orgPhoto; LS.set('lab_orgphoto', ui.orgPhoto ? '1' : '0'); render(); break;
     case 'photo-pick': if (!need()) break; photoDialog(d.id); break;
     case 'photo-file': if (!need()) break; pickPhoto(d.id); break;
+    case 'photo-clip': if (!need()) break; (async () => { try { for (const ci of await navigator.clipboard.read()) { const ty = ci.types.find(x => x.startsWith('image/')); if (ty) { const bl = await ci.getType(ty); applyPhoto(d.id, new File([bl], 'p', { type: ty })); return; } } toast('클립보드에 복사된 그림이 없습니다', true); } catch { toast('클립보드를 읽지 못했습니다. Ctrl+V로 붙여넣어 주세요', true); } })(); break;
     case 'photo-del': if (!need()) break; setPhoto(d.id, null); if ($('#dlgBody [data-photo]')) closeDlg(); else personDialog(d.id); toast('사진을 지웠습니다'); break;
     case 'org-edit': if (!need()) break; orgDialog(); break;
     case 'person-edu': personEdu(d.id); break;
