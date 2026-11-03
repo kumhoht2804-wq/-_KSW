@@ -363,12 +363,25 @@ td.neg{color:var(--bad);font-weight:700}
 .cr-stage small{font-size:11px;color:var(--muted)}
 .cr-cell{padding:8px;display:flex;flex-direction:column;gap:5px;border-top:2px solid var(--accent)}
 .cr-cell.empty{background:repeating-linear-gradient(45deg,transparent 0 6px,var(--sunk) 6px 7px)}
-.cr-common{grid-column:2 / -1;display:flex;align-items:flex-start;gap:10px;padding:8px 10px;background:color-mix(in srgb,var(--sunk) 60%,var(--surface))}
+.cr-common{grid-column:2 / -1;display:grid;grid-template-columns:subgrid;row-gap:5px;padding:8px 0;align-content:start;background:color-mix(in srgb,var(--sunk) 60%,var(--surface))}
+.cr-common>.cchip{margin:0 8px}
+.cr-ctag{grid-column:1 / -1;padding:0 8px}
 .cr-common.solo{border-top:2px solid var(--accent)}
 .cr-tag{flex:none;font-size:11px;font-weight:700;color:var(--accent);background:var(--surface);border:1px solid var(--accent);border-radius:4px;padding:3px 6px;margin-top:2px}
 .cr-wrap{display:flex;flex-wrap:wrap;gap:5px}
-.cchip{display:flex;align-items:center;justify-content:center;text-align:center;min-height:28px;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:4px 8px;font-size:12.5px;line-height:1.3;word-break:keep-all}
-.cr-wrap .cchip{display:inline-flex}
+.cchip{display:flex;align-items:center;justify-content:center;gap:6px;text-align:center;min-height:28px;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:4px 8px;font:inherit;font-size:12.5px;line-height:1.3;word-break:keep-all;color:inherit;cursor:pointer;position:relative;width:auto}
+button.cchip:hover{border-color:var(--accent)}
+.cchip .cn{display:flex;flex-direction:column;align-items:center}
+.cchip .ins{font-size:10.5px;color:var(--muted);font-weight:500}
+.cchip .mat{position:absolute;right:4px;top:2px;font-size:9px;font-style:normal;opacity:.7}
+.dv{flex:none;font-size:10px;font-weight:700;border-radius:4px;padding:1px 5px;line-height:15px;white-space:nowrap}
+.dv.in{background:var(--accent);color:#fff}
+.dv.out{background:var(--sunk);color:var(--muted);border:1px solid var(--line)}
+.cinfo+h3+.toolbar a.btn{text-decoration:none}
+#dlgBody .btn.primary .muted{color:inherit;opacity:.75}
+.cinfo{display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;margin-top:8px}
+.cinfo span{display:block;font-size:11px;color:var(--muted)}
+.cinfo b{font-size:13px}
 .cchip.ok{background:var(--ok-soft);border-color:var(--ok);color:var(--ok);font-weight:600}
 .cchip.miss{background:var(--bad-soft);border-color:var(--bad);color:var(--bad);font-weight:600}
 .cchip.pre{background:var(--surface);border:1px dashed var(--ok);color:var(--ok);font-weight:600}
@@ -430,7 +443,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.03 15:42</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.03 16:27</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -1107,7 +1120,7 @@ async function reload(manual) {
     // 받아오는 사이에 수정이 있었으면 이 응답은 예전 값이라 버리고 잠시 뒤 다시 받음
     if (seq !== writeSeq || busy || Date.now() - lastWrite < 3000) { loading = false; syncUI(); setTimeout(() => reload(), 4000); return; }
     applyDocs(d.docs);
-    if (admin && !busy) freezeAuto();
+    if (admin && !busy) { freezeAuto(); initDelivery(); }
     if (admin) for (const [pid, m] of Object.entries(S.edu)) if (Object.values(m).some(r => r && r.date)) { const m2 = {}; for (const [k, r] of Object.entries(m)) m2[k] = { note: r.note || '' }; S.edu[pid] = m2; put('edu/' + pid, { r: m2 }); } loadedOnce = true; offline = false; if (admin) loadUsers(true); if (manual) toast('최신 데이터로 새로 고쳤습니다'); }
   catch (e) { if (!e.auth) { offline = true; toast('서버에서 데이터를 받지 못했습니다: ' + e.message, true); } }
   loading = false; syncUI(); schedule();
@@ -1138,6 +1151,39 @@ async function pump(path) {
     }
   }
   running.delete(path); busy--; syncUI();
+}
+// 사내/사외 첫 설정 (관리자 접속 시 1회): 1단계 공통 필수 = 사내, 나머지 = 사외
+function initDelivery() {
+  if (!S.config || S.config.deliveryInit || !C) return;
+  const ops = [];
+  for (const c of S.courses) { if (c.delivery) continue; c.delivery = (c.dept === '공통' && c.type === '필수' && C.cStage(c) === 1) ? '사내' : '사외'; const { id, ...doc } = c; ops.push({ path: 'courses/' + id, data: doc }); }
+  S.config.deliveryInit = true; const { id, ...body } = S.config; ops.push({ path: 'config/main', data: body });
+  putBatch(ops).then(() => { toast(`교육 ${ops.length - 1}건에 사내/사외를 처음 지정했습니다 (1단계 공통 = 사내)`); render(); }).catch(e => { S.config.deliveryInit = false; toast('사내/사외 지정 저장 실패: ' + e.message, true); });
+}
+// 교안 파일: 서버(구글 드라이브)에 올리고, 열 때는 로그인한 사람만 받아 감
+const fmtSize = n => n > 1048576 ? (n / 1048576).toFixed(1) + 'MB' : Math.max(1, Math.round(n / 1024)) + 'KB';
+async function openFile(f) {
+  if (!f || !f.id) return;
+  toast(`${f.name} 여는 중…`);
+  try {
+    const d = await api('file', { id: f.id });
+    const bin = atob(d.data), u8 = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+    const blob = new Blob([u8], { type: d.mime || 'application/octet-stream' }), url = URL.createObjectURL(blob);
+    if (/pdf|image\//.test(d.mime || '')) window.open(url, '_blank'); else { const a = document.createElement('a'); a.href = url; a.download = d.name || f.name; a.click(); }
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  } catch (e) { toast('파일을 열지 못했습니다: ' + e.message, true); }
+}
+const dvBadge = c => c.delivery ? `<span class="dv ${c.delivery === '사내' ? 'in' : 'out'}">${esc(c.delivery)}</span>` : '';
+const hasMat = c => !!(c.link || (c.file && c.file.id));
+function courseInfo(id) {
+  const c = S.courses.find(x => x.id === id); if (!c) return;
+  const st = C.cStage(c);
+  openDlg(`<h2>${dvBadge(c)} ${esc(c.name)}</h2>
+    <div class="cinfo"><div><span>분야</span><b>${esc(c.dept)}</b></div><div><span>직급</span><b>${esc(c.rank)}${st ? ` (${st}단계)` : ''}</b></div><div><span>구분</span><b>${esc(c.type)}</b></div><div><span>교육 방식</span><b>${esc(c.delivery || '미지정')}</b></div>
+    ${c.delivery === '사내' ? `<div><span>담당강사</span><b>${esc(c.teacher || '미정')}</b></div>` : ''}${c.purpose ? `<div style="grid-column:1/-1"><span>교육목적</span><b style="font-weight:500">${esc(c.purpose)}</b></div>` : ''}</div>
+    <h3 style="font-size:14px;margin:14px 0 6px">교안</h3>
+    ${hasMat(c) ? `<div class="toolbar">${c.link ? `<a class="btn primary" href="${esc(c.link)}" target="_blank" rel="noopener">링크 열기</a>` : ''}${c.file && c.file.id ? `<button type="button" class="btn primary" data-act="file-open" data-id="${c.id}">${esc(c.file.name)} <span class="muted small">${fmtSize(c.file.size || 0)}</span></button>` : ''}</div>` : '<p class="muted small">등록된 교안이 없습니다.</p>'}
+    <div class="actions">${admin ? `<button type="button" class="btn" data-act="course-edit" data-id="${c.id}">수정</button>` : ''}<span class="spacer"></span><button type="button" class="btn" data-act="close">닫기</button></div>`);
 }
 // 상위 직급 자동 인정을 지금 상태 그대로 실제 이수 기록으로 한 번 저장하고 끔 (관리자 접속 시 1회)
 function freezeAuto() {
@@ -1632,8 +1678,8 @@ function vEduBody() {
   const rows = S.courses.filter(c => (!ui.guideDept || c.dept === ui.guideDept) && (!ui.guideType || c.type === ui.guideType) && (!ui.q || c.name.includes(ui.q)));
   const cnt = cid => Object.values(S.edu).filter(m => m[cid] && !m[cid].x).length;
   const anyPurpose = rows.some(c => c.purpose);
-  h += `<section class="card"><div class="head"><h2>연구소 교육 가이드</h2><span class="sub">필수 ${S.courses.filter(c => c.type === '필수').length}건 · 선택 ${S.courses.filter(c => c.type === '선택').length}건</span></div><div class="tw"><table><thead><tr><th class="c">No</th><th>교육내용</th>${anyPurpose ? '<th>교육목적</th>' : ''}<th>부서</th><th>직급</th><th class="c">단계</th><th class="c">구분</th><th class="r">이수 인원</th>${admin ? '<th></th>' : ''}</tr></thead><tbody>
-  ${rows.map((c, i) => { const st = C.cStage(c); return `<tr><td class="c num muted">${i + 1}</td><td class="l"><b>${esc(c.name)}</b></td>${anyPurpose ? `<td class="muted l" style="white-space:normal">${esc(c.purpose)}</td>` : ''}<td>${esc(c.dept)}</td><td>${esc(c.rank)}</td><td class="c num">${st == null ? '<span class="tag bad">직급 표기 확인</span>' : st || '–'}</td><td class="c"><span class="tag ${c.type === '필수' ? 'ok' : ''}">${esc(c.type || '미지정')}</span></td><td class="r num">${cnt(c.id)}</td>${admin ? `<td><button type="button" class="btn sm" data-act="course-edit" data-id="${c.id}">수정</button></td>` : ''}</tr>`; }).join('')}
+  h += `<section class="card"><div class="head"><h2>연구소 교육 가이드</h2><span class="sub">필수 ${S.courses.filter(c => c.type === '필수').length}건 · 선택 ${S.courses.filter(c => c.type === '선택').length}건</span></div><div class="tw"><table><thead><tr><th class="c">No</th><th>교육내용</th>${anyPurpose ? '<th>교육목적</th>' : ''}<th>부서</th><th>직급</th><th class="c">단계</th><th class="c">구분</th><th class="c">교육 방식</th><th>담당강사</th><th class="c">교안</th><th class="r">이수 인원</th>${admin ? '<th></th>' : ''}</tr></thead><tbody>
+  ${rows.map((c, i) => { const st = C.cStage(c); return `<tr><td class="c num muted">${i + 1}</td><td class="l"><b>${esc(c.name)}</b></td>${anyPurpose ? `<td class="muted l" style="white-space:normal">${esc(c.purpose)}</td>` : ''}<td>${esc(c.dept)}</td><td>${esc(c.rank)}</td><td class="c num">${st == null ? '<span class="tag bad">직급 표기 확인</span>' : st || '–'}</td><td class="c"><span class="tag ${c.type === '필수' ? 'ok' : ''}">${esc(c.type || '미지정')}</span></td><td class="c">${dvBadge(c) || '<span class="muted">–</span>'}</td><td>${c.delivery === '사내' ? esc(c.teacher || '미정') : '<span class="muted">–</span>'}</td><td class="c">${hasMat(c) ? `<button type="button" class="btn sm" data-act="course-info" data-id="${c.id}">보기</button>` : '<span class="muted">–</span>'}</td><td class="r num">${cnt(c.id)}</td>${admin ? `<td><button type="button" class="btn sm" data-act="course-edit" data-id="${c.id}">수정</button></td>` : ''}</tr>`; }).join('')}
   </tbody></table></div></section>`;
   return h;
 }
@@ -1649,7 +1695,8 @@ function vCurri() {
     let cls = '', tip = `${c.name} · ${c.dept} · ${c.rank}`;
     if (sel) { const x = C.cell(c, sel); if (x.target) { cls = x.mark ? 'ok' : 'miss'; tip += x.mark ? ' · 이수' : ' · 미이수'; } else if (x.rec) { cls = 'ok'; tip += ' · 이수(미리 들음)'; } else cls = 'na'; }
     else { const tgt = S.people.filter(p => C.eduValid(p) && C.cell(c, p).target), dn = tgt.filter(p => C.cell(c, p).mark).length; if (tgt.length) tip += ` · 대상 ${tgt.length}명 중 ${dn}명 이수`; }
-    return `<span class="cchip ${cls}" title="${esc(tip)}">${esc(c.name)}</span>`;
+    if (c.delivery === '사내') tip += ` · 사내 (강사 ${c.teacher || '미정'})`; else if (c.delivery) tip += ' · 사외';
+    return `<button type="button" class="cchip ${cls}" data-act="course-info" data-id="${c.id}" title="${esc(tip)}">${dvBadge(c)}<span class="cn">${esc(c.name)}${c.delivery === '사내' ? `<small class="ins">강사 ${esc(c.teacher || '미정')}</small>` : ''}</span>${hasMat(c) ? '<i class="mat" aria-label="교안 있음">📎</i>' : ''}</button>`;
   };
   let h = `<label class="field"><span>개인별 이수 표시</span><select class="ci" data-act="f-curp"><option value="">선택 안 함</option>${people.map(p => `<option value="${p.id}"${p.id === ui.curPerson ? ' selected' : ''}>${esc(p.name)} · ${esc(p.team)} · ${esc(p.rank)}</option>`).join('')}</select></label>
     ${sel ? `<span class="legend-inline"><span class="pill ok">이수</span><span class="pill miss">미이수</span><span class="muted small">흐린 칸: 대상 아님</span></span>` : ''}</div>`;
@@ -1663,7 +1710,7 @@ function vCurri() {
     const span = (own ? 1 : 0) + (common.length ? 1 : 0);
     h += `<div class="cr-stage" style="grid-row:span ${span}"><b>${esc(st.label.split('/').map(x => x.trim().replace(/\s*연구원$/, '') || x.trim()).join(' / '))}</b><small>${st.stage}단계 · ${L.length}과목</small></div>`;
     if (own) h += depts.map(d => { const cs = L.filter(c => c.dept === d); return `<div class="cr-cell${cs.length ? '' : ' empty'}">${cs.map(chip).join('')}</div>`; }).join('');
-    if (common.length) h += `<div class="cr-common${own ? '' : ' solo'}"><span class="cr-tag">공통</span><div class="cr-wrap">${common.map(chip).join('')}</div></div>`;
+    if (common.length) h += `<div class="cr-common${own ? '' : ' solo'}"><div class="cr-ctag"><span class="cr-tag">공통</span></div>${common.map(chip).join('')}</div>`;
   }
   h += `</div>`;
   const elect = S.courses.filter(c => c.type === '선택');
@@ -1706,6 +1753,10 @@ function courseDialog(id) {
     <label class="field">부서<select name="dept">${depts.map(d => `<option${d === c.dept ? ' selected' : ''}>${esc(d)}</option>`).join('')}</select></label>
     <label class="field">직급<select name="rank">${ranks.map(d => `<option${d === c.rank ? ' selected' : ''}>${esc(d)}</option>`).join('')}</select></label>
     <label class="field">구분<select name="type"><option${c.type === '필수' ? ' selected' : ''}>필수</option><option${c.type === '선택' ? ' selected' : ''}>선택</option></select></label>
+    <label class="field">교육 방식<select name="delivery">${['사내', '사외'].map(v => `<option${v === (c.delivery || '사외') ? ' selected' : ''}>${v}</option>`).join('')}</select></label>
+    <label class="field">담당강사 (사내)<input name="teacher" value="${esc(c.teacher || '')}" placeholder="예: 홍길동 책임"></label>
+    <label class="field">교안 링크<input name="link" type="url" value="${esc(c.link || '')}" placeholder="https://… (드라이브·사내 시스템 주소)"></label>
+    <div class="field" style="grid-column:1/-1">교안 파일<div class="toolbar" style="margin-top:4px"><input type="hidden" name="file" id="cfile" value="${esc(JSON.stringify(c.file || null))}"><span id="cfileName" class="small">${c.file && c.file.id ? `${esc(c.file.name)} <span class="muted">${fmtSize(c.file.size || 0)}</span>` : '<span class="muted">없음</span>'}</span><button type="button" class="btn sm" data-act="cfile-up">파일 올리기</button><button type="button" class="btn sm danger" data-act="cfile-del"${c.file && c.file.id ? '' : ' hidden'}>지우기</button><span class="muted small">PPT·PDF 등 20MB까지</span></div></div>
     <div class="err" id="cerr" style="grid-column:1/-1"></div>
     <div class="actions" style="grid-column:1/-1">${id ? '<button type="button" class="btn danger" data-act="course-del" data-id="' + id + '">삭제</button><span class="spacer"></span>' : ''}<button type="button" class="btn" data-act="close">취소</button><button class="btn primary" type="submit">저장</button></div></form>`);
 }
@@ -2173,6 +2224,18 @@ document.addEventListener('click', e => {
     case 'year-view': ui.eduYear = d.v; ui.eduMode = 'sum'; render(); break;
     case 'year-del': if (!need()) break; if (!confirm(`${d.v}년 마감 자료를 삭제할까요?`)) break; for (const sfx of ['', 'e', 'c']) { delete S.archive['y' + d.v + sfx]; put('archive/y' + d.v + sfx, null); } if (String(ui.eduYear) === String(d.v)) ui.eduYear = ''; render(); toast('삭제했습니다'); break;
     case 'pmode': ui.peopleMode = d.v; ui.q = ''; render(); break;
+    case 'course-info': courseInfo(d.id); break;
+    case 'file-open': { const c = S.courses.find(x => x.id === d.id); if (c) openFile(c.file); break; }
+    case 'cfile-del': if (!need()) break; $('#cfile').value = 'null'; $('#cfileName').innerHTML = '<span class="muted">없음</span>'; t.hidden = true; break;
+    case 'cfile-up': if (!need()) break; { const inp = document.createElement('input'); inp.type = 'file'; inp.onchange = async () => { const f = inp.files[0]; if (!f) return;
+      if (f.size > 20 * 1048576) { toast('20MB 이하 파일만 올릴 수 있습니다', true); return; }
+      $('#cfileName').innerHTML = `<span class="muted">${esc(f.name)} 올리는 중…</span>`;
+      try { const b64 = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1]); r.onerror = rej; r.readAsDataURL(f); });
+        const dd = await api('upload', { name: f.name, mime: f.type || 'application/octet-stream', data: b64 });
+        const prev = (() => { try { return JSON.parse($('#cfile').value); } catch { return null; } })();
+        if (prev && prev.id && !S.courses.some(c => c.file && c.file.id === prev.id)) api('fileDel', { id: prev.id }).catch(() => { });
+        $('#cfile').value = JSON.stringify(dd.file); $('#cfileName').innerHTML = `${esc(dd.file.name)} <span class="muted">${fmtSize(dd.file.size)}</span>`; const del = $('#dlgBody [data-act=cfile-del]'); if (del) del.hidden = false; toast('파일을 올렸습니다. 저장을 눌러 주세요');
+      } catch (e) { $('#cfileName').innerHTML = '<span class="muted">없음</span>'; toast('올리지 못했습니다: ' + e.message, true); } }; inp.click(); break; }
     case 'hr-edit': if (!need()) break; hrDialog(d.id); break;
     case 'hr-paste': if (!need()) break; hrPasteDialog(); break;
     case 'hr-del': if (!need()) break; if (!confirm('이 인사 기록을 삭제할까요?')) break; S.hr = S.hr.filter(x => x.id !== d.id); put('hr/' + d.id, null); closeDlg(); hrSync(); render(); toast('삭제했습니다'); break;
@@ -2281,7 +2344,10 @@ document.addEventListener('submit', e => {
     const id = f.dataset.id || uid('c'); const name = v.name.trim();
     if (S.courses.some(c => c.name === name && c.id !== id)) { $('#cerr').textContent = '같은 이름의 교육이 이미 있습니다.'; return; }
     const old = S.courses.find(c => c.id === id);
-    const doc = { name, purpose: v.purpose.trim(), dept: v.dept, rank: v.rank, type: v.type, order: old ? old.order : Math.max(0, ...S.courses.map(c => c.order || 0)) + 1 };
+    let file = null; try { file = JSON.parse(v.file || 'null'); } catch { }
+    if (old && old.file && old.file.id && (!file || file.id !== old.file.id)) api('fileDel', { id: old.file.id }).catch(() => { });   // 바뀐 교안 파일은 드라이브 휴지통으로
+    const doc = { name, purpose: v.purpose.trim(), dept: v.dept, rank: v.rank, type: v.type, delivery: v.delivery, teacher: v.delivery === '사내' ? v.teacher.trim() : '', link: v.link.trim(), file, order: old ? old.order : Math.max(0, ...S.courses.map(c => c.order || 0)) + 1 };
+    if (!doc.file) delete doc.file;
     if (old) Object.assign(old, doc); else S.courses.push({ id, ...doc });
     put('courses/' + id, doc); rebuild(); closeDlg(); render(); toast('교육 가이드를 저장했습니다');
   } else if (f.dataset.form === 'person') {
