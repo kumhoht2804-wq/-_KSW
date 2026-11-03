@@ -273,6 +273,12 @@ th.pch{box-shadow:inset 0 -3px 0 var(--pc)}
 .eqtbl{table-layout:fixed;width:100%}
 .eqtbl td{text-align:center}
 .ohc tr.hl td{background:var(--sunk)}
+.orgcard{position:relative}
+.orankw{position:absolute;top:12px;right:16px;z-index:2}
+.orank{border-collapse:collapse;font-size:11.5px;background:var(--surface)}
+.orank th,.orank td{border:1px solid var(--line);padding:2px 9px;text-align:center;white-space:nowrap}
+.orank thead th{background:var(--sunk);font-weight:600;color:var(--muted)}
+.orank tr.muted td{color:var(--muted)}
 .ostat{grid-template-columns:minmax(0,1fr) minmax(0,2.2fr);align-items:start}
 @media (max-width:1300px){.ostat{grid-template-columns:1fr}}
 .onum{width:100%;max-width:80px;text-align:center;height:28px;padding:0 4px}
@@ -392,7 +398,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.03 11:28</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.03 11:29</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -1689,7 +1695,12 @@ function vOrg(seg) {
   const mainT = teams.filter(t => !extTeams.has(t));
   const np = T => T.reduce((a, t) => a + parts(t).length, 0);
   let h = `<div class="toolbar">${seg}<span class="spacer"></span>${admin ? '<button type="button" class="btn" data-act="org-edit">조직 설정</button>' : ''}</div>`;
-  h += `<section class="card"><div class="head"><h2>조직도</h2><span class="sub">기준일 ${today()}</span></div><div class="orgw"><div class="org">`;
+  const ranks = [...S.config.rankOrder.filter(r => L.some(p => p.rank === r)), ...[...new Set(L.map(p => p.rank))].filter(r => !S.config.rankOrder.includes(r))];
+  const rn = L.length || 1;
+  const rankTbl = `<table class="orank"><thead><tr><th>직급</th>${ranks.map(r => `<th>${esc(RSHORT(r))}</th>`).join('')}<th>합계</th></tr></thead><tbody>
+    <tr><td>인원</td>${ranks.map(r => `<td>${L.filter(p => p.rank === r).length}</td>`).join('')}<td><b>${L.length}</b></td></tr>
+    <tr class="muted"><td>비율</td>${ranks.map(r => `<td>${Math.round(L.filter(p => p.rank === r).length / rn * 100)}%</td>`).join('')}<td>100%</td></tr></tbody></table>`;
+  h += `<section class="card orgcard"><div class="head"><h2>조직도</h2><span class="sub">기준일 ${today()}</span>${scoped ? `<span class="spacer"></span>${rankTbl}` : ''}</div>${scoped ? '' : `<div class="orankw">${rankTbl}</div>`}<div class="orgw"><div class="org">`;
   if (scoped) h += `<div class="oteams solo">${teams.map(teamHTML).join('')}</div>`;
   else {
     const cols = [{ w: Math.max(1, np(mainT)) }, ...units.map(u => { const T = teams.filter(t => (u.teams || []).includes(t)), M = extMembers(u); return { u, T, M, w: Math.max(1, np(T) + (M.length ? 1 : 0)) }; })];
@@ -1706,12 +1717,6 @@ function vOrg(seg) {
   const anyLeave = L.some(isLeave), anyNew = L.some(isNew);
   if (anyLeave || anyNew) h += `<div class="olg">${anyLeave ? '<span><b>*</b> 휴직</span>' : ''}${anyNew ? '<span><b class="nwc">파란 이름</b> 올해 입사</span>' : ''}</div>`;
   h += `</section>`;
-  // 직급별 인원
-  const ranks = [...S.config.rankOrder.filter(r => L.some(p => p.rank === r)), ...[...new Set(L.map(p => p.rank))].filter(r => !S.config.rankOrder.includes(r))];
-  const n = L.length || 1;
-  h += `<div class="grid ostat"><section class="card"><div class="head"><h2>직급별 인원</h2><span class="sub">${L.length}명</span></div><div class="tw free"><table class="eqtbl"><thead><tr><th>구분</th>${ranks.map(r => `<th>${esc(RSHORT(r))}</th>`).join('')}<th>합계</th></tr></thead><tbody>
-    <tr><td>인원</td>${ranks.map(r => `<td class="num">${L.filter(p => p.rank === r).length}</td>`).join('')}<td class="num"><b>${L.length}</b></td></tr>
-    <tr><td>비율</td>${ranks.map(r => `<td class="num muted">${Math.round(L.filter(p => p.rank === r).length / n * 100)}%</td>`).join('')}<td class="num muted">100%</td></tr></tbody></table></div></section>`;
   // 팀·파트별 현황 (출력 전용, 입력은 조직 설정)
   const cols = teams.flatMap(t => parts(t).map(c => ({ t, c, k: t + '|' + c, n: L.filter(p => p.team === t && p.cat === c).length })));
   const val = (k, f) => (o.to[k] || {})[f];
@@ -1727,7 +1732,7 @@ function vOrg(seg) {
     <tr><td>과부족</td>${sg(gapOf(cols))}${cols.map(x => sg(gapOf([x]))).join('')}</tr>
     <tr><td>퇴사</td>${num(sum('out'))}${cols.map(x => num(val(x.k, 'out'))).join('')}</tr>
     <tr><td>충원</td>${num(sum('in'))}${cols.map(x => num(val(x.k, 'in'))).join('')}</tr>
-  </tbody></table></div></section></div>`;
+  </tbody></table></div></section>`;
   return h;
 }
 function orgDialog() {
