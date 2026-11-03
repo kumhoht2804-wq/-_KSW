@@ -354,29 +354,28 @@ td.neg{color:var(--bad);font-weight:700}
 @media (max-width:900px){.donuts{grid-template-columns:repeat(auto-fit,minmax(104px,1fr))}}
 @media (prefers-reduced-motion:reduce){.donut,.donut .seg{transition:none}}
 /* ---- 교육 커리큘럼 ---- */
-.curri{display:grid;grid-template-columns:110px repeat(var(--n),minmax(140px,1fr));border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface)}
+.curri{display:grid;grid-template-columns:88px 34px repeat(var(--n),minmax(150px,1fr));border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface)}
 .curri>div{border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
-.cr-corner{background:var(--sunk);font-size:11px;color:var(--muted);display:flex;align-items:center;justify-content:center;padding:10px 6px}
-.cr-dept{background:var(--sunk);text-align:center;padding:10px 6px;font-weight:700;font-size:14px;color:var(--ink);box-shadow:inset 0 -3px 0 var(--accent)}
-.cr-stage{background:var(--accent-soft);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:10px 6px;text-align:center;border-top:2px solid var(--accent)}
-.cr-stage b{font-size:14px;color:var(--accent)}
-.cr-stage small{font-size:11px;color:var(--muted)}
-.cr-cell{padding:8px;display:flex;flex-direction:column;gap:5px;border-top:2px solid var(--accent)}
-.cr-cell.empty{background:repeating-linear-gradient(45deg,transparent 0 6px,var(--sunk) 6px 7px)}
-.cr-common{grid-column:2 / -1;display:grid;grid-template-columns:subgrid;row-gap:5px;padding:8px 0;align-content:start;background:color-mix(in srgb,var(--sunk) 60%,var(--surface))}
-.cr-common>.cchip{margin:0 8px}
-.cr-ctag{grid-column:1 / -1;padding:0 8px}
-.cr-common.solo{border-top:2px solid var(--accent)}
-.cr-tag{flex:none;font-size:11px;font-weight:700;color:var(--accent);background:var(--surface);border:1px solid var(--accent);border-radius:4px;padding:3px 6px;margin-top:2px}
-.cr-wrap{display:flex;flex-wrap:wrap;gap:5px}
-.cchip{display:flex;align-items:center;justify-content:center;gap:6px;text-align:center;min-height:28px;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:4px 8px;font:inherit;font-size:12.5px;line-height:1.3;word-break:keep-all;color:inherit;cursor:pointer;position:relative;width:auto}
-button.cchip:hover{border-color:var(--accent)}
-.cchip .cn{display:flex;flex-direction:column;align-items:center}
-.cchip .ins{font-size:10.5px;color:var(--muted);font-weight:500}
-.cchip .mat{position:absolute;right:4px;top:2px;font-size:9px;font-style:normal;opacity:.7}
-.dv{flex:none;font-size:10px;font-weight:700;border-radius:4px;padding:1px 5px;line-height:15px;white-space:nowrap}
+.curri>div:nth-last-child(1){border-bottom:0}
+.cr-corner{background:var(--sunk);font-size:11px;color:var(--muted);display:flex;align-items:center;justify-content:center;padding:10px 4px}
+.cr-dept{background:var(--sunk);text-align:center;padding:10px 6px;font-weight:700;font-size:13.5px;color:var(--ink);box-shadow:inset 0 -2px 0 var(--accent)}
+.cr-stage{background:var(--accent-soft);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:10px 4px;text-align:center;border-top:2px solid var(--accent)}
+.cr-stage b{font-size:13.5px;color:var(--accent)}
+.cr-stage small{font-size:10.5px;color:var(--muted)}
+.cr-kind{display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--muted);background:var(--sunk);writing-mode:vertical-rl;letter-spacing:2px;padding:6px 0}
+.cr-kind.cm{color:var(--accent);background:color-mix(in srgb,var(--accent-soft) 70%,var(--surface))}
+.cr-kind.first,.cr-cell.first,.cr-common.first{border-top:2px solid var(--accent)}
+.cr-cell{padding:6px;display:flex;flex-direction:column;gap:4px}
+.cr-cell.empty{background:color-mix(in srgb,var(--sunk) 45%,var(--surface))}
+.cr-common{grid-column:3 / -1;display:grid;grid-template-columns:subgrid;row-gap:4px;padding:6px 0;align-content:start;background:color-mix(in srgb,var(--accent-soft) 35%,var(--surface))}
+.cr-common>.cchip{margin:0 7px 0 6px;width:auto}
+.cchip{display:grid;grid-template-columns:30px minmax(0,1fr) auto;align-items:center;column-gap:6px;text-align:left;height:28px;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:0 8px 0 5px;font:inherit;font-size:12px;line-height:1;color:inherit;cursor:pointer;width:100%}
+button.cchip:hover{border-color:var(--accent);background:var(--accent-soft)}
+.cchip .cn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cchip .ins{font-size:10.5px;color:var(--muted);white-space:nowrap;max-width:72px;overflow:hidden;text-overflow:ellipsis}
+.dv{display:inline-flex;align-items:center;justify-content:center;width:30px;height:17px;font-size:10px;font-weight:700;border-radius:4px;white-space:nowrap;box-sizing:border-box}
 .dv.in{background:var(--accent);color:#fff}
-.dv.out{background:var(--sunk);color:var(--muted);border:1px solid var(--line)}
+.dv.out{background:transparent;color:var(--muted);border:1px solid var(--line)}
 .cinfo+h3+.toolbar a.btn{text-decoration:none}
 #dlgBody .btn.primary .muted{color:inherit;opacity:.75}
 .cinfo{display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;margin-top:8px}
@@ -389,9 +388,8 @@ button.cchip:hover{border-color:var(--accent)}
 .cr-elect{border:1px solid var(--line);border-radius:10px;padding:10px 12px}
 .cr-elect summary{cursor:pointer;font-weight:700;font-size:13px}
 .cr-elist{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:5px;margin-top:10px}
-.cr-elist .cchip{justify-content:flex-start;text-align:left}
-body.dense .cchip{min-height:24px;padding:3px 6px;font-size:11.5px}
-body.dense .cr-cell{padding:6px;gap:4px}
+.cr-elist .cchip{display:flex;height:auto;min-height:26px;padding:4px 8px;justify-content:flex-start;text-align:left}
+body.dense .cchip{height:26px;font-size:11.5px}
 /* ---- 촘촘하게 보기 ---- */
 #denseBtn[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
 body.dense main{padding:10px 12px;gap:10px}
@@ -444,7 +442,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.03 16:30</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.03 17:00</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -1724,21 +1722,21 @@ function vCurri() {
     if (sel) { const x = C.cell(c, sel); if (x.target) { cls = x.mark ? 'ok' : 'miss'; tip += x.mark ? ' · 이수' : ' · 미이수'; } else if (x.rec) { cls = 'ok'; tip += ' · 이수(미리 들음)'; } else cls = 'na'; }
     else { const tgt = S.people.filter(p => C.eduValid(p) && C.cell(c, p).target), dn = tgt.filter(p => C.cell(c, p).mark).length; if (tgt.length) tip += ` · 대상 ${tgt.length}명 중 ${dn}명 이수`; }
     if (c.delivery === '사내') tip += ` · 사내 (강사 ${c.teacher || '미정'})`; else if (c.delivery) tip += ' · 사외';
-    return `<button type="button" class="cchip ${cls}" data-act="course-info" data-id="${c.id}" title="${esc(tip)}">${dvBadge(c)}<span class="cn">${esc(c.name)}${c.delivery === '사내' ? `<small class="ins">강사 ${esc(c.teacher || '미정')}</small>` : ''}</span>${hasMat(c) ? '<i class="mat" aria-label="교안 있음">📎</i>' : ''}</button>`;
+    return `<button type="button" class="cchip ${cls}" data-act="course-info" data-id="${c.id}" title="${esc(tip)}">${c.delivery ? `<span class="dv ${c.delivery === '사내' ? 'in' : 'out'}">${esc(c.delivery)}</span>` : '<span></span>'}<span class="cn">${esc(c.name)}</span>${c.delivery === '사내' ? `<span class="ins">${esc(c.teacher || '강사 미정')}</span>` : hasMat(c) ? '<span class="ins">📎</span>' : '<span></span>'}</button>`;
   };
   let h = `<label class="field"><span>개인별 이수 표시</span><select class="ci" data-act="f-curp"><option value="">선택 안 함</option>${people.map(p => `<option value="${p.id}"${p.id === ui.curPerson ? ' selected' : ''}>${esc(p.name)} · ${esc(p.team)} · ${esc(p.rank)}</option>`).join('')}</select></label>
     ${sel ? `<span class="legend-inline"><span class="pill ok">이수</span><span class="pill miss">미이수</span><span class="muted small">흐린 칸: 대상 아님</span></span>` : ''}</div>`;
   h += `<section class="card"><div class="head"><h2>연구소 교육 커리큘럼</h2><span class="sub">필수 교육 ${req.length}건</span></div>
     <div class="curri" style="--n:${depts.length}">
-    <div class="cr-corner">직급 \ 분야</div>${depts.map(d => `<div class="cr-dept">${esc(d)}</div>`).join('')}`;
+    <div class="cr-corner" style="grid-column:span 2">직급 \ 분야</div>${depts.map(d => `<div class="cr-dept">${esc(d)}</div>`).join('')}`;
   for (const st of stages) {
     const L = req.filter(c => C.cStage(c) === st.stage);
     if (!L.length) continue;
     const common = L.filter(c => c.dept === '공통'), own = depts.some(d => L.some(c => c.dept === d));
     const span = (own ? 1 : 0) + (common.length ? 1 : 0);
     h += `<div class="cr-stage" style="grid-row:span ${span}"><b>${esc(st.label.split('/').map(x => x.trim().replace(/\s*연구원$/, '') || x.trim()).join(' / '))}</b><small>${st.stage}단계 · ${L.length}과목</small></div>`;
-    if (own) h += depts.map(d => { const cs = L.filter(c => c.dept === d); return `<div class="cr-cell${cs.length ? '' : ' empty'}">${cs.map(chip).join('')}</div>`; }).join('');
-    if (common.length) h += `<div class="cr-common${own ? '' : ' solo'}"><div class="cr-ctag"><span class="cr-tag">공통</span></div>${common.map(chip).join('')}</div>`;
+    if (own) h += `<div class="cr-kind first">분야</div>` + depts.map(d => { const cs = L.filter(c => c.dept === d); return `<div class="cr-cell first${cs.length ? '' : ' empty'}">${cs.map(chip).join('')}</div>`; }).join('');
+    if (common.length) h += `<div class="cr-kind cm${own ? '' : ' first'}">공통</div><div class="cr-common${own ? '' : ' first'}">${common.map(chip).join('')}</div>`;
   }
   h += `</div>`;
   const elect = S.courses.filter(c => c.type === '선택');
