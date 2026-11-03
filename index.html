@@ -231,7 +231,7 @@ table thead th{text-align:center!important}
 .ob b{font-size:13px;font-weight:700}
 .ob small{font-size:11.5px;color:var(--muted)}
 .ob em{position:absolute;right:7px;top:5px;font:600 10.5px var(--font-num);color:var(--muted);font-style:normal}
-.ob.lead{width:170px;height:46px;background:var(--accent-soft);border-color:transparent}
+.ob.lead{width:calc(100% - 8px);max-width:170px;height:46px;background:var(--accent-soft);border-color:transparent}
 .ob.lead b{color:var(--accent)}
 .ovl{display:block;width:1px;height:14px;background:var(--oln)}
 .org{--oln:color-mix(in srgb,var(--muted) 45%,transparent)}
@@ -240,29 +240,30 @@ table thead th{text-align:center!important}
 .obc{display:flex;flex-direction:column;align-items:center;min-width:0;position:relative}
 .obc.ext{padding-top:60px}
 .obc.ext::before{content:'';position:absolute;top:53px;left:50%;height:7px;border-left:1px solid var(--oln)}
-.obc>.oteams{align-self:stretch;flex:1}
-.oteams{display:flex;align-items:stretch}
-.ot,.op{position:relative;padding:14px 4px 0;display:flex;flex-direction:column;align-items:stretch;min-width:0}
-.ot::before,.op::before{content:'';position:absolute;top:0;left:50%;height:14px;border-left:1px solid var(--oln)}
+.obc>.oteams{align-self:stretch}
+.oteams{display:flex;align-items:flex-start}
+.ot,.op{position:relative;padding:12px 3px 0;display:flex;flex-direction:column;align-items:stretch;min-width:0}
+.ot::before,.op::before{content:'';position:absolute;top:0;left:50%;height:12px;border-left:1px solid var(--oln)}
 .ot::after,.op::after{content:'';position:absolute;top:0;left:0;right:0;border-top:1px solid var(--oln)}
 .ot:first-child::after,.op:first-child::after{left:50%}
 .ot:last-child::after,.op:last-child::after{right:50%}
 .ot:only-child::after,.op:only-child::after{display:none}
 .oteams.solo .ot{padding-top:0}.oteams.solo .ot::before{display:none}
-.ob.team{background:var(--sunk);border-color:transparent;height:46px}
-.oparts{display:flex;flex:1}
+.ob.team{background:var(--sunk);border-color:transparent;height:42px}
+.oparts{display:flex;align-items:flex-start}
 .op{flex:1 1 0}
-.ob.part{height:32px;border-top:3px solid var(--pc,var(--line))}
+.ob.part{height:30px;border-top:3px solid var(--pc,var(--line))}
 .ob.part b{font-size:12.5px}
 .op.direct .ob.part{visibility:hidden}
-.op.direct::before{height:52px;z-index:1}
-.onames{list-style:none;margin:6px 0 0;padding:8px 6px;border:1px solid var(--line);border-radius:7px;flex:1;display:flex;flex-direction:column;gap:2px}
-.onames li{display:grid;grid-template-columns:1fr auto 1fr;align-items:baseline;column-gap:5px;font-size:12.5px;white-space:nowrap}
-.onames .nm{font-weight:600;text-align:right}
-.onames .rk{color:var(--muted);font-size:11.5px;text-align:left;min-width:2em}
-.onames .nw{justify-self:start}
+.op.direct::before{height:49px;z-index:1}
+.onames{list-style:none;margin:5px 0 0;padding:6px 4px;border:1px solid var(--line);border-radius:7px;align-self:stretch;display:grid;grid-template-columns:24px auto auto;justify-content:center;align-content:start;column-gap:4px;row-gap:1px}
+.onames li{display:contents;font-size:12px;white-space:nowrap}
+.onames li>span{display:flex;align-items:center;min-height:19px;white-space:nowrap}
+.onames .tg{justify-content:flex-end}
+.onames .nm{font-weight:600;font-size:12px}
+.onames .rk{color:var(--muted);font-size:11px}
 .onames li.leave .nm,.onames li.leave .rk{color:var(--muted);font-style:italic;font-weight:500}
-.nw{font-size:9.5px;font-weight:700;color:var(--ok);background:var(--ok-soft);border-radius:4px;padding:0 4px}
+.nw{font-size:9px;font-weight:700;color:var(--ok);background:var(--ok-soft);border-radius:3px;padding:0 3px;line-height:14px}
 .olg{display:flex;gap:14px;justify-content:flex-end;font-size:11.5px;color:var(--muted)}
 .obc.ext .ob,.obc.ext .onames{opacity:.6}
 .obc.ext .ob.lead{background:var(--sunk)}.obc.ext .ob.lead b{color:var(--muted)}
@@ -271,6 +272,8 @@ th.pch{box-shadow:inset 0 -3px 0 var(--pc)}
 .eqtbl{table-layout:fixed;width:100%}
 .eqtbl td{text-align:center}
 .ohc tr.hl td{background:var(--sunk)}
+.ostat{grid-template-columns:minmax(0,1fr) minmax(0,2.2fr);align-items:start}
+@media (max-width:1300px){.ostat{grid-template-columns:1fr}}
 .onum{width:100%;max-width:80px;text-align:center;height:28px;padding:0 4px}
 td.neg{color:var(--bad);font-weight:700}
 .fsec{grid-column:1/-1;font-size:13px;margin:8px 0 0;padding-top:8px;border-top:1px solid var(--line)}
@@ -388,7 +391,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.03 11:19</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.03 11:24</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -1668,7 +1671,7 @@ const isLeave = p => /휴직|공가/.test(p.note || '');
 const isNew = p => String(p.join || '').slice(0, 4) === String(new Date().getFullYear());
 const extMembers = u => String(u.members || '').split(/\n|,/).map(x => x.trim()).filter(Boolean).map(x => { const m = x.split(/\s+/); return { name: m[0], rank: m.slice(1).join(' ') }; });
 function orgName(p) {
-  return `<li class="${isLeave(p) ? 'leave' : ''}" title="${esc(p.rank)}${p.note ? ' · ' + esc(p.note) : ''}"><span class="nm">${isLeave(p) ? '*' : ''}${esc(p.name)}</span><span class="rk">${esc(RSHORT(p.rank))}</span>${isNew(p) ? '<span class="nw">신규</span>' : ''}</li>`;
+  return `<li class="${isLeave(p) ? 'leave' : ''}" title="${esc(p.rank)}${p.note ? ' · ' + esc(p.note) : ''}"><span class="tg">${isNew(p) ? '<span class="nw">신규</span>' : ''}</span><span class="nm">${isLeave(p) ? '*' : ''}${esc(p.name)}</span><span class="rk">${esc(RSHORT(p.rank))}</span></li>`;
 }
 function vOrg(seg) {
   const o = orgCfg(), L = C.sortComp(S.people), teams = C.teams(L);
@@ -1704,7 +1707,7 @@ function vOrg(seg) {
   // 직급별 인원
   const ranks = [...S.config.rankOrder.filter(r => L.some(p => p.rank === r)), ...[...new Set(L.map(p => p.rank))].filter(r => !S.config.rankOrder.includes(r))];
   const n = L.length || 1;
-  h += `<section class="card"><div class="head"><h2>직급별 인원</h2><span class="sub">${L.length}명</span></div><div class="tw free"><table class="eqtbl"><thead><tr><th>구분</th>${ranks.map(r => `<th>${esc(RSHORT(r))}</th>`).join('')}<th>합계</th></tr></thead><tbody>
+  h += `<div class="grid ostat"><section class="card"><div class="head"><h2>직급별 인원</h2><span class="sub">${L.length}명</span></div><div class="tw free"><table class="eqtbl"><thead><tr><th>구분</th>${ranks.map(r => `<th>${esc(RSHORT(r))}</th>`).join('')}<th>합계</th></tr></thead><tbody>
     <tr><td>인원</td>${ranks.map(r => `<td class="num">${L.filter(p => p.rank === r).length}</td>`).join('')}<td class="num"><b>${L.length}</b></td></tr>
     <tr><td>비율</td>${ranks.map(r => `<td class="num muted">${Math.round(L.filter(p => p.rank === r).length / n * 100)}%</td>`).join('')}<td class="num muted">100%</td></tr></tbody></table></div></section>`;
   // 팀·파트별 현황 (출력 전용, 입력은 조직 설정)
@@ -1722,7 +1725,7 @@ function vOrg(seg) {
     <tr><td>과부족</td>${sg(gapOf(cols))}${cols.map(x => sg(gapOf([x]))).join('')}</tr>
     <tr><td>퇴사</td>${num(sum('out'))}${cols.map(x => num(val(x.k, 'out'))).join('')}</tr>
     <tr><td>충원</td>${num(sum('in'))}${cols.map(x => num(val(x.k, 'in'))).join('')}</tr>
-  </tbody></table></div></section>`;
+  </tbody></table></div></section></div>`;
   return h;
 }
 function orgDialog() {
