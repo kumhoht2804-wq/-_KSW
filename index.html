@@ -450,7 +450,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.03 17:55</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.04 08:54</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -2357,7 +2357,7 @@ function vSettings(kind) {
     ${admin ? `<div class="toolbar"><span class="spacer"></span><button type="button" class="btn" data-act="cfg-reset">되돌리기</button><button type="button" class="btn primary" data-act="cfg-save">기준 저장</button></div>` : ''}</section>`;
   // history
   const hist = [...S.history].sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.rev - b.rev));
-  h += `<section class="card"><div class="head"><h2>제/개정 이력</h2></div><div class="tw free"><table><thead><tr><th>Ver</th><th class="r">Rev</th><th>날짜</th><th>작성자 부서/성명</th><th>제/개정사항</th><th>비고</th>${admin ? '<th></th>' : ''}</tr></thead><tbody>
+  if (admin) h += `<section class="card"><div class="head"><h2>제/개정 이력</h2></div><div class="tw free"><table><thead><tr><th>Ver</th><th class="r">Rev</th><th>날짜</th><th>작성자 부서/성명</th><th>제/개정사항</th><th>비고</th>${admin ? '<th></th>' : ''}</tr></thead><tbody>
     ${hist.map(x => `<tr><td>${esc(x.ver)}</td><td class="r num">${esc(x.rev)}</td><td class="num">${esc(x.date)}</td><td>${esc(x.author)}</td><td class="l">${esc(x.change)}</td><td class="l">${esc(x.note)}</td>${admin ? `<td><button type="button" class="btn sm danger" data-act="hist-del" data-id="${x.id}">삭제</button></td>` : ''}</tr>`).join('')}</tbody></table></div>
     ${admin ? `<form class="form" data-form="hist"><label class="field">Ver<input name="ver" value="${esc(hist.at(-1)?.ver || 'V1.0')}"></label><label class="field">Rev<input name="rev" type="number" value="${(+(hist.at(-1)?.rev ?? -1)) + 1}"></label><label class="field">날짜<input name="date" type="date" value="${today()}"></label><label class="field">작성자<input name="author" placeholder="부서/성명"></label><label class="field" style="grid-column:span 2">제/개정사항<input name="change" required></label><div><button class="btn primary" type="submit">이력 추가</button></div></form>` : ''}</section>`;
   if (admin) h += `<section class="card"><div class="head"><h2>데이터 불러오기 · 백업</h2></div><p class="small muted" style="margin:0">한 파일만 넣으면 나머지 데이터는 유지됩니다.</p><div class="toolbar"><label class="btn primary">원본 엑셀 불러오기 (.xlsx)<input type="file" accept=".xlsx" multiple data-act="import-xlsx" hidden></label><button type="button" class="btn" data-act="export-json">백업 내려받기 (.json)</button><label class="btn">백업 파일 불러오기 (.json)<input type="file" accept=".json" data-act="import-json" hidden></label></div></section>`;
