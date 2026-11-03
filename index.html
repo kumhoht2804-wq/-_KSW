@@ -271,8 +271,15 @@ table thead th{text-align:center!important}
 .avb{width:26px;height:34px;border-radius:5px;overflow:hidden;border:1px solid var(--line);background:var(--sunk);padding:0;display:inline-flex;align-items:center;justify-content:center;color:var(--muted);font-size:11px}
 button.avb{cursor:pointer}button.avb:hover{border-color:var(--accent)}
 .avb img{width:100%;height:100%;object-fit:cover;display:block}
-.avb.empty b{font-weight:600}
+.avb.empty b.plus{font-size:16px;font-weight:400;line-height:1}
+.avb.empty svg{width:18px;height:24px;fill:var(--line)}
+button.avb.empty{border-style:dashed}
 .onames.ph li>span:not(.av){line-height:34px}
+.pdrop{display:flex;align-items:center;justify-content:center;gap:16px;min-height:150px;border:2px dashed var(--line);border-radius:10px;padding:16px;text-align:center;outline:none;margin:6px 0 12px}
+.pdrop:focus,.pdrop.over{border-color:var(--accent);background:var(--accent-soft)}
+.pdrop img{width:90px;height:120px;object-fit:cover;border-radius:6px;border:1px solid var(--line)}
+button.avb.over{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.orank{width:auto!important}
 .pphoto{display:flex;align-items:center;gap:8px;margin-top:4px}
 .pphoto img{width:60px;height:80px;object-fit:cover;border-radius:6px;border:1px solid var(--line)}
 .onames li.leave .nm,.onames li.leave .rk{color:var(--muted);font-style:italic;font-weight:500}
@@ -416,7 +423,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.03 12:01</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.03 12:59</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -1696,8 +1703,9 @@ const isLeave = p => /휴직|공가/.test(p.note || '');
 const isNew = p => String(p.join || '').slice(0, 4) === String(new Date().getFullYear());
 const extMembers = u => String(u.members || '').split(/\n|,/).map(x => x.trim()).filter(Boolean).map(x => { const m = x.split(/\s+/); return { name: m[0], rank: m.slice(1).join(' ') }; });
 function avatar(p) {
-  const inner = p.photo ? `<img src="${esc(p.photo)}" alt="">` : `<b>${esc(String(p.name || '').trim().charAt(0))}</b>`;
-  return admin && p.id ? `<span class="av"><button type="button" class="avb${p.photo ? '' : ' empty'}" data-act="photo-pick" data-id="${p.id}" title="${esc(p.name)} 사진 ${p.photo ? '바꾸기' : '올리기'}">${inner}</button></span>`
+  const canUp = admin && p.id;
+  const inner = p.photo ? `<img src="${esc(p.photo)}" alt="">` : canUp ? '<b class="plus">+</b>' : '<svg viewBox="0 0 24 32" aria-hidden="true"><circle cx="12" cy="11" r="5"/><path d="M3 30c0-6 4-10 9-10s9 4 9 10z"/></svg>';
+  return canUp ? `<span class="av"><button type="button" class="avb${p.photo ? '' : ' empty'}" data-act="photo-pick" data-id="${p.id}" title="${esc(p.name)} 사진 ${p.photo ? '바꾸기' : '넣기'} · 마우스를 올리고 Ctrl+V로 바로 붙여넣기 가능">${inner}</button></span>`
     : `<span class="av"><span class="avb${p.photo ? '' : ' empty'}">${inner}</span></span>`;
 }
 // 사진: 가운데를 3:4로 잘라 96×128 JPEG로 줄여 저장 (한 명당 약 5KB)
@@ -1718,9 +1726,34 @@ function setPhoto(id, url) {
   if (url) p.photo = url; else delete p.photo;
   const { id: _, ...doc } = p; put('people/' + id, doc); render();
 }
+// 사진 넣기 창: Ctrl+V 붙여넣기 · 끌어다 놓기 · 파일 고르기
+function photoDialog(id) {
+  const p = S.people.find(x => x.id === id); if (!p) return;
+  openDlg(`<div data-photo="${id}"><h2>${esc(p.name)} 사진</h2>
+    <div class="pdrop" data-drop="${id}" tabindex="0">${p.photo ? `<img src="${esc(p.photo)}" alt="">` : ''}<div><b>Ctrl+V</b>로 붙여넣기<br><span class="muted small">또는 사진을 여기로 끌어다 놓기</span></div></div>
+    <div class="actions">${p.photo ? `<button type="button" class="btn danger" data-act="photo-del" data-id="${id}">지우기</button>` : ''}<span class="spacer"></span><button type="button" class="btn" data-act="photo-file" data-id="${id}">파일 고르기</button><button type="button" class="btn" data-act="close">닫기</button></div></div>`);
+  setTimeout(() => $('#dlgBody .pdrop')?.focus(), 30);
+}
+async function applyPhoto(id, file) {
+  if (!file || !/^image\//.test(file.type)) { toast('이미지가 아닙니다', true); return; }
+  try { setPhoto(id, await makePhoto(file)); toast('사진을 저장했습니다'); if ($('#dlgBody [data-photo]')) closeDlg(); else if ($('#dlg').open && $('#dlgBody [data-form=person]')) personDialog(id); } catch (e) { toast(e.message, true); }
+}
+let hoverPhoto = null;
+document.addEventListener('mouseover', e => { const b = e.target.closest?.('button.avb[data-id]'); hoverPhoto = b ? b.dataset.id : null; });
+document.addEventListener('paste', e => {
+  if (!admin) return;
+  const box = $('#dlg').open ? $('#dlgBody [data-photo]') : null, id = box ? box.dataset.photo : hoverPhoto;
+  if (!id) return;
+  const it = [...(e.clipboardData?.items || [])].find(i => i.type.startsWith('image/'));
+  if (!it) { if (box) toast('클립보드에 이미지가 없습니다', true); return; }
+  e.preventDefault(); applyPhoto(id, it.getAsFile());
+});
+document.addEventListener('dragover', e => { const z = e.target.closest?.('[data-drop],button.avb[data-id]'); if (z && admin) { e.preventDefault(); z.classList.add('over'); } });
+document.addEventListener('dragleave', e => { e.target.closest?.('[data-drop],button.avb[data-id]')?.classList.remove('over'); });
+document.addEventListener('drop', e => { const z = e.target.closest?.('[data-drop],button.avb[data-id]'); if (!z || !admin) return; e.preventDefault(); z.classList.remove('over'); applyPhoto(z.dataset.drop || z.dataset.id, e.dataTransfer.files[0]); });
 function pickPhoto(id) {
   const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*';
-  inp.onchange = async () => { const f = inp.files[0]; if (!f) return; try { setPhoto(id, await makePhoto(f)); toast('사진을 저장했습니다'); if ($('#dlg').open && $('#dlgBody [data-form=person]')) personDialog(id); } catch (e) { toast(e.message, true); } };
+  inp.onchange = () => { const f = inp.files[0]; if (f) applyPhoto(id, f); };
   inp.click();
 }
 function orgName(p, ph) {
@@ -1829,7 +1862,7 @@ function personDialog(id) {
     <label class="field">상세부서 (교육)${sel('eduDept', S.config.eduDeptMap.map(x => x.dept), p.eduDept)}</label>
     <label class="field" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" name="edu" ${p.edu ? 'checked' : ''}> 교육 수료 현황 대상</label>
     <label class="field">비고<input name="note" value="${esc(p.note)}"></label>
-    ${id ? `<div class="field" style="grid-column:1/-1">사진<div class="pphoto">${p.photo ? `<img src="${esc(p.photo)}" alt="">` : '<span class="muted small">없음</span>'}<button type="button" class="btn sm" data-act="photo-pick" data-id="${id}">${p.photo ? '바꾸기' : '올리기'}</button>${p.photo ? `<button type="button" class="btn sm danger" data-act="photo-del" data-id="${id}">지우기</button>` : ''}</div></div>` : ''}
+    ${id ? `<div class="field" style="grid-column:1/-1">사진<div class="pphoto">${p.photo ? `<img src="${esc(p.photo)}" alt="">` : '<span class="muted small">없음</span>'}<button type="button" class="btn sm" data-act="photo-file" data-id="${id}">${p.photo ? '바꾸기' : '올리기'}</button>${p.photo ? `<button type="button" class="btn sm danger" data-act="photo-del" data-id="${id}">지우기</button>` : ''}</div></div>` : ''}
     <div class="err" id="perr" style="grid-column:1/-1"></div>
     <div class="actions" style="grid-column:1/-1">${id ? `<button type="button" class="btn danger" data-act="person-del" data-id="${id}">삭제</button><span class="spacer"></span>` : ''}<button type="button" class="btn" data-act="close">취소</button><button class="btn primary" type="submit">저장</button></div></form>`);
 }
@@ -1938,8 +1971,9 @@ document.addEventListener('click', e => {
     case 'emode': ui.eduMode = d.v; ui.q = ''; render(); break;
     case 'pmode': ui.peopleMode = d.v; ui.q = ''; render(); break;
     case 'org-photo': ui.orgPhoto = !ui.orgPhoto; LS.set('lab_orgphoto', ui.orgPhoto ? '1' : '0'); render(); break;
-    case 'photo-pick': if (!need()) break; pickPhoto(d.id); break;
-    case 'photo-del': if (!need()) break; setPhoto(d.id, null); personDialog(d.id); toast('사진을 지웠습니다'); break;
+    case 'photo-pick': if (!need()) break; photoDialog(d.id); break;
+    case 'photo-file': if (!need()) break; pickPhoto(d.id); break;
+    case 'photo-del': if (!need()) break; setPhoto(d.id, null); if ($('#dlgBody [data-photo]')) closeDlg(); else personDialog(d.id); toast('사진을 지웠습니다'); break;
     case 'org-edit': if (!need()) break; orgDialog(); break;
     case 'person-edu': personEdu(d.id); break;
     case 'toggle-rec': if (!canP(pById(d.p))) { toast('우리 팀 인원만 수정할 수 있습니다', true); break; } {
