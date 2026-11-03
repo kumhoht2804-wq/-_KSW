@@ -430,7 +430,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.03 15:40</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.03 15:42</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -1064,8 +1064,8 @@ let partLead = false, scoped = false;
 function setRole() { const u = auth?.user, r = u?.role; admin = r === '관리자'; leader = r === '팀장'; partLead = r === '파트장'; scoped = r === '파트장' || r === '보기'; director = DIRECTORS.includes(r); editor = admin || director || leader || partLead; myTeam = u?.team || ''; }
 // 이 사람의 등급·교육 이수를 고칠 수 있나 (팀장은 자기 팀만)
 function canP(p) { return admin || director || ((leader || partLead) && !!p && p.team === myTeam); }
-// 이 파트의 평가항목을 고칠 수 있나 (팀장은 자기 팀 인원이 속한 파트만)
-function canPart(part) { return admin || (leader && !!part && S.people.some(p => p.cat === part.name && p.team === myTeam)); }
+// 이 파트의 평가항목을 고칠 수 있나 (관리자만)
+function canPart(part) { return admin; }   // 평가항목·배점은 관리자만
 const pById = id => S.people.find(x => x.id === id);
 setRole();
 
@@ -1263,7 +1263,7 @@ function pwDialog() {
     <label class="field">새 비밀번호 확인<input name="pw2" type="password" autocomplete="new-password" required></label>
     <div class="err"></div><div class="actions"><button type="button" class="btn" data-act="close">취소</button><button class="btn primary" type="submit">변경</button></div></form>`);
 }
-const ROLE_DESC = { '관리자': '모든 화면 수정 · 계정 관리 · 엑셀/백업 받기', '연구소장': '부서 전체 역량평가 등급·교육 이수 수정', '개발실장': '부서 전체 역량평가 등급·교육 이수 수정', '팀장': '우리 팀 역량평가·교육 이수·우리 파트 평가항목 수정', '파트장': '우리 팀만 보기 · 우리 팀 역량평가·교육 이수 수정', '보기': '우리 팀만 조회 (기준 정보 제외)' };
+const ROLE_DESC = { '관리자': '모든 화면 수정 · 계정 관리 · 엑셀/백업 받기', '연구소장': '부서 전체 역량평가 등급·교육 이수 수정', '개발실장': '부서 전체 역량평가 등급·교육 이수 수정', '팀장': '우리 팀 역량평가 등급·교육 이수 수정', '파트장': '우리 팀만 보기 · 우리 팀 역량평가·교육 이수 수정', '보기': '우리 팀만 조회 (기준 정보 제외)' };
 const teamList = () => `<datalist id="teamlist">${(S.config?.teamOrder || []).map(t => `<option value="${esc(t)}">`).join('')}</datalist>`;
 function acctDialog(id) {
   const u = ui.users.find(x => x.id === id) || { id: '', name: '', role: '보기' };
@@ -1479,7 +1479,7 @@ function vDash(kind) {
 // ===== 역량평가 =====
 function vAssess() {
   const parts = S.parts.filter(p => (p.items || []).length && (!scoped || S.people.some(x => x.cat === p.name)));
-  if (!ui.part || !parts.find(p => p.id === ui.part)) ui.part = (leader && parts.find(canPart) || parts[0])?.id;
+  if (!ui.part || !parts.find(p => p.id === ui.part)) ui.part = ((leader || partLead) && parts.find(p => S.people.some(x => x.cat === p.name && x.team === myTeam)) || parts[0])?.id;
   if (ui.assessMode === 'set' && !canSet()) ui.assessMode = 'sum';
   let h = `<div class="toolbar"><div class="seg" role="group" aria-label="보기"><button type="button" data-act="amode" data-v="sum" aria-pressed="${ui.assessMode === 'sum'}">종합</button><button type="button" data-act="amode" data-v="part" aria-pressed="${ui.assessMode === 'part'}">파트별 입력</button><button type="button" data-act="amode" data-v="all" aria-pressed="${ui.assessMode === 'all'}">전체 평가현황</button>${canSet() ? `<button type="button" data-act="amode" data-v="set" aria-pressed="${ui.assessMode === 'set'}">기준 정보</button>` : ''}</div>`;
   if (ui.assessMode === 'sum') return h + '</div>' + vDash('comp');
@@ -1877,7 +1877,7 @@ function vOrg(seg) {
       <div class="obc main" style="flex:${cols[0].w} 1 0"><div class="olead" style="--x:${snap * 100}%"><div class="ob lead${orgPh() ? ' hasav' : ''}">${orgPh() ? boxAvatar('org:head', (o.photos || {}).head) : ''}<div class="obt"><b>연구소장</b><small>${esc(o.head || '–')}</small></div></div><i class="ovl"></i>
         <div class="ob lead${orgPh() ? ' hasav' : ''}">${orgPh() ? boxAvatar('org:dev', (o.photos || {}).dev) : ''}<div class="obt"><b>개발실장</b><small>${esc(o.dev || '–')}</small></div><em>${devN}</em></div><i class="ovl"></i></div><div class="oteams">${mainT.map(teamHTML).join('')}</div></div>
       ${cols.slice(1).map(c => { const n = c.T.reduce((a, t) => a + L.filter(p => p.team === t).length, 0) + c.M.length;
-        return `<div class="obc ext" style="flex:${c.w} 1 0"><div class="ob lead${orgPh() ? ' hasav' : ''}">${orgPh() ? boxAvatar('org:ext:' + c.u.name, (o.photos || {})['ext:' + c.u.name]) : ''}<div class="obt"><b>${esc(c.u.name)}</b><small>${esc(c.u.head || '') || '&nbsp;'}</small></div><em>${n}</em></div><i class="ovl"></i>
+        return `<div class="obc ext" style="flex:${c.w} 1 0"><div class="ob lead"><div class="obt"><b>${esc(c.u.name)}</b><small>${esc(c.u.head || '') || '&nbsp;'}</small></div><em>${n}</em></div><i class="ovl"></i>
         <div class="oteams">${c.T.map(teamHTML).join('')}${c.M.length ? `<div class="ot" style="flex:1 1 0"><div class="ob team"><b>${esc(c.u.part || c.u.name)}</b><small>&nbsp;</small><em>${c.M.length}</em></div><div class="oparts">${partBox(c.u.part || c.u.name, c.M, 'direct')}</div></div>` : ''}</div></div>`; }).join('')}</div>`;
   }
   h += `</div></div>`;
@@ -2213,7 +2213,7 @@ document.addEventListener('click', e => {
     case 'it-del': { const dr = ui.drafts['part:' + ui.setPart]; dr.splice(+d.i, 1); render(); break; }
     case 'it-up': { const dr = ui.drafts['part:' + ui.setPart], i = +d.i; if (i > 0) [dr[i - 1], dr[i]] = [dr[i], dr[i - 1]]; render(); break; }
     case 'part-reset': delete ui.drafts['part:' + ui.setPart]; render(); break;
-    case 'part-save': { const p = S.parts.find(x => x.id === ui.setPart); if (!canPart(p)) { toast('우리 팀이 쓰는 파트만 수정할 수 있습니다', true); break; } const dr = ui.drafts['part:' + p.id] || p.items;
+    case 'part-save': { const p = S.parts.find(x => x.id === ui.setPart); if (!canPart(p)) { toast('관리자만 수정할 수 있습니다', true); break; } const dr = ui.drafts['part:' + p.id] || p.items;
       if (dr.some(x => !x.name.trim())) { toast('항목명이 비어 있는 행이 있습니다', true); break; }
       const items = [...dr.filter(x => x.area === 'Knowledge'), ...dr.filter(x => x.area === 'Skill')].map(x => ({ id: x.id, area: x.area, name: x.name.trim(), ratio: Math.round((+x.ratio || 0) * 10000) / 10000, basis: x.basis || '' }));
       p.items = items; delete ui.drafts['part:' + p.id]; put('parts/' + p.id, { name: p.name, order: p.order ?? 99, items }); rebuild(); render(); toast(p.name + ' 평가항목을 저장했습니다'); break; }
