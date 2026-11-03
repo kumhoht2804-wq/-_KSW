@@ -450,7 +450,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.03 17:53</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.03 17:55</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -859,12 +859,12 @@ const Export = (() => {
     const L = [...(S.asset || [])].sort((a, b) => String(b.date).localeCompare(String(a.date)) || String(a.no).localeCompare(String(b.no)));
     const cols = full
       ? [['No', 5], ['자산번호', 18], ['자산명', 46], ['취득일', 12], ['취득계정', 11], ['취득처', 22], ['취득수량', 9], ['취득가액', 14], ['잔존가액', 14], ['관리부서', 12], ['고정자산 유무', 9], ['장소', 8], ['위치', 14], ['비고', 30]]
-      : [['No', 5], ['자산번호', 18], ['자산명', 50], ['취득일', 12], ['관리부서', 12]];
+      : [['No', 5], ['자산번호', 18], ['자산명', 50], ['수량', 8], ['취득일', 12], ['관리부서', 12]];
     const s1 = new Sheet('자산 보유현황');
     s1.set(0, 0, '자산 보유현황', T); s1.set(0, cols.length - 2, '기준일', H2); s1.set(0, cols.length - 1, today(), BC);
     cols.forEach(([h, w], i) => { s1.set(2, i, h, H); s1.width(i, w); });
     const M = { border: true, h: 'right', fmt: '#,##0' };
-    L.forEach((a, r) => { const v = full ? [r + 1, a.no, a.name, a.date, a.acct, a.vendor, a.qty, a.cost, a.rest, a.dept, a.fixed, a.site, a.loc, a.note] : [r + 1, a.no, a.name, a.date, a.dept];
+    L.forEach((a, r) => { const v = full ? [r + 1, a.no, a.name, a.date, a.acct, a.vendor, a.qty, a.cost, a.rest, a.dept, a.fixed, a.site, a.loc, a.note] : [r + 1, a.no, a.name, a.qty, a.date, a.dept];
       v.forEach((x, i) => s1.set(3 + r, i, x ?? '', full && (i === 7 || i === 8) ? M : (cols[i][0] === '자산명' || cols[i][0] === '취득처' || cols[i][0] === '비고') ? B : BC)); });
     if (full && L.length) { const r = 3 + L.length; s1.set(r, 0, '합계', { ...H2 }); for (let i = 1; i < cols.length; i++) s1.set(r, i, i === 6 ? L.reduce((a, x) => a + (+x.qty || 0), 0) : i === 7 ? L.reduce((a, x) => a + (+x.cost || 0), 0) : i === 8 ? L.reduce((a, x) => a + (+x.rest || 0), 0) : '', i === 7 || i === 8 ? { ...M, bold: true, fill: 'E6EBF2' } : H2); }
     s1.freeze = { row: 3, col: 0 };
@@ -2093,8 +2093,8 @@ function vAsset() {
       ${rows.map((a, i) => `<tr><td class="c num muted">${i + 1}</td><td class="num">${esc(a.no || '–')}</td><td class="l"><b>${esc(a.name)}</b></td><td class="num">${esc(a.date || '–')}</td><td>${esc(a.acct || '–')}</td><td class="l">${esc(a.vendor || '–')}</td><td class="num">${a.qty ?? '–'}</td><td class="num">${won(a.cost)}</td><td class="num">${won(a.rest)}</td><td>${esc(a.dept || '–')}</td><td>${esc(a.fixed || '–')}</td><td>${esc(a.site || '–')}</td><td>${esc(a.loc || '–')}</td><td class="l muted" style="white-space:normal;min-width:120px">${esc(a.note || '')}</td><td><button type="button" class="btn sm" data-act="as-edit" data-id="${a.id}">수정</button></td></tr>`).join('')}
       </tbody></table></div></section>`;
   } else {
-    h += `<section class="card"><div class="head"><h2>자산 보유현황</h2><span class="sub">${rows.length}건</span></div><div class="tw"><table class="eqtbl" style="table-layout:auto"><thead><tr><th class="c">No</th><th>자산번호</th><th>자산명</th><th>취득일</th><th>관리부서</th></tr></thead><tbody>
-      ${rows.map((a, i) => `<tr><td class="c num muted">${i + 1}</td><td class="num">${esc(a.no || '–')}</td><td class="l"><b>${esc(a.name)}</b></td><td class="num">${esc(a.date || '–')}</td><td>${esc(a.dept || '–')}</td></tr>`).join('')}
+    h += `<section class="card"><div class="head"><h2>자산 보유현황</h2><span class="sub">${rows.length}건</span></div><div class="tw"><table class="eqtbl" style="table-layout:auto"><thead><tr><th class="c">No</th><th>자산번호</th><th>자산명</th><th>수량</th><th>취득일</th><th>관리부서</th></tr></thead><tbody>
+      ${rows.map((a, i) => `<tr><td class="c num muted">${i + 1}</td><td class="num">${esc(a.no || '–')}</td><td class="l"><b>${esc(a.name)}</b></td><td class="num">${a.qty ?? '–'}</td><td class="num">${esc(a.date || '–')}</td><td>${esc(a.dept || '–')}</td></tr>`).join('')}
       </tbody></table></div></section>`;
   }
   return h;
