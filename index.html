@@ -428,7 +428,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.03 13:55</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.03 14:04</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -1044,9 +1044,9 @@ const LS = { get: k => { try { return localStorage.getItem(k); } catch { return 
 let API_URL = DEFAULT_API || LS.get('lab_api') || '';
 
 // ---------- state ----------
-const S = { config: null, parts: [], people: [], grades: {}, courses: [], edu: {}, history: [], items: {} };
+const S = { config: null, parts: [], people: [], grades: {}, courses: [], edu: {}, history: [], items: {}, archive: {} };
 let C = null, admin = false, editor = false, leader = false, myTeam = '', offline = false, loadedOnce = false, auth = null;
-const ui = { assessMode: 'sum', part: null, eduMode: 'sum', peopleMode: 'org', orgPhoto: LS.get('lab_orgphoto') !== '0', eduDept: '', q: '', team: '', lv: '', guideDept: '', guideType: '', setPart: null, drafts: {}, users: [], lockSet: false, setup: false, signup: false, signupDone: '' };
+const ui = { assessMode: 'sum', part: null, eduMode: 'sum', eduYear: '', peopleMode: 'org', orgPhoto: LS.get('lab_orgphoto') !== '0', eduDept: '', q: '', team: '', lv: '', guideDept: '', guideType: '', setPart: null, drafts: {}, users: [], lockSet: false, setup: false, signup: false, signupDone: '' };
 try { auth = JSON.parse(LS.get('lab_auth') || 'null'); } catch { auth = null; }
 
 function rebuild() {
@@ -1075,12 +1075,13 @@ async function api(action, payload) {
   return d;
 }
 function applyDocs(docs) {
-  const by = { config: null, parts: [], people: [], grades: {}, courses: [], edu: {}, history: [] };
+  const by = { config: null, parts: [], people: [], grades: {}, courses: [], edu: {}, history: [], archive: {} };
   for (const [path, data] of Object.entries(docs)) {
     const [col, id] = path.split('/');
     if (col === 'config') { if (id === 'main') by.config = { id, ...data }; }
     else if (col === 'grades') by.grades[id] = { ...(data.g || {}) };
     else if (col === 'edu') by.edu[id] = data.r || {};
+    else if (col === 'archive') by.archive[id] = data;
     else if (by[col]) by[col].push({ id, ...data });
   }
   // 저장 중이거나 아직 저장 안 된 문서는 화면 값을 유지
@@ -1214,7 +1215,7 @@ function startSession(d) {
 function logout(silent) {
   if (auth && !silent) api('logout').catch(() => { });
   auth = null; LS.set('lab_auth', null); setRole(); ui.drafts = {}; ui.users = []; usersLoaded = false;
-  Object.assign(S, { config: null, parts: [], people: [], grades: {}, courses: [], edu: {}, history: [] }); C = null; loadedOnce = false;
+  Object.assign(S, { config: null, parts: [], people: [], grades: {}, courses: [], edu: {}, history: [], archive: {} }); C = null; loadedOnce = false;
   whoUI(); syncUI(); checkSetup(); render();
 }
 async function checkSetup() {
@@ -1521,7 +1522,39 @@ function vAssess() {
 
 // ===== 교육 =====
 function deptOptions() { return S.config.eduDeptMap.map(x => x.dept).filter(d => S.people.some(p => p.eduDept === d && eduActive(p))); }
+// ===== 교육 연도 마감 자료 =====
+// archive/y2026 : 마감 당시 명단·교육 설정 / archive/y2026c : 교육 가이드 / archive/y2026e : 이수 기록
+const eduYears = () => Object.keys(S.archive).filter(k => /^y\d{4}$/.test(k)).map(k => +k.slice(1)).sort((a, b) => b - a);
+function withYear(y, fn, keepFlags) {
+  const m = y && S.archive['y' + y], e = y && S.archive['y' + y + 'e'];
+  if (!m) return fn();
+  const keep = { config: S.config, people: S.people, courses: S.courses, edu: S.edu }, fl = { admin, editor, director, leader, partLead };
+  const edu = {}; for (const [pid, r] of Object.entries((e && e.r) || {})) edu[pid] = Object.fromEntries(Object.entries(r).map(([cid, n]) => [cid, { note: n === 1 ? '이수 완료' : n }]));
+  Object.assign(S, { config: { ...S.config, ...m.config, id: 'main', autoFrozen: true }, people: m.people.map(p => ({ ...p })), courses: (m.courses || (S.archive['y' + y + 'c'] || {}).list || []).map(c => ({ ...c })), edu });
+  if (!keepFlags) { admin = editor = director = leader = partLead = false; }
+  rebuild();
+  try { return fn(); } finally { Object.assign(S, keep); ({ admin, editor, director, leader, partLead } = fl); rebuild(); }
+}
+function closeYear(y) {
+  const cfgKeys = ['rankStage', 'guideStage', 'eduDeptMap', 'courseDeptOrder', 'teamOrder', 'rankOrder', 'partOrder'];
+  const cfg = Object.fromEntries(cfgKeys.filter(k => k in S.config).map(k => [k, S.config[k]]));
+  const people = S.people.map(({ id, team, name, rank, cat, eduDept, edu, order }) => ({ id, team, name, rank, cat, eduDept, edu, order }));
+  const courses = S.courses.map(({ id, ...c }) => ({ id, ...c }));
+  const r = {}; for (const p of S.people) { const x = S.edu[p.id]; if (!x) continue; const o = {}; for (const [cid, v] of Object.entries(x)) if (!v.x) o[cid] = (v.note && v.note !== '이수 완료') ? v.note : 1; if (Object.keys(o).length) r[p.id] = o; }
+  const meta = { year: y, at: today(), by: auth?.user?.name || '', config: cfg, people };
+  S.archive['y' + y] = meta; S.archive['y' + y + 'e'] = { r }; S.archive['y' + y + 'c'] = { list: courses };
+  put('archive/y' + y, meta); put('archive/y' + y + 'e', { r }); put('archive/y' + y + 'c', { list: courses });
+}
 function vEdu() {
+  const ys = eduYears(), cur = new Date().getFullYear();
+  if (ui.eduYear && !ys.includes(+ui.eduYear)) ui.eduYear = '';
+  const sel = ys.length ? `<label class="field"><span>연도</span><select class="ci" data-act="f-eyear"><option value="">${cur} 진행 중</option>${ys.map(y => `<option value="${y}"${String(y) === String(ui.eduYear) ? ' selected' : ''}>${y} 마감</option>`).join('')}</select></label>` : '';
+  if (!ui.eduYear) return vEduBody().replace('<div class="toolbar">', '<div class="toolbar">' + sel);
+  const m = S.archive['y' + ui.eduYear];
+  return withYear(+ui.eduYear, () => { if (ui.eduMode === 'set') ui.eduMode = 'sum';
+    return `<div class="notice">${ui.eduYear}년 마감 자료입니다 (${esc(m.at || '')} 저장${m.by ? ' · ' + esc(m.by) : ''}). 읽기 전용입니다.</div>` + vEduBody().replace('<div class="toolbar">', '<div class="toolbar">' + sel); });
+}
+function vEduBody() {
   let h = `<div class="toolbar"><div class="seg" role="group" aria-label="보기">
     <button type="button" data-act="emode" data-v="sum" aria-pressed="${ui.eduMode === 'sum'}">종합</button>
     <button type="button" data-act="emode" data-v="matrix" aria-pressed="${ui.eduMode === 'matrix'}">부서별 수료 현황</button>
@@ -1966,6 +1999,10 @@ function vSettingsEdu() {
   const dis = admin ? '' : 'disabled';
   const cfg = draft('cfg', () => S.config);
   let h = '';
+  if (admin) { const ys = eduYears(), cur = new Date().getFullYear();
+    h += `<section class="card"><div class="head"><h2>연도 마감</h2><span class="sub">지금의 수료 현황·이수율을 그 해 자료로 따로 보관합니다. 이수 기록은 그대로 이어집니다.</span></div>
+    <div class="toolbar"><label class="field"><span>연도</span><input class="ci" id="closeYearIn" type="number" min="2020" max="2100" value="${cur}" style="width:90px"></label><button type="button" class="btn primary" data-act="year-close">마감 저장</button></div>
+    ${ys.length ? `<div class="tw free"><table class="eqtbl" style="max-width:640px"><thead><tr><th>연도</th><th>저장일</th><th>저장한 사람</th><th>인원</th><th></th></tr></thead><tbody>${ys.map(y => { const m = S.archive['y' + y]; return `<tr><td><b>${y}</b></td><td class="num">${esc(m.at || '')}</td><td>${esc(m.by || '')}</td><td class="num">${(m.people || []).filter(p => p.edu).length}</td><td><button type="button" class="btn sm" data-act="year-view" data-v="${y}">보기</button> <button type="button" class="btn sm danger" data-act="year-del" data-v="${y}">삭제</button></td></tr>`; }).join('')}</tbody></table></div>` : ''}</section>`; }
   h += `<section class="card"><div class="head"><h2>교육 설정</h2></div>
     <div class="grid" style="grid-template-columns:1fr 1fr">
     <div class="tw free"><table><thead><tr><th>직급</th><th class="r">교육 단계</th></tr></thead><tbody>${cfg.rankStage.map((x, i) => `<tr><td>${esc(x.rank)}</td><td class="r"><input class="ci num" style="width:56px;text-align:right" type="number" min="1" max="9" data-act="cfg-rs" data-i="${i}" value="${x.stage}" ${dis}></td></tr>`).join('')}</tbody></table></div>
@@ -2017,6 +2054,11 @@ document.addEventListener('click', e => {
     case 'part': ui.part = d.v; render(); break;
     case 'goto-part': { const p = S.parts.find(x => x.name === d.v); if (p) { ui.part = p.id; ui.assessMode = 'part'; render(); } break; }
     case 'emode': ui.eduMode = d.v; ui.q = ''; render(); break;
+    case 'year-close': if (!need()) break; { const y = +($('#closeYearIn')?.value || 0); if (y < 2000 || y > 2100) { toast('연도를 확인해 주세요', true); break; }
+      if (S.archive['y' + y] && !confirm(`${y}년 마감 자료가 이미 있습니다. 지금 현황으로 덮어쓸까요?`)) break;
+      closeYear(y); render(); toast(`${y}년 마감 자료를 저장했습니다`); break; }
+    case 'year-view': ui.eduYear = d.v; ui.eduMode = 'sum'; render(); break;
+    case 'year-del': if (!need()) break; if (!confirm(`${d.v}년 마감 자료를 삭제할까요?`)) break; for (const sfx of ['', 'e', 'c']) { delete S.archive['y' + d.v + sfx]; put('archive/y' + d.v + sfx, null); } if (String(ui.eduYear) === String(d.v)) ui.eduYear = ''; render(); toast('삭제했습니다'); break;
     case 'pmode': ui.peopleMode = d.v; ui.q = ''; render(); break;
     case 'org-photo': ui.orgPhoto = !ui.orgPhoto; LS.set('lab_orgphoto', ui.orgPhoto ? '1' : '0'); render(); break;
     case 'photo-pick': if (!need()) break; photoDialog(d.id); break;
@@ -2081,6 +2123,7 @@ document.addEventListener('change', e => {
   else if (a === 'f-team') { ui.team = t.value; render(); }
   else if (a === 'f-lv') { ui.lv = t.value; render(); }
   else if (a === 'f-curp') { ui.curPerson = t.value; render(); }
+  else if (a === 'f-eyear') { ui.eduYear = t.value; render(); }
   else if (a === 'f-dept') { ui.eduDept = t.value; LS.set('lab_edudept', t.value); render(); }
   else if (a === 'f-gdept') { ui.guideDept = t.value; render(); }
   else if (a === 'f-gtype') { ui.guideType = t.value; render(); }
@@ -2148,7 +2191,7 @@ document.addEventListener('submit', e => {
 
 // ---------- export ----------
 function snapshotData() {
-  return { version: 1, exported: new Date().toISOString(), config: (({ id, ...c }) => c)(S.config), parts: S.parts, people: S.people, grades: S.grades, courses: S.courses, edu: S.edu, history: S.history };
+  return { version: 1, exported: new Date().toISOString(), config: (({ id, ...c }) => c)(S.config), parts: S.parts, people: S.people, grades: S.grades, courses: S.courses, edu: S.edu, history: S.history, archive: S.archive };
 }
 function saveFile(filename, data) {
   const url = URL.createObjectURL(data instanceof Blob ? data : new Blob([data], { type: 'application/json' }));
@@ -2164,9 +2207,9 @@ async function exportXlsx(kind) {
     if (lockProt === undefined) lockProt = (await api('lockHash')).prot;
   } catch (e) { toast('잠금 정보를 받지 못했습니다: ' + e.message, true); return; }
   if (!lockProt) toast('엑셀 잠금 비밀번호가 설정되지 않아 잠금 없이 내보냅니다', true);
-  const sheets = kind === 'comp' ? Export.comp(S, C) : Export.edu(S, C, ui.eduDept);
+  const sheets = kind === 'comp' ? Export.comp(S, C) : withYear(ui.eduYear ? +ui.eduYear : 0, () => Export.edu(S, C, ui.eduDept), true);
   const bytes = await XLSX.build(sheets, lockProt || null);
-  const name = kind === 'comp' ? `${stamp()}_연구소 인원 역량평가 현황.xlsx` : `${stamp()}_연구소 교육 수료 현황${ui.eduDept && ui.eduDept !== '전체' ? '_' + ui.eduDept : ''}.xlsx`;
+  const name = kind === 'comp' ? `${stamp()}_연구소 인원 역량평가 현황.xlsx` : `${stamp()}_연구소 교육 수료 현황${ui.eduYear ? '_' + ui.eduYear + '년 마감' : ''}${ui.eduDept && ui.eduDept !== '전체' ? '_' + ui.eduDept : ''}.xlsx`;
   saveFile(name, new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
 }
 function exportJson() { if (!C || !admin) return; saveFile(`${stamp()}_연구소관리_백업.json`, JSON.stringify(snapshotData(), null, 1)); }
@@ -2186,6 +2229,7 @@ function docsFromData(data) {
   for (const c of data.courses) docs['courses/' + c.id] = strip(c);
   for (const [k, r] of Object.entries(data.edu || {})) docs['edu/' + k] = { r };
   for (const h of data.history || []) docs['history/' + h.id] = strip(h);
+  for (const [k, v] of Object.entries(data.archive || {})) if (/^y\d{4}[ec]?$/.test(k)) docs['archive/' + k] = v;
   return docs;
 }
 async function sendAll(data) {
