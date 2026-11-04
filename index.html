@@ -333,6 +333,20 @@ td.neg{color:var(--bad);font-weight:700}
 .fu legend{font-size:12px;font-weight:600;padding:0 4px;color:var(--muted)}
 .fu textarea{width:100%;font:inherit;border:1px solid var(--line);border-radius:6px;padding:6px 8px;background:var(--surface);color:var(--ink)}
 /* ---- 팀별 도넛 ---- */
+.evb{grid-template-columns:minmax(0,2fr) minmax(0,1fr);align-items:stretch}
+@media (max-width:1100px){.evb{grid-template-columns:1fr}}
+.vbars{--vh:190px;position:relative;display:grid;grid-template-columns:repeat(var(--k),minmax(0,1fr));gap:14px;align-items:end;padding:22px 6px 0;border-bottom:0}
+.vb{display:flex;flex-direction:column;align-items:center;min-width:0}
+.vt{position:relative;width:100%;max-width:64px;height:var(--vh);background:var(--sunk);border-radius:8px 8px 3px 3px;display:flex;align-items:flex-end;overflow:visible}
+.vt .vf{display:block;width:100%;border-radius:8px 8px 3px 3px;min-height:2px;transition:height .3s}
+.vt b{position:absolute;left:0;right:0;top:-20px;text-align:center;font-size:14px;font-weight:700;color:var(--ink)}
+.vt b small{font-size:10px;color:var(--muted);font-weight:600}
+.vb.all .vt{background:color-mix(in srgb,var(--accent-soft) 70%,var(--surface))}
+.vl{display:flex;flex-direction:column;align-items:center;margin-top:8px;text-align:center;line-height:1.3;max-width:100%}
+.vl b{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.vl small{font-size:10.5px;color:var(--muted);white-space:nowrap}
+.vmark{position:absolute;left:-4px;right:-4px;height:0;border-top:1.5px dashed var(--accent);z-index:1}
+.vkey{display:inline-block;width:14px;border-top:1.5px dashed var(--accent);vertical-align:middle}
 .hbars{display:flex;flex-direction:column;gap:8px;flex:1;justify-content:space-evenly}
 :root{--track:#EDF0F4}
 :root[data-theme="dark"]{--track:#222B34}
@@ -450,7 +464,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.04 19:38</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.04 20:09</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -1567,13 +1581,17 @@ function vDash(kind) {
   }
   // edu by team
   if (kind === 'edu') {
-  h += `<section class="card"><div class="head"><h2>팀별 필수 교육 이수율</h2></div><div class="hbars">`;
-  for (const t of teams) {
-    const a = es.withT.filter(x => x.p.team === t); if (!a.length) continue;
-    const tot = a.reduce((s, x) => s + x.e.target, 0), dn = a.reduce((s, x) => s + x.e.done, 0), r = tot ? dn / tot : 0;
-    h += `<div class="hbar"><span>${esc(t)}</span><span class="track"><i style="width:${r * 100}%;background:${r >= 1 ? 'var(--ok)' : r < .5 ? 'var(--bad)' : 'var(--warn)'}"></i></span><span class="num r">${pct(r)}</span></div>`;
-  }
-  h += `</div>`;
+  // 세로 막대: 팀별 / 직급 단계별
+  const rc = r => r >= 1 ? 'var(--dB)' : r < .5 ? 'var(--dX)' : 'var(--dC)';
+  const agg = L => { const tot = L.reduce((a, x) => a + x.e.target, 0), dn = L.reduce((a, x) => a + x.e.done, 0); return { tot, dn, r: tot ? dn / tot : 0, n: L.length }; };
+  const vbars = (items, avgR) => `<div class="vbars" style="--k:${items.length}">${items.map(([name, a, all]) => `<div class="vb${all ? ' all' : ''}" title="${esc(name)}: 필수 ${a.tot}건 중 ${a.dn}건 이수 · ${a.n}명"><div class="vt">${avgR != null && !all ? `<i class="vmark" style="bottom:${avgR * 100}%"></i>` : ''}<b>${Math.round(a.r * 100)}<small>%</small></b><span class="vf" style="height:${a.r * 100}%;background:${all ? 'var(--accent)' : rc(a.r)}"></span></div><div class="vl"><b>${esc(name)}</b><small>${a.dn}/${a.tot} · ${a.n}명</small></div></div>`).join('')}</div>`;
+  const tAll = agg(es.withT);
+  const tItems = [...(scoped ? [] : [['연구소 전체', tAll, true]]), ...teams.map(t => [t, agg(es.withT.filter(x => x.p.team === t))]).filter(([, a]) => a.n)];
+  const stg = [...S.config.guideStage].sort((a, b) => a.stage - b.stage);
+  const sItems = stg.map(g => [g.label.split('/').map(x => x.trim().replace(/\s*연구원$/, '') || x.trim()).join('/'), agg(es.withT.filter(x => x.e.stage === g.stage))]).filter(([, a]) => a.n);
+  h += `<div class="grid evb"><section class="card"><div class="head"><h2>팀별 필수 교육 이수율</h2><span class="sub">이수 / 대상 건수${scoped ? '' : ` · <span class="vkey"></span> 연구소 평균 ${Math.round(tAll.r * 100)}%`}</span></div>${vbars(tItems, scoped ? null : tAll.r)}</section>
+    <section class="card"><div class="head"><h2>직급 단계별 이수율</h2></div>${vbars(sItems, null)}</section></div>`;
+  h += `<section class="card"><div class="head"><h2>팀별 이수 현황</h2></div>`;
   // 팀별 필수 교육 이수율 링
   const eg = [...(scoped ? [] : [['연구소 전체', es.withT]]), ...teams.map(t => [t, es.withT.filter(x => x.p.team === t)]).filter(([, L]) => L.length)];
   h += `<div class="donuts" style="--k:${eg.length}">${eg.map(([name, L], gi) => {
