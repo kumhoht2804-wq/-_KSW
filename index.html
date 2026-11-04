@@ -450,7 +450,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.04 08:54</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.04 19:38</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -1672,10 +1672,10 @@ function vEdu() {
 function vEduBody() {
   let h = `<div class="toolbar"><div class="seg" role="group" aria-label="보기">
     <button type="button" data-act="emode" data-v="sum" aria-pressed="${ui.eduMode === 'sum'}">종합</button>
-    <button type="button" data-act="emode" data-v="matrix" aria-pressed="${ui.eduMode === 'matrix'}">부서별 수료 현황</button>
-    <button type="button" data-act="emode" data-v="records" aria-pressed="${ui.eduMode === 'records'}">이수 기록</button>
     <button type="button" data-act="emode" data-v="curri" aria-pressed="${ui.eduMode === 'curri'}">교육 커리큘럼</button>
-    <button type="button" data-act="emode" data-v="guide" aria-pressed="${ui.eduMode === 'guide'}">교육 가이드</button>${canSet() ? `<button type="button" data-act="emode" data-v="set" aria-pressed="${ui.eduMode === 'set'}">기준 정보</button>` : ''}</div>`;
+    <button type="button" data-act="emode" data-v="guide" aria-pressed="${ui.eduMode === 'guide'}">교육 가이드</button>
+    <button type="button" data-act="emode" data-v="matrix" aria-pressed="${ui.eduMode === 'matrix'}">부서별 수료 현황</button>
+    <button type="button" data-act="emode" data-v="records" aria-pressed="${ui.eduMode === 'records'}">이수 기록</button>${canSet() ? `<button type="button" data-act="emode" data-v="set" aria-pressed="${ui.eduMode === 'set'}">기준 정보</button>` : ''}</div>`;
   if (ui.eduMode === 'set' && !canSet()) ui.eduMode = 'sum';
   if (ui.eduMode === 'sum') return h + '</div>' + vDash('edu');
   if (ui.eduMode === 'set') return h + '</div>' + vSettings('edu');
@@ -1684,7 +1684,7 @@ function vEduBody() {
     const opts = deptOptions();
     if (!opts.includes(ui.eduDept)) { const mine = (leader || partLead) && S.people.find(p => p.edu && p.team === myTeam); ui.eduDept = (mine && opts.includes(mine.eduDept)) ? mine.eduDept : (LS.get('lab_edudept') && opts.includes(LS.get('lab_edudept')) ? LS.get('lab_edudept') : opts[0]); }
     h += `<label class="field"><span>부서 선택</span><select class="ci" data-act="f-dept">${deptOptions().map(d => `<option${d === ui.eduDept ? ' selected' : ''}>${esc(d)}</option>`).join('')}</select></label>
-    <span class="legend-inline"><span class="pill ok">이수</span><span class="pill miss">미이수</span>${editor ? '<span class="muted small">칸을 누르면 변경 · + 는 미리 들은 교육</span>' : ''}</span></div>`;
+    <span class="legend-inline"><span class="pill ok">이수</span><span class="pill miss">미이수</span></span></div>`;
     const v = C.eduView(ui.eduDept);
     const invalid = S.people.filter(p => p.edu && !C.eduValid(p));
     if (invalid.length) h += `<div class="notice warn small">직급 또는 상세부서가 교육 설정에 없어 표시되지 않는 인원 ${invalid.length}명: ${invalid.map(p => esc(p.name)).join(', ')}</div>`;
