@@ -290,7 +290,7 @@ button.avb.over{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-sof
 .pphoto{display:flex;align-items:center;gap:8px;margin-top:4px}
 .pphoto img{width:60px;height:80px;object-fit:cover;border-radius:6px;border:1px solid var(--line)}
 .onames li.leave .nm,.onames li.leave .rk{color:var(--muted)}
-.nw.lv{color:var(--warn);background:var(--warn-soft)}
+.nw.hj{color:var(--warn);background:var(--warn-soft)}
 .nw{font-size:9px;font-weight:700;color:var(--ok);background:var(--ok-soft);border-radius:3px;padding:0 3px;line-height:14px}
 .olg{display:flex;gap:14px;justify-content:flex-end;font-size:11.5px;color:var(--muted)}
 .obc.ext .ob,.obc.ext .onames{opacity:.6}
@@ -465,7 +465,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.04 20:12</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.05 09:31</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -1975,7 +1975,7 @@ function pickPhoto(id) {
 }
 function orgName(p, ph) {
   const cls = [isLeave(p) && 'leave', isNew(p) && 'new'].filter(Boolean).join(' ');
-  return `<li class="${cls}" title="${esc(p.rank)}${isNew(p) ? ' · 올해 입사' : ''}${p.note ? ' · ' + esc(p.note) : ''}">${ph ? avatar(p) : ''}${(n => `<span class="nm"><span class="sz" aria-hidden="true">가나다</span><span class="tx${n.length === 2 ? ' two' : ''}">${n.length === 2 ? `<span>${esc(n[0])}</span><span>${esc(n[1])}</span>` : esc(n)}</span></span>`)(String(p.name).replace(/\s+/g, ''))}<span class="rk">${esc(RSHORT(p.rank))}</span><span class="tg">${isLeave(p) ? '<span class="nw lv">휴직</span>' : isNew(p) ? '<span class="nw">신규</span>' : ''}</span></li>`;
+  return `<li class="${cls}" title="${esc(p.rank)}${isNew(p) ? ' · 올해 입사' : ''}${p.note ? ' · ' + esc(p.note) : ''}">${ph ? avatar(p) : ''}${(n => `<span class="nm"><span class="sz" aria-hidden="true">가나다</span><span class="tx${n.length === 2 ? ' two' : ''}">${n.length === 2 ? `<span>${esc(n[0])}</span><span>${esc(n[1])}</span>` : esc(n)}</span></span>`)(String(p.name).replace(/\s+/g, ''))}<span class="rk">${esc(RSHORT(p.rank))}</span><span class="tg">${isLeave(p) ? '<span class="nw hj">휴직</span>' : isNew(p) ? '<span class="nw">신규</span>' : ''}</span></li>`;
 }
 function vOrg(seg) {
   const o = orgCfg(), L = C.sortComp(S.people), teams = C.teams(L);
@@ -2019,7 +2019,7 @@ function vOrg(seg) {
   }
   h += `</div></div>`;
   const anyLeave = L.some(isLeave), anyNew = L.some(isNew);
-  if (anyLeave || anyNew) h += `<div class="olg">${anyNew ? '<span><span class="nw">신규</span> 올해 입사</span>' : ''}${anyLeave ? '<span><span class="nw lv">휴직</span> 육아휴직 등</span>' : ''}</div>`;
+  if (anyLeave || anyNew) h += `<div class="olg">${anyNew ? '<span><span class="nw">신규</span> 올해 입사</span>' : ''}${anyLeave ? '<span><span class="nw hj">휴직</span> 육아휴직 등</span>' : ''}</div>`;
   h += `</section>`;
   // 팀·파트별 현황 (출력 전용, 입력은 조직 설정) — 개발실장 라인 / 별도 조직은 오른쪽 표로 분리
   const val = (k, f) => (o.to[k] || {})[f];
