@@ -314,6 +314,13 @@ th.pch{box-shadow:inset 0 -3px 0 var(--pc)}
 .st{height:46px;border:0;box-shadow:0 0 0 1px var(--ink);background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font:inherit;cursor:pointer;padding:0 2px;position:relative;color:var(--ink)}
 .st:hover{background:var(--accent-soft)}
 .st b{font-size:13px;font-weight:700;letter-spacing:.5px}
+.st-in{width:100%;border:0;background:transparent;text-align:center;font:inherit;font-size:13px;font-weight:700;color:var(--ink);padding:0 2px;outline:none;letter-spacing:.3px}
+.st-in::-webkit-calendar-picker-indicator{display:none!important;opacity:0}
+.st-in::placeholder{color:var(--muted);font-weight:400;opacity:.7}
+.st:focus-within{background:var(--accent-soft);outline:2px solid var(--accent);outline-offset:-2px;z-index:2}
+.st.txt .st-in{font-weight:500;font-size:11.5px;color:var(--muted)}
+.st.lead .st-in{font-size:13.5px}
+.st{cursor:text}
 .st small{font-size:10px;color:var(--muted)}
 .st span{font-size:12px;color:var(--muted);text-align:center;line-height:1.2}
 .st.ppl{box-shadow:inset 3px 0 0 var(--pc),0 0 0 1px var(--ink)}
@@ -505,7 +512,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.09 09:33</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.09 09:42</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -2403,14 +2410,15 @@ function vSeat(seg) {
     const p = pm.get(nkey(v)); if (p) used.add(p.id);
     const hit = q && nkey(v).includes(q);
     const cls = ['st', lead ? 'lead' : '', !v || v === '공석' ? 'empty' : '', p ? tc(p.team) + ' ppl' : (v && v !== '공석' ? 'txt' : ''), hit ? 'hit' : ''].filter(Boolean).join(' ');
-    return `<button type="button" class="${cls}" data-act="seat-cell" data-path="${path}" data-drop-seat="${path}"${p || (v && v !== '공석') ? ` draggable="true" data-drag-seat="${path}"` : ''} title="${esc(p ? `${p.name} · ${p.team} · ${p.rank}` : v || '빈 자리')}">${p ? `<b>${esc((n => n.length === 2 ? n[0] + ' ' + n[1] : n)(nkey(p.name)))}</b>${lead ? '' : `<small>${esc(RSHORT(p.rank))}</small>`}` : `<span>${esc(v || '공석')}</span>`}</button>`;
+    return `<div class="${cls}" title="${esc(p ? `${p.name} · ${p.team} · ${p.rank}` : v && v !== '공석' ? v : '빈 자리')}"><input class="st-in" data-act="seat-in" data-path="${path}" list="seatNames" value="${esc(v && v !== '공석' ? v : '')}" placeholder="공석" autocomplete="off" spellcheck="false">${p && !lead ? `<small>${esc(RSHORT(p.rank))}</small>` : ''}</div>`;
   };
   const island = (it, bp) => `<div class="isl" style="--c:${Math.max(...it.rows.map(r => r.length), 1)}">${it.rows.map((r, ri) => r.map((v, ci) => seat(v, `${bp}.${ri}.${ci}`)).join('') + (r.length < Math.max(...it.rows.map(x => x.length)) ? '<div class="st none"></div>'.repeat(Math.max(...it.rows.map(x => x.length)) - r.length) : '')).join('')}${it.hasLead ? seat(it.lead, `${bp}.L`, true) : ''}</div>`;
   const item = (it, bp) => it.type === 'room' ? `<div class="room${it.tall ? ' tall' : ''}"><span>${esc(it.label)}</span></div>` : island(it, bp);
-  h += `<section class="card"><div class="head"><h2>자리 배치</h2><span class="sub">아래 이름을 자리로 끌어다 놓거나, 자리를 눌러 고르세요 · 자리끼리 끌면 서로 바뀝니다</span></div><div class="seatw"><div class="seats">${m.blocks.map((b, bi) => b.type === 'stack' ? `<div class="stk">${b.items.map((it, ii) => item(it, `${bi}:${ii}`)).join('')}</div>` : item(b, `${bi}`)).join('')}</div></div>`;
+  h += `<section class="card"><div class="head"><h2>자리 배치</h2><span class="sub">자리에 이름을 바로 입력하세요 (Enter·Tab으로 저장)</span></div><div class="seatw"><div class="seats">${m.blocks.map((b, bi) => b.type === 'stack' ? `<div class="stk">${b.items.map((it, ii) => item(it, `${bi}:${ii}`)).join('')}</div>` : item(b, `${bi}`)).join('')}</div></div>`;
   const miss = C.sortComp(S.people).filter(p => !used.has(p.id));
+  h += `<datalist id="seatNames">${C.sortComp(S.people).map(p => `<option value="${esc(p.name)}">${esc(p.team)} · ${esc(RSHORT(p.rank))}</option>`).join('')}<option value="공석"></datalist>`;
   h += `<div class="seatlg">${C.teams(S.people).map(t => `<span><i class="${tc(t)}"></i>${esc(t)}</span>`).join('')}</div>`;
-  if (miss.length) h += `<div class="seatpool"><div class="head"><b>자리 미지정 ${miss.length}명</b><span class="sub">끌어다 자리에 놓기</span></div>${C.teams(miss).map(t => `<div class="pool-t"><span class="pool-n"><i class="${tc(t)}"></i>${esc(t)}</span>${miss.filter(p => p.team === t).map(p => `<span class="pchip2 ${tc(t)}" draggable="true" data-drag-name="${esc(p.name)}" title="${esc(p.rank)}">${esc(p.name)} <small>${esc(RSHORT(p.rank))}</small></span>`).join('')}</div>`).join('')}</div>`;
+  if (miss.length) h += `<div class="small muted">자리 미지정 ${miss.length}명: ${miss.map(p => esc(p.name)).join(', ')}</div>`;
   else h += `<div class="small muted">명단의 모든 인원이 자리에 배치되어 있습니다.</div>`;
   h += `</section>`;
   return h;
@@ -2722,6 +2730,9 @@ document.addEventListener('change', e => {
   else if (a === 'f-swlic') { ui.swLic = t.value; render(); }
   else if (a === 'f-asacct') { ui.asAcct = t.value; render(); }
   else if (a === 'f-asdept') { ui.asDept = t.value; render(); }
+  else if (a === 'seat-in') { if (!admin) return; const path = t.dataset.path, val = t.value.trim();
+    setTimeout(() => { const nx = document.activeElement?.dataset?.path, sel = document.activeElement?.selectionStart; seatSet(path, val || '공석');
+      const el = nx && document.querySelector(`[data-act="seat-in"][data-path="${nx}"]`); if (el) { el.focus(); try { el.setSelectionRange(el.value.length, el.value.length); } catch { } } }, 0); }
   else if (a === 'f-yryear') { ui.yrYear = t.value; render(); }
   else if (a === 'f-hrst') { ui.hrSt = t.value; render(); }
   else if (a === 'f-hrteam') { ui.hrTeam = t.value; render(); }
