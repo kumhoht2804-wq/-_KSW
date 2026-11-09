@@ -514,7 +514,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.09 09:44</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.09 10:03</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -1190,7 +1190,7 @@ setRole();
 async function api(action, payload) {
   const r = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(Object.assign({ action, token: auth?.token }, payload || {})) });
   const d = await r.json();
-  if (!d.ok) { if (d.auth) { logout(true); } const e = new Error(d.err || '서버 오류'); e.auth = d.auth; e.perm = /권한|우리 팀|관리자만|파트 추가/.test(d.err || ''); throw e; }
+  if (!d.ok) { if (d.auth) { logout(true); } const e = new Error(d.err || '서버 오류'); e.auth = d.auth; e.perm = /권한|우리 팀|관리자만|파트 추가/.test(d.err || ''); e.old = /잘못된 경로|알 수 없는 요청|Unknown/.test(d.err || ''); throw e; }
   return d;
 }
 function applyDocs(docs) {
@@ -1252,6 +1252,7 @@ async function pump(path) {
     } catch (e) {
       writeErr(e);
       if (e.perm) { delete unsaved[path]; keepUnsaved(); }        // 권한 없음: 다시 보내도 안 되니 버림
+      else if (e.old) { }   // 서버가 예전 버전: 배포 후 다음 접속 때 다시 보냄 (반복 재시도 안 함)
       else if (!retryT) retryT = setTimeout(() => { retryT = null; flush(); }, 8000);   // 연결 문제: 잠시 뒤 다시
     }
   }
@@ -1338,7 +1339,8 @@ function flush(manual) {
   for (const k of ks) if (!pend.has(k) && !running.has(k)) { pend.set(k, unsaved[k]); pump(k); }
   if (manual) toast(`저장 안 된 ${ks.length}건을 저장하는 중입니다…`);
 }
-function writeErr(e) { if (!e.auth) toast((e.perm ? '저장할 권한이 없습니다: ' : '저장하지 못했습니다 (잠시 뒤 자동으로 다시 시도): ') + e.message, true); }
+let oldWarned = 0;
+function writeErr(e) { if (e.auth) return; if (e.old) { if (Date.now() - oldWarned > 60000) { oldWarned = Date.now(); toast('서버(Code.gs)가 예전 버전이라 이 내용을 저장할 수 없습니다. Code.gs를 새 버전으로 배포해 주세요. 입력한 내용은 이 브라우저에 보관했다가 배포 후 다시 접속하면 저장됩니다.', true); } return; } toast((e.perm ? '저장할 권한이 없습니다: ' : '저장하지 못했습니다 (잠시 뒤 자동으로 다시 시도): ') + e.message, true); }
 window.addEventListener('beforeunload', e => { if (busy || Object.keys(unsaved).length) { e.preventDefault(); e.returnValue = ''; } });
 function syncUI() {
   const el = $('#sync'); if (!el) return;
