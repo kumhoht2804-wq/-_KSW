@@ -308,6 +308,30 @@ th.pch{box-shadow:inset 0 -3px 0 var(--pc)}
 .swk span{display:inline-flex;align-items:center;gap:3px}
 .swk i{width:7px;height:7px;border-radius:2px;background:var(--pc)}
 .legend i.pc0,.legend i.pc1,.legend i.pc2,.legend i.pc3,.legend i.pc4,.legend i.pc5,.legend i.pc6,.legend i.pc7,.legend i.pc8,.legend i.pc9{background:var(--pc)}
+.seatw{overflow-x:auto}
+.seats{display:flex;align-items:flex-start;gap:22px;padding:6px 2px 4px;min-width:max-content}
+.isl{display:grid;grid-template-columns:repeat(var(--c),78px);margin:1px}
+.st{height:46px;border:0;box-shadow:0 0 0 1px var(--ink);background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font:inherit;cursor:pointer;padding:0 2px;position:relative;color:var(--ink)}
+.st:hover{background:var(--accent-soft)}
+.st b{font-size:13px;font-weight:700;letter-spacing:.5px}
+.st small{font-size:10px;color:var(--muted)}
+.st span{font-size:12px;color:var(--muted);text-align:center;line-height:1.2}
+.st.ppl{box-shadow:inset 3px 0 0 var(--pc),0 0 0 1px var(--ink)}
+.st.empty span{color:var(--muted);opacity:.7}
+.st.txt span{font-size:11px}
+.st.lead{grid-column:1 / -1;height:46px}
+.st.lead span{font-size:13.5px;font-weight:700;color:var(--ink)}
+.st.lead b{font-size:13.5px}
+.st.none{background:transparent;cursor:default;box-shadow:none}
+.st.hit{background:var(--warn-soft);outline:2px solid var(--warn);outline-offset:-2px;z-index:1}
+.st:hover{z-index:1}
+.stk{display:flex;flex-direction:column;gap:22px;align-items:flex-end;align-self:stretch;justify-content:space-between}
+.room{display:flex;align-items:center;justify-content:center;width:170px;height:110px;background:var(--sunk);border:1.5px solid var(--muted);color:var(--ink);font-weight:700;font-size:15px}
+.room.tall{width:60px;height:auto;align-self:stretch;min-height:200px;writing-mode:vertical-rl;letter-spacing:6px}
+.seatlg{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:11.5px;color:var(--muted)}
+.seatlg span{display:inline-flex;align-items:center;gap:5px}
+.seatlg i{width:10px;height:10px;border-radius:2px;background:var(--pc)}
+td.sel{background:var(--accent-soft)}
 .hyear{display:inline-flex;align-items:center;gap:6px}
 .hyear select{height:28px;padding:0 6px;font-size:12px}
 .ostat2{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:start}
@@ -465,7 +489,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.05 09:31</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.09 09:23</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -1114,9 +1138,9 @@ const LS = { get: k => { try { return localStorage.getItem(k); } catch { return 
 let API_URL = DEFAULT_API || LS.get('lab_api') || '';
 
 // ---------- state ----------
-const S = { config: null, parts: [], people: [], grades: {}, courses: [], edu: {}, history: [], items: {}, archive: {}, hr: [], asset: [], sw: [] };
+const S = { config: null, parts: [], people: [], grades: {}, courses: [], edu: {}, history: [], items: {}, archive: {}, hr: [], asset: [], sw: [], seat: null };
 let C = null, admin = false, editor = false, leader = false, myTeam = '', offline = false, loadedOnce = false, auth = null;
-const ui = { assessMode: 'sum', part: null, eduMode: 'sum', eduYear: '', asMode: 'list', swOwner: '', swLic: '', asAcct: '', asDept: '', asQ: '', hrYear: '', hrSt: '재직', hrTeam: '', hrQ: '', peopleMode: 'org', orgPhoto: LS.get('lab_orgphoto') !== '0', eduDept: '', q: '', team: '', lv: '', guideDept: '', guideType: '', setPart: null, drafts: {}, users: [], lockSet: false, setup: false, signup: false, signupDone: '' };
+const ui = { assessMode: 'sum', part: null, eduMode: 'sum', eduYear: '', yrYear: '', seatQ: '', asMode: 'list', swOwner: '', swLic: '', asAcct: '', asDept: '', asQ: '', hrYear: '', hrSt: '재직', hrTeam: '', hrQ: '', peopleMode: 'org', orgPhoto: LS.get('lab_orgphoto') !== '0', eduDept: '', q: '', team: '', lv: '', guideDept: '', guideType: '', setPart: null, drafts: {}, users: [], lockSet: false, setup: false, signup: false, signupDone: '' };
 try { auth = JSON.parse(LS.get('lab_auth') || 'null'); } catch { auth = null; }
 
 function rebuild() {
@@ -1145,13 +1169,14 @@ async function api(action, payload) {
   return d;
 }
 function applyDocs(docs) {
-  const by = { config: null, parts: [], people: [], grades: {}, courses: [], edu: {}, history: [], archive: {}, hr: [], asset: [], sw: [] };
+  const by = { config: null, parts: [], people: [], grades: {}, courses: [], edu: {}, history: [], archive: {}, hr: [], asset: [], sw: [], seat: null };
   for (const [path, data] of Object.entries(docs)) {
     const [col, id] = path.split('/');
     if (col === 'config') { if (id === 'main') by.config = { id, ...data }; }
     else if (col === 'grades') by.grades[id] = { ...(data.g || {}) };
     else if (col === 'edu') by.edu[id] = data.r || {};
     else if (col === 'archive') by.archive[id] = data;
+    else if (col === 'seat') { if (id === 'main') by.seat = data; }
     else if (by[col]) by[col].push({ id, ...data });
   }
   // 저장 중이거나 아직 저장 안 된 문서는 화면 값을 유지
@@ -1345,7 +1370,7 @@ function startSession(d) {
 function logout(silent) {
   if (auth && !silent) api('logout').catch(() => { });
   auth = null; LS.set('lab_auth', null); setRole(); ui.drafts = {}; ui.users = []; usersLoaded = false;
-  Object.assign(S, { config: null, parts: [], people: [], grades: {}, courses: [], edu: {}, history: [], archive: {}, hr: [], asset: [], sw: [] }); C = null; loadedOnce = false;
+  Object.assign(S, { config: null, parts: [], people: [], grades: {}, courses: [], edu: {}, history: [], archive: {}, hr: [], asset: [], sw: [], seat: null }); C = null; loadedOnce = false;
   whoUI(); syncUI(); checkSetup(); render();
 }
 async function checkSetup() {
@@ -1861,8 +1886,10 @@ function personIssues(p) {
   return out;
 }
 function vPeople() {
-  const seg = `<div class="seg" role="group" aria-label="보기"><button type="button" data-act="pmode" data-v="org" aria-pressed="${ui.peopleMode === 'org'}">조직도·현황</button><button type="button" data-act="pmode" data-v="list" aria-pressed="${ui.peopleMode === 'list'}">명단</button>${admin ? `<button type="button" data-act="pmode" data-v="hr" aria-pressed="${ui.peopleMode === 'hr'}">인사 기록</button>` : ''}</div>`;
-  if (ui.peopleMode === 'hr' && !admin) ui.peopleMode = 'org';
+  const seg = `<div class="seg" role="group" aria-label="보기"><button type="button" data-act="pmode" data-v="org" aria-pressed="${ui.peopleMode === 'org'}">조직도·현황</button><button type="button" data-act="pmode" data-v="list" aria-pressed="${ui.peopleMode === 'list'}">명단</button>${admin ? `<button type="button" data-act="pmode" data-v="year" aria-pressed="${ui.peopleMode === 'year'}">연도별 현황</button><button type="button" data-act="pmode" data-v="seat" aria-pressed="${ui.peopleMode === 'seat'}">자리 배치</button><button type="button" data-act="pmode" data-v="hr" aria-pressed="${ui.peopleMode === 'hr'}">인사 기록</button>` : ''}</div>`;
+  if (['hr', 'year', 'seat'].includes(ui.peopleMode) && !admin) ui.peopleMode = 'org';
+  if (ui.peopleMode === 'year') return vHRYear(seg);
+  if (ui.peopleMode === 'seat') return vSeat(seg);
   if (ui.peopleMode === 'org') return vOrg(seg);
   if (ui.peopleMode === 'hr') return vHR(seg);
   let h = `<div class="toolbar">${seg}<label class="field"><span>검색</span><input class="ci" data-act="f-q" value="${esc(ui.q)}" placeholder="이름·소속"></label><span class="spacer"></span>${admin ? '<button type="button" class="btn primary" data-act="person-edit">인원 추가</button>' : ''}</div>`;
@@ -2271,6 +2298,101 @@ function vHR(seg) {
   </tbody></table></div></section>`;
   return h;
 }
+// ===== 연도별 팀·직급 현황 (관리자) =====
+function vHRYear(seg) {
+  const cur = new Date().getFullYear();
+  let h = `<div class="toolbar">${seg}`;
+  if (!S.hr.length) return h + `</div><section class="card"><div class="empty">인사 기록이 있어야 연도별 현황을 볼 수 있습니다. <b>인사 기록</b>에서 먼저 붙여넣어 주세요.</div></section>`;
+  const y0 = Math.max(2000, Math.min(...S.hr.map(x => +String(x.join || '').slice(0, 4)).filter(Boolean)));
+  const years = []; for (let y = cur; y >= y0; y--) years.push(y);
+  const Y = +(ui.yrYear || cur), at = Y === cur ? today() : Y + '-12-31', prevAt = (Y - 1) + '-12-31';
+  h += `<label class="field"><span>연도</span><select class="ci" data-act="f-yryear">${years.map(y => `<option value="${y}"${y === Y ? ' selected' : ''}>${y}년${y === cur ? ' (현재)' : ' 말'}</option>`).join('')}</select></label></div>`;
+  const A = hrActiveAt(at), P = hrActiveAt(prevAt), teams = hrTeams().filter(t => A.some(x => x.team === t) || P.some(x => x.team === t));
+  const order = [...HR_HEADS, ...S.config.rankOrder], ranks = [...new Set(A.map(x => x.pos))].sort((a, b) => (order.indexOf(a) + 1 || 99) - (order.indexOf(b) + 1 || 99));
+  const st = hrCalc()[String(Y)] || {};
+  const c = (t, r) => A.filter(x => x.team === t && x.pos === r).length;
+  const cell = n => n ? `<td class="num">${n}</td>` : '<td class="num muted">–</td>';
+  const dlt = n => `<td class="num${n < 0 ? ' neg' : ''}">${n > 0 ? '+' + n : n || '<span class="muted">0</span>'}</td>`;
+  h += `<section class="card"><div class="head"><h2>${Y}년 팀·직급별 인원</h2><span class="sub">${Y === cur ? `오늘(${today()}) 기준` : `${Y}-12-31 기준`} · ${A.length}명 · 직위는 인사 기록의 현재 직위</span></div><div class="tw free"><table class="eqtbl ohc"><thead>
+    <tr><th rowspan="2">부서</th><th colspan="${ranks.length}">직위</th><th rowspan="2">합계</th><th rowspan="2">전년 말</th><th rowspan="2">증감</th><th colspan="2">${Y}년</th></tr>
+    <tr>${ranks.map(r => `<th>${esc(HR_HEADS.includes(r) ? r : RSHORT(r))}</th>`).join('')}<th>입사</th><th>퇴사</th></tr></thead><tbody>
+    ${teams.map(t => { const n = A.filter(x => x.team === t).length, pn = P.filter(x => x.team === t).length, s2 = st[t] || {};
+      return `<tr><td class="l"><b>${esc(t)}</b></td>${ranks.map(r => cell(c(t, r))).join('')}<td class="num"><b>${n}</b></td><td class="num muted">${pn}</td>${dlt(n - pn)}${cell(s2.in || 0)}<td class="num${s2.out ? ' neg' : ' muted'}">${s2.out || '–'}</td></tr>`; }).join('')}
+    <tr class="hl"><td><b>합계</b></td>${ranks.map(r => `<td class="num"><b>${A.filter(x => x.pos === r).length}</b></td>`).join('')}<td class="num"><b>${A.length}</b></td><td class="num">${P.length}</td>${dlt(A.length - P.length)}<td class="num"><b>${Object.values(st).reduce((a, x) => a + (x.in || 0), 0)}</b></td><td class="num neg"><b>${Object.values(st).reduce((a, x) => a + (x.out || 0), 0) || '–'}</b></td></tr>
+    <tr><td class="muted">비율</td>${ranks.map(r => `<td class="num muted">${A.length ? Math.round(A.filter(x => x.pos === r).length / A.length * 100) : 0}%</td>`).join('')}<td class="num muted">100%</td><td></td><td></td><td></td><td></td></tr>
+  </tbody></table></div></section>`;
+  // 연도별 추이 (연말 인원)
+  const ys = years.slice(0, 6).reverse(), allT = hrTeams().filter(t => ys.some(y => hrActiveAt(y === cur ? today() : y + '-12-31').some(x => x.team === t)));
+  h += `<section class="card"><div class="head"><h2>연도별 인원 추이</h2><span class="sub">연말 기준 (올해는 오늘 기준)</span></div><div class="tw free"><table class="eqtbl ohc"><thead><tr><th>부서</th>${ys.map(y => `<th>${y}</th>`).join('')}</tr></thead><tbody>
+    ${allT.map(t => `<tr><td class="l"><b>${esc(t)}</b></td>${ys.map(y => { const n = hrActiveAt(y === cur ? today() : y + '-12-31').filter(x => x.team === t).length; return `<td class="num${y === Y ? ' sel' : ''}">${n || '<span class="muted">–</span>'}</td>`; }).join('')}</tr>`).join('')}
+    <tr class="hl"><td><b>합계</b></td>${ys.map(y => `<td class="num${y === Y ? ' sel' : ''}"><b>${hrActiveAt(y === cur ? today() : y + '-12-31').length}</b></td>`).join('')}</tr></tbody></table></div></section>`;
+  return h;
+}
+// ===== 자리 배치 (관리자) =====
+// 배치는 텍스트로 저장·편집: 빈 줄로 덩어리 구분 / "## 이름" = 아래 리더석 (## 만 쓰면 리더석 없음) / "A | B" = 한 줄 좌석
+// "." = 자리 없음, 빈칸 = 빈 자리 / "[방이름]" = 방, "[[방이름]]" = 세로로 긴 방 / 덩어리 첫 줄 "^" = 앞 덩어리 아래로 쌓기
+function seatParse(text) {
+  const blocks = String(text || '').replace(/\r/g, '').split(/\n\s*\n/).map(b => b.split('\n').filter(l => l.trim() !== '' || false)).filter(b => b.length);
+  const out = [];
+  for (let b of blocks) {
+    let stack = false; if (b[0].trim() === '^') { stack = true; b = b.slice(1); } if (!b.length) continue;
+    let item;
+    const m = b[0].trim().match(/^(\[\[|\[)(.+?)(\]\]|\])$/);
+    if (m && b.length === 1) item = { type: 'room', label: m[2].trim(), tall: m[1] === '[[' };
+    else { let lead = null, rows = b; if (b[0].trim().startsWith('##')) { lead = b[0].trim().slice(2).trim(); rows = b.slice(1); }
+      item = { type: 'island', lead: lead || '', hasLead: !!lead, rows: rows.map(l => l.split('|').map(x => x.trim())) }; }
+    if (stack && out.length) { const last = out[out.length - 1]; if (last.type === 'stack') last.items.push(item); else out[out.length - 1] = { type: 'stack', items: [last, item] }; }
+    else out.push(item);
+  }
+  return { blocks: out };
+}
+function seatText(m) {
+  const one = it => it.type === 'room' ? (it.tall ? `[[${it.label}]]` : `[${it.label}]`) : [it.hasLead ? `## ${it.lead}` : '##', ...it.rows.map(r => r.join(' | '))].join('\n');
+  return (m && m.blocks || []).map(b => b.type === 'stack' ? b.items.map((it, i) => (i ? '^\n' : '') + one(it)).join('\n\n') : one(b)).join('\n\n');
+}
+function seatPeople() { const by = new Map(); for (const p of S.people) by.set(nkey(p.name), p); return by; }
+function vSeat(seg) {
+  const m = S.seat, pm = seatPeople(), q = nkey(ui.seatQ);
+  const T = S.config.teamOrder || [], tc = t => 'pc' + (Math.max(0, T.indexOf(t)) % 10);
+  let h = `<div class="toolbar">${seg}<label class="field"><span>찾기</span><input class="ci" data-act="f-seatq" value="${esc(ui.seatQ)}" placeholder="이름"></label><span class="spacer"></span><button type="button" class="btn" data-act="seat-text">배치 편집 (텍스트)</button></div>`;
+  if (!m || !(m.blocks || []).length) return h + `<section class="card"><div class="empty">자리 배치가 없습니다. <b>배치 편집 (텍스트)</b>에 배치표를 넣어 주세요.</div></section>`;
+  const used = new Set();
+  const seat = (v, path, lead) => {
+    if (v === '.') return `<div class="st none"></div>`;
+    const p = pm.get(nkey(v)); if (p) used.add(p.id);
+    const hit = q && nkey(v).includes(q);
+    const cls = ['st', lead ? 'lead' : '', !v || v === '공석' ? 'empty' : '', p ? tc(p.team) + ' ppl' : (v && v !== '공석' ? 'txt' : ''), hit ? 'hit' : ''].filter(Boolean).join(' ');
+    return `<button type="button" class="${cls}" data-act="seat-cell" data-path="${path}" title="${esc(p ? `${p.name} · ${p.team} · ${p.rank}` : v || '빈 자리')}">${p ? `<b>${esc((n => n.length === 2 ? n[0] + ' ' + n[1] : n)(nkey(p.name)))}</b>${lead ? '' : `<small>${esc(RSHORT(p.rank))}</small>`}` : `<span>${esc(v || '공석')}</span>`}</button>`;
+  };
+  const island = (it, bp) => `<div class="isl" style="--c:${Math.max(...it.rows.map(r => r.length), 1)}">${it.rows.map((r, ri) => r.map((v, ci) => seat(v, `${bp}.${ri}.${ci}`)).join('') + (r.length < Math.max(...it.rows.map(x => x.length)) ? '<div class="st none"></div>'.repeat(Math.max(...it.rows.map(x => x.length)) - r.length) : '')).join('')}${it.hasLead ? seat(it.lead, `${bp}.L`, true) : ''}</div>`;
+  const item = (it, bp) => it.type === 'room' ? `<div class="room${it.tall ? ' tall' : ''}"><span>${esc(it.label)}</span></div>` : island(it, bp);
+  h += `<section class="card"><div class="head"><h2>자리 배치</h2><span class="sub">자리를 누르면 사람을 바꿀 수 있습니다</span></div><div class="seatw"><div class="seats">${m.blocks.map((b, bi) => b.type === 'stack' ? `<div class="stk">${b.items.map((it, ii) => item(it, `${bi}:${ii}`)).join('')}</div>` : item(b, `${bi}`)).join('')}</div></div>`;
+  const miss = C.sortComp(S.people).filter(p => !used.has(p.id));
+  h += `<div class="seatlg">${C.teams(S.people).map(t => `<span><i class="${tc(t)}"></i>${esc(t)}</span>`).join('')}</div>`;
+  if (miss.length) h += `<div class="notice warn small">자리 미지정 ${miss.length}명: ${miss.map(p => `<b>${esc(p.name)}</b>`).join(', ')}</div>`;
+  h += `</section>`;
+  return h;
+}
+function seatGet(path) {
+  const [b, ...rest] = path.split('.'), [bi, ii] = b.split(':').map(Number), blk = S.seat.blocks[bi], it = ii == null || isNaN(ii) ? blk : blk.items[ii];
+  return { it, rest };
+}
+function seatDialog(path) {
+  const { it, rest } = seatGet(path), cur = rest[0] === 'L' ? it.lead : it.rows[+rest[0]][+rest[1]];
+  const pm = seatPeople(), sel = pm.get(nkey(cur));
+  openDlg(`<h2>자리 지정</h2><form class="form" data-form="seat" data-path="${esc(path)}" style="grid-template-columns:1fr">
+    <label class="field">사람<select name="p"><option value="">— 선택 안 함 —</option>${C.sortComp(S.people).map(p => `<option value="${esc(p.name)}"${sel === p ? ' selected' : ''}>${esc(p.team)} · ${esc(p.name)} ${esc(RSHORT(p.rank))}</option>`).join('')}</select></label>
+    <label class="field">또는 직접 입력 (공석·내선번호 등)<input name="t" value="${esc(sel ? '' : cur)}" placeholder="공석"></label>
+    <div class="actions"><button type="button" class="btn" data-act="seat-clear" data-path="${esc(path)}">비우기 (공석)</button><span class="spacer"></span><button type="button" class="btn" data-act="close">취소</button><button class="btn primary" type="submit">저장</button></div></form>`);
+}
+function seatSet(path, v) {
+  const { it, rest } = seatGet(path);
+  if (rest[0] === 'L') it.lead = v; else it.rows[+rest[0]][+rest[1]] = v;
+  // 같은 사람이 다른 자리에 있으면 그 자리는 공석으로
+  if (v && v !== '공석' && seatPeople().get(nkey(v))) for (const [bi, b] of S.seat.blocks.entries()) for (const [ii, x] of (b.type === 'stack' ? b.items : [b]).entries()) { if (x.type !== 'island') continue; const bp = b.type === 'stack' ? `${bi}:${ii}` : `${bi}`;
+    x.rows.forEach((r, ri) => r.forEach((c, ci) => { if (`${bp}.${ri}.${ci}` !== path && nkey(c) === nkey(v)) r[ci] = '공석'; })); if (x.hasLead && `${bp}.L` !== path && nkey(x.lead) === nkey(v)) x.lead = '공석'; }
+  put('seat/main', S.seat); render();
+}
 function hrDialog(id) {
   const x = S.hr.find(r => r.id === id) || { name: '', kind: '전담연구원', pos: '연구원', team: S.config.teamOrder[0], school: '', major: '', degree: '학사', join: today(), leave: '', moved: false };
   const stv = x.moved ? '부서변동' : x.leave ? '퇴사' : '재직';
@@ -2449,6 +2571,11 @@ document.addEventListener('click', e => {
     case 'year-view': ui.eduYear = d.v; ui.eduMode = 'sum'; render(); break;
     case 'year-del': if (!need()) break; if (!confirm(`${d.v}년 마감 자료를 삭제할까요?`)) break; for (const sfx of ['', 'e', 'c']) { delete S.archive['y' + d.v + sfx]; put('archive/y' + d.v + sfx, null); } if (String(ui.eduYear) === String(d.v)) ui.eduYear = ''; render(); toast('삭제했습니다'); break;
     case 'pmode': ui.peopleMode = d.v; ui.q = ''; render(); break;
+    case 'seat-cell': if (!need()) break; seatDialog(d.path); break;
+    case 'seat-clear': if (!need()) break; closeDlg(); seatSet(d.path, '공석'); break;
+    case 'seat-text': if (!need()) break; openDlg(`<h2>자리 배치 편집</h2><form class="form" data-form="seattext" style="grid-template-columns:1fr"><label class="field">배치표<textarea name="t" rows="22" style="width:100%;font:12.5px/1.5 var(--font-num);border:1px solid var(--line);border-radius:6px;padding:8px">${esc(seatText(S.seat))}</textarea></label>
+      <div class="small muted">빈 줄 = 책상 묶음 구분 · <b>## 이름</b> = 묶음 아래 리더석(##만 쓰면 없음) · <b>A | B</b> = 한 줄 좌석 · <b>.</b> = 자리 없음 · <b>[방]</b> / <b>[[긴 방]]</b> · 묶음 첫 줄 <b>^</b> = 앞 묶음 아래에 쌓기</div>
+      <div class="actions"><span class="spacer"></span><button type="button" class="btn" data-act="close">취소</button><button class="btn primary" type="submit">저장</button></div></form>`, true); break;
     case 'as-edit': if (!need()) break; asDialog(d.id); break;
     case 'asmode': ui.asMode = d.v; ui.asQ = ''; render(); break;
     case 'as-xlsx': if (!(admin || director)) { toast('연구소장·개발실장·관리자만 받을 수 있습니다', true); break; }
@@ -2541,6 +2668,7 @@ document.addEventListener('change', e => {
   else if (a === 'f-swlic') { ui.swLic = t.value; render(); }
   else if (a === 'f-asacct') { ui.asAcct = t.value; render(); }
   else if (a === 'f-asdept') { ui.asDept = t.value; render(); }
+  else if (a === 'f-yryear') { ui.yrYear = t.value; render(); }
   else if (a === 'f-hrst') { ui.hrSt = t.value; render(); }
   else if (a === 'f-hrteam') { ui.hrTeam = t.value; render(); }
   else if (a === 'f-hryear') { ui.hrYear = t.value; render(); }
@@ -2565,6 +2693,7 @@ document.addEventListener('change', e => {
 let qTimer;
 document.addEventListener('input', e => {
   if (e.target.dataset.act === 'f-asq') { clearTimeout(qTimer); const v = e.target.value; qTimer = setTimeout(() => { ui.asQ = v; const pos = e.target.selectionStart; render(); const el = document.querySelector('[data-act="f-asq"]'); if (el) { el.focus(); el.setSelectionRange(pos, pos); } }, 250); }
+  if (e.target.dataset.act === 'f-seatq') { clearTimeout(qTimer); const v = e.target.value; qTimer = setTimeout(() => { ui.seatQ = v; const pos = e.target.selectionStart; render(); const el = document.querySelector('[data-act="f-seatq"]'); if (el) { el.focus(); el.setSelectionRange(pos, pos); } }, 200); }
   if (e.target.dataset.act === 'f-hrq') { clearTimeout(qTimer); const v = e.target.value; qTimer = setTimeout(() => { ui.hrQ = v; const pos = e.target.selectionStart; render(); const el = document.querySelector('[data-act="f-hrq"]'); if (el) { el.focus(); el.setSelectionRange(pos, pos); } }, 250); }
   if (e.target.dataset.act === 'f-q') { clearTimeout(qTimer); const v = e.target.value; qTimer = setTimeout(() => { ui.q = v; const pos = e.target.selectionStart; render(); const el = document.querySelector('[data-act="f-q"]'); if (el) { el.focus(); el.setSelectionRange(pos, pos); } }, 250); }
 });
@@ -2632,6 +2761,11 @@ document.addEventListener('submit', e => {
     const btn = f.querySelector('button[type=submit]'); btn.disabled = true; btn.textContent = '저장 중…';
     putBatch(ops).then(() => { S.asset = next; closeDlg(); render(); toast(`자산 ${next.length}건을 저장했습니다`); })
       .catch(x => { btn.disabled = false; btn.textContent = '가져오기'; $('#aperr').textContent = '저장하지 못했습니다: ' + x.message; });
+  } else if (f.dataset.form === 'seat') {
+    closeDlg(); seatSet(f.dataset.path, v.p || v.t.trim() || '공석');
+  } else if (f.dataset.form === 'seattext') {
+    const m = seatParse(v.t); if (!m.blocks.length) { toast('배치가 비어 있습니다', true); return; }
+    S.seat = m; put('seat/main', m); closeDlg(); render(); toast('자리 배치를 저장했습니다');
   } else if (f.dataset.form === 'hr') {
     if (!v.name.trim()) { $('#hrerr').textContent = '이름을 입력해 주세요.'; return; }
     if (v.st === '퇴사' && !v.leave) { $('#hrerr').textContent = '퇴사일을 입력해 주세요.'; return; }
@@ -2665,7 +2799,7 @@ document.addEventListener('submit', e => {
 
 // ---------- export ----------
 function snapshotData() {
-  return { version: 1, exported: new Date().toISOString(), config: (({ id, ...c }) => c)(S.config), parts: S.parts, people: S.people, grades: S.grades, courses: S.courses, edu: S.edu, history: S.history, archive: S.archive, hr: S.hr, asset: S.asset, sw: S.sw };
+  return { version: 1, exported: new Date().toISOString(), config: (({ id, ...c }) => c)(S.config), parts: S.parts, people: S.people, grades: S.grades, courses: S.courses, edu: S.edu, history: S.history, archive: S.archive, hr: S.hr, asset: S.asset, sw: S.sw, seat: S.seat };
 }
 function saveFile(filename, data) {
   const url = URL.createObjectURL(data instanceof Blob ? data : new Blob([data], { type: 'application/json' }));
@@ -2706,6 +2840,7 @@ function docsFromData(data) {
   for (const h of data.hr || []) docs['hr/' + h.id] = strip(h);
   for (const a of data.asset || []) docs['asset/' + a.id] = strip(a);
   for (const a of data.sw || []) docs['sw/' + a.id] = strip(a);
+  if (data.seat) docs['seat/main'] = data.seat;
   for (const [k, v] of Object.entries(data.archive || {})) if (/^y\d{4}[ec]?$/.test(k)) docs['archive/' + k] = v;
   return docs;
 }
