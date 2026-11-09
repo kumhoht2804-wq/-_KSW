@@ -519,7 +519,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.09 11:32</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.09 11:38</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -1168,7 +1168,7 @@ const LS = { get: k => { try { return localStorage.getItem(k); } catch { return 
 let API_URL = DEFAULT_API || LS.get('lab_api') || '';
 
 // ---------- state ----------
-const S = { config: null, parts: [], people: [], grades: {}, courses: [], edu: {}, history: [], items: {}, archive: {}, hr: [], asset: [], sw: [], seat: null };
+const S = { config: null, parts: [], people: [], grades: {}, courses: [], edu: {}, history: [], items: {}, archive: {}, hr: [], asset: [], sw: [], seat: null, heads: [] };
 let C = null, admin = false, editor = false, leader = false, myTeam = '', offline = false, loadedOnce = false, auth = null;
 const ui = { assessMode: 'sum', part: null, eduMode: 'sum', eduYear: '', yrYear: '', seatQ: '', asMode: 'list', swOwner: '', swLic: '', asAcct: '', asDept: '', asQ: '', hrYear: '', hrSt: '재직', hrTeam: '', hrQ: '', peopleMode: 'org', orgPhoto: LS.get('lab_orgphoto') !== '0', eduDept: '', q: '', team: '', lv: '', guideDept: '', guideType: '', setPart: null, drafts: {}, users: [], lockSet: false, setup: false, signup: false, signupDone: '' };
 try { auth = JSON.parse(LS.get('lab_auth') || 'null'); } catch { auth = null; }
@@ -1199,7 +1199,7 @@ async function api(action, payload) {
   return d;
 }
 function applyDocs(docs) {
-  const by = { config: null, parts: [], people: [], grades: {}, courses: [], edu: {}, history: [], archive: {}, hr: [], asset: [], sw: [], seat: null };
+  const by = { config: null, parts: [], people: [], grades: {}, courses: [], edu: {}, history: [], archive: {}, hr: [], asset: [], sw: [], seat: null, heads: [] };
   for (const [path, data] of Object.entries(docs)) {
     const [col, id] = path.split('/');
     if (col === 'config') { if (id === 'main') by.config = { id, ...data }; }
@@ -1209,6 +1209,7 @@ function applyDocs(docs) {
     else if (col === 'seat') { if (id === 'main') by.seat = data; }
     else if (by[col]) by[col].push({ id, ...data });
   }
+  by.heads = by.people.filter(p => p.head); by.people = by.people.filter(p => !p.head);
   // 저장 중이거나 아직 저장 안 된 문서는 화면 값을 유지
   for (const p of [...pend.keys(), ...running, ...Object.keys(unsaved)]) {
     const [col, id] = p.split('/');
@@ -1402,7 +1403,7 @@ function startSession(d) {
 function logout(silent) {
   if (auth && !silent) api('logout').catch(() => { });
   auth = null; LS.set('lab_auth', null); setRole(); ui.drafts = {}; ui.users = []; usersLoaded = false;
-  Object.assign(S, { config: null, parts: [], people: [], grades: {}, courses: [], edu: {}, history: [], archive: {}, hr: [], asset: [], sw: [], seat: null }); C = null; loadedOnce = false;
+  Object.assign(S, { config: null, parts: [], people: [], grades: {}, courses: [], edu: {}, history: [], archive: {}, hr: [], asset: [], sw: [], seat: null, heads: [] }); C = null; loadedOnce = false;
   whoUI(); syncUI(); checkSetup(); render();
 }
 async function checkSetup() {
@@ -1932,8 +1933,11 @@ function vPeople() {
   const hrOf = new Map(); if (admin) for (const x of S.hr) if (hrStatus(x) === '재직') { const p = hrLink(x); if (p && !hrOf.has(p.id)) hrOf.set(p.id, x); }
   const leads = new Set(C.teams(S.people).map(t => orgLeader(t, S.people.filter(p => p.team === t))?.id).filter(Boolean));
   const H = admin && hrOf.size, hv = (p, k) => { const v = hrOf.get(p.id)?.[k]; return v ? esc(v) : '<span class="muted">–</span>'; };
-  h += `<section class="card"><div class="head"><h2>연구소 인원</h2><span class="sub">${S.people.length}명</span></div><div class="tw"><table><thead><tr><th class="c">No</th><th>소속</th><th>성명</th>${H ? '<th>전담여부</th>' : ''}<th>직급</th><th>직위</th><th>부서</th><th>내선</th>${H ? '<th>학교</th><th>전공</th><th>학위</th>' : ''}${admin ? '<th>IRIS ID</th><th>국가연구자번호</th>' : ''}${anyNote ? '<th>비고</th>' : ''}${anyIssue ? '<th>점검</th>' : ''}${admin ? '<th></th>' : ''}</tr></thead><tbody>
-  ${rows.map((p, i) => `<tr><td class="c num muted">${i + 1}</td><td>${esc(p.team)}</td><td><b>${esc(p.name)}</b></td>${H ? `<td>${hv(p, 'kind')}</td>` : ''}<td>${esc(p.rank)}</td><td>${leads.has(p.id) ? '<b>팀장</b>' : '팀원'}</td><td>${esc(p.cat)}</td><td class="num">${p.ext ? esc(p.ext) : '<span class="muted">–</span>'}</td>${H ? `<td class="l">${hv(p, 'school')}</td><td class="l">${hv(p, 'major')}</td><td>${hv(p, 'degree')}</td>` : ''}${admin ? `<td class="num">${p.iris ? esc(p.iris) : '<span class="muted">–</span>'}</td><td class="num">${p.rno ? esc(p.rno) : '<span class="muted">–</span>'}</td>` : ''}${anyNote ? `<td class="muted l">${esc(p.note)}</td>` : ''}${anyIssue ? `<td>${personIssues(p).map(([c, t]) => `<span class="tag ${c}">${t}</span>`).join(' ')}</td>` : ''}${admin ? `<td><button type="button" class="btn sm" data-act="person-edit" data-id="${p.id}">수정</button></td>` : ''}</tr>`).join('')}
+  const HD = scoped || ui.q ? [] : headRows(), HX = HD.filter(r => !r.inP), roleOf = new Map(HD.filter(r => r.inP).map(r => [r.inP.id, r.role]));
+  const dash = '<span class="muted">–</span>', hh = (r, f) => r.hr && r.hr[f] ? esc(r.hr[f]) : dash, hp = (r, f) => r.rec && r.rec[f] ? esc(r.rec[f]) : dash;
+  const headTr = HX.map(r => `<tr><td class="c num muted">–</td><td>모듈개발연구소</td><td><b>${esc(r.name)}</b></td>${H ? `<td>${hh(r, 'kind')}</td>` : ''}<td>${esc(r.rank || '–')}</td><td><b>${esc(r.role)}</b></td><td>–</td><td class="num">${hp(r, 'ext')}</td>${H ? `<td class="l">${hh(r, 'school')}</td><td class="l">${hh(r, 'major')}</td><td>${hh(r, 'degree')}</td>` : ''}${admin ? `<td class="num">${hp(r, 'iris')}</td><td class="num">${hp(r, 'rno')}</td>` : ''}${anyNote ? '<td></td>' : ''}${anyIssue ? '<td></td>' : ''}${admin ? `<td><button type="button" class="btn sm" data-act="head-edit" data-k="${r.k}">수정</button></td>` : ''}</tr>`).join('');
+  h += `<section class="card"><div class="head"><h2>연구소 인원</h2><span class="sub">${S.people.length + HX.length}명</span></div><div class="tw"><table><thead><tr><th class="c">No</th><th>소속</th><th>성명</th>${H ? '<th>전담여부</th>' : ''}<th>직급</th><th>직위</th><th>부서</th><th>내선</th>${H ? '<th>학교</th><th>전공</th><th>학위</th>' : ''}${admin ? '<th>IRIS ID</th><th>국가연구자번호</th>' : ''}${anyNote ? '<th>비고</th>' : ''}${anyIssue ? '<th>점검</th>' : ''}${admin ? '<th></th>' : ''}</tr></thead><tbody>
+  ${headTr}${rows.map((p, i) => `<tr><td class="c num muted">${i + 1}</td><td>${esc(p.team)}</td><td><b>${esc(p.name)}</b></td>${H ? `<td>${hv(p, 'kind')}</td>` : ''}<td>${esc(p.rank)}</td><td>${roleOf.has(p.id) ? `<b>${roleOf.get(p.id)}</b>` : leads.has(p.id) ? '<b>팀장</b>' : '팀원'}</td><td>${esc(p.cat)}</td><td class="num">${p.ext ? esc(p.ext) : '<span class="muted">–</span>'}</td>${H ? `<td class="l">${hv(p, 'school')}</td><td class="l">${hv(p, 'major')}</td><td>${hv(p, 'degree')}</td>` : ''}${admin ? `<td class="num">${p.iris ? esc(p.iris) : '<span class="muted">–</span>'}</td><td class="num">${p.rno ? esc(p.rno) : '<span class="muted">–</span>'}</td>` : ''}${anyNote ? `<td class="muted l">${esc(p.note)}</td>` : ''}${anyIssue ? `<td>${personIssues(p).map(([c, t]) => `<span class="tag ${c}">${t}</span>`).join(' ')}</td>` : ''}${admin ? `<td><button type="button" class="btn sm" data-act="person-edit" data-id="${p.id}">수정</button></td>` : ''}</tr>`).join('')}
   </tbody></table></div></section>`;
   return h;
 }
@@ -2275,6 +2279,32 @@ function asPasteDialog() {
 const nkey = v => String(v || '').replace(/\s+/g, '');
 const hrStatus = h => h.moved ? '부서변동' : h.leave ? '퇴사' : '재직';
 const HR_HEADS = ['연구소장', '개발실장'];   // 조직도 책임자 (명단 밖)
+function headRows() {
+  const o = orgCfg();
+  return [['head', '연구소장'], ['dev', '개발실장']].map(([k, role]) => {
+    const [name = '', ...rk] = String(o[k] || '').trim().split(/\s+/); if (!name) return null;
+    const inP = S.people.find(p => nkey(p.name) === nkey(name));
+    const rec = S.heads.find(h => h.head === role) || null;
+    const hr = S.hr.find(x => nkey(x.name) === nkey(name) && hrStatus(x) === '재직') || null;
+    return { k, role, name, rank: rk.join(' '), inP, rec, hr };
+  }).filter(Boolean);
+}
+function headSave(r, ext) {
+  const id = r.rec ? r.rec.id : 'hd' + r.k, doc = { head: r.role, name: r.name, rank: r.rank, team: '' };
+  for (const k of ['ext', 'iris', 'rno']) { const x = String(ext[k] ?? (r.rec || {})[k] ?? '').trim(); if (x) doc[k] = x; }
+  const cur = S.heads.find(h => h.id === id); if (cur) { for (const k of Object.keys(cur)) if (k !== 'id') delete cur[k]; Object.assign(cur, doc); } else S.heads.push({ id, ...doc });
+  return { path: 'people/' + id, data: doc };
+}
+function headDialog(k) {
+  const r = headRows().find(x => x.k === k); if (!r) return; const p = r.rec || {};
+  openDlg(`<h2>${esc(r.role)} 정보</h2><form class="form" data-form="head" data-k="${k}" style="grid-template-columns:1fr 1fr">
+    <label class="field">성명<input value="${esc(r.name + ' ' + r.rank)}" disabled></label>
+    <label class="field">직위<input value="${esc(r.role)}" disabled></label>
+    <label class="field">내선번호<input name="ext" value="${esc(p.ext || '')}" inputmode="numeric"></label>
+    <label class="field">IRIS ID<input name="iris" value="${esc(p.iris || '')}"></label>
+    <label class="field">국가연구자번호<input name="rno" value="${esc(p.rno || '')}" inputmode="numeric"></label>
+    <div class="actions" style="grid-column:1/-1"><span class="spacer"></span><button type="button" class="btn" data-act="close">취소</button><button class="btn primary" type="submit">저장</button></div></form>`);
+}
 function hrLink(h) {
   return S.people.find(p => nkey(p.name) === nkey(h.name)) || (h.join && S.people.find(p => p.team === h.team && p.join === h.join && p.rank === h.pos)) || null;
 }
@@ -2412,7 +2442,7 @@ function seatDefault() {
     { type: 'stack', items: [{ type: 'island', lead: '', hasLead: false, rows: [['.'], [''], [''], ['']] }, { type: 'room', label: 'SW 측정실', tall: false }] },
     { type: 'room', label: '회의실', tall: true }] };
 }
-function seatPeople() { const by = new Map(); for (const p of S.people) by.set(nkey(p.name), p); return by; }
+function seatPeople() { const by = new Map(); for (const p of [...S.heads, ...S.people]) by.set(nkey(p.name), p); return by; }
 function vSeat(seg) {
   const m = S.seat || seatDefault(), pm = seatPeople(), q = nkey(ui.seatQ);
   const T = S.config.teamOrder || [], tc = t => 'pc' + (Math.max(0, T.indexOf(t)) % 10);
@@ -2699,6 +2729,7 @@ document.addEventListener('click', e => {
     case 'hr-edit': if (!need()) break; hrDialog(d.id); break;
     case 'hr-paste': if (!need()) break; hrPasteDialog(); break;
     case 'pinfo-paste': if (!need()) break; pinfoDialog(); break;
+    case 'head-edit': if (!need()) break; headDialog(d.k); break;
     case 'hr-del': if (!need()) break; if (!confirm('이 인사 기록을 삭제할까요?')) break; S.hr = S.hr.filter(x => x.id !== d.id); put('hr/' + d.id, null); closeDlg(); hrSync(); render(); toast('삭제했습니다'); break;
     case 'hr-joinfix': if (!need()) break; { let n = 0; for (const x of S.hr) { if (hrStatus(x) !== '재직') continue; const p = hrLink(x); if (p && x.join && p.join !== x.join) { p.join = x.join; const { id, ...doc } = p; put('people/' + id, doc); n++; } } render(); toast(`${n}명의 입사일을 맞췄습니다`); break; }
     case 'org-photo': ui.orgPhoto = !ui.orgPhoto; LS.set('lab_orgphoto', ui.orgPhoto ? '1' : '0'); render(); break;
@@ -2881,16 +2912,22 @@ document.addEventListener('submit', e => {
     if (!doc.part) delete doc.part;
     if (old) Object.assign(old, doc); else S.hr.push({ id, ...doc });
     put('hr/' + id, doc); closeDlg(); hrSync(); render(); toast('인사 기록을 저장했습니다');
+  } else if (f.dataset.form === 'head') {
+    const r = headRows().find(x => x.k === f.dataset.k); if (!r) return;
+    const op = headSave(r, { ext: v.ext, iris: v.iris, rno: v.rno }); put(op.path, op.data); closeDlg(); render(); toast('저장했습니다');
   } else if (f.dataset.form === 'pinfo') {
     let d; try { d = pinfoParse(v.t); } catch (x) { $('#pierr').textContent = x.message; return; }
     if (!d.rows.length) { $('#pierr').textContent = '읽을 수 있는 줄이 없습니다.'; return; }
     const pm = new Map(S.people.map(p => [nkey(p.name), p])), miss = [], ops = [], upd = [];
-    for (const r of d.rows) { const p = pm.get(nkey(r.name)); if (!p) { miss.push(r.name.replace(/\s+/g, '')); continue; }
+    const hx = new Map(headRows().filter(x => !x.inP).map(x => [nkey(x.name), x]));
+    for (const r of d.rows) { const p = pm.get(nkey(r.name));
+      if (!p && hx.has(nkey(r.name))) { const e = {}; for (const k of d.cols) e[k] = r[k] || ''; ops.push(headSave(hx.get(nkey(r.name)), e)); upd.push(null); continue; }
+      if (!p) { miss.push(r.name.replace(/\s+/g, '')); continue; }
       const doc = { ...p }; delete doc.id; for (const k of d.cols) { if (r[k]) doc[k] = r[k]; else delete doc[k]; }
       upd.push([p, doc]); ops.push({ path: 'people/' + p.id, data: doc }); }
     if (!ops.length) { $('#pierr').textContent = '명단과 이름이 맞는 사람이 없습니다.'; return; }
     const btn = f.querySelector('button[type=submit]'); btn.disabled = true; btn.textContent = '저장 중…';
-    putBatch(ops).then(() => { for (const [p, doc] of upd) { for (const k of d.cols) delete p[k]; Object.assign(p, doc); } closeDlg(); render(); toast(`${upd.length}명 반영${miss.length ? ` · 명단에 없는 ${miss.length}명 제외` : ''}`); if (miss.length) openDlg(`<h2>명단에 없어 제외한 이름 · ${miss.length}명</h2><div class="small" style="line-height:1.9">${miss.map(esc).join(', ')}</div><div class="actions"><span class="spacer"></span><button type="button" class="btn primary" data-act="close">확인</button></div>`); })
+    putBatch(ops).then(() => { for (const [p, doc] of upd.filter(Boolean)) { for (const k of d.cols) delete p[k]; Object.assign(p, doc); } closeDlg(); render(); toast(`${upd.length}명 반영${miss.length ? ` · 명단에 없는 ${miss.length}명 제외` : ''}`); if (miss.length) openDlg(`<h2>명단에 없어 제외한 이름 · ${miss.length}명</h2><div class="small" style="line-height:1.9">${miss.map(esc).join(', ')}</div><div class="actions"><span class="spacer"></span><button type="button" class="btn primary" data-act="close">확인</button></div>`); })
       .catch(x => { btn.disabled = false; btn.textContent = '가져오기'; $('#pierr').textContent = '저장하지 못했습니다: ' + x.message; });
   } else if (f.dataset.form === 'hrpaste') {
     let rows; try { rows = hrParse(v.t); } catch (x) { $('#hperr').textContent = x.message; return; }
@@ -2918,7 +2955,7 @@ document.addEventListener('submit', e => {
 
 // ---------- export ----------
 function snapshotData() {
-  return { version: 1, exported: new Date().toISOString(), config: (({ id, ...c }) => c)(S.config), parts: S.parts, people: S.people, grades: S.grades, courses: S.courses, edu: S.edu, history: S.history, archive: S.archive, hr: S.hr, asset: S.asset, sw: S.sw, seat: S.seat };
+  return { version: 1, exported: new Date().toISOString(), config: (({ id, ...c }) => c)(S.config), parts: S.parts, people: [...S.people, ...S.heads], grades: S.grades, courses: S.courses, edu: S.edu, history: S.history, archive: S.archive, hr: S.hr, asset: S.asset, sw: S.sw, seat: S.seat };
 }
 function saveFile(filename, data) {
   const url = URL.createObjectURL(data instanceof Blob ? data : new Blob([data], { type: 'application/json' }));
