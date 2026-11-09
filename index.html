@@ -519,7 +519,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.09 11:27</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.09 11:32</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -1924,7 +1924,7 @@ function vPeople() {
   if (ui.peopleMode === 'seat') return vSeat(seg);
   if (ui.peopleMode === 'org') return vOrg(seg);
   if (ui.peopleMode === 'hr') return vHR(seg);
-  let h = `<div class="toolbar">${seg}<label class="field"><span>검색</span><input class="ci" data-act="f-q" value="${esc(ui.q)}" placeholder="이름·소속"></label><span class="spacer"></span>${admin ? '<button type="button" class="btn primary" data-act="person-edit">인원 추가</button>' : ''}</div>`;
+  let h = `<div class="toolbar">${seg}<label class="field"><span>검색</span><input class="ci" data-act="f-q" value="${esc(ui.q)}" placeholder="이름·소속"></label><span class="spacer"></span>${admin ? '<button type="button" class="btn" data-act="pinfo-paste">기초정보 붙여넣기</button><button type="button" class="btn primary" data-act="person-edit">인원 추가</button>' : ''}</div>`;
   const mm = admin ? eduMismatch() : [];
   if (mm.length) h += `<div class="notice warn">평가 파트와 교육 상세부서가 맞지 않는 인원 ${mm.length}명: ${mm.map(p => `<b>${esc(p.name)}</b> (평가 ${esc(p.cat)} → 교육 ${esc(p.eduDept)})`).join(', ')}${admin ? ` <button type="button" class="btn sm primary" data-act="fix-edudept">평가 파트에 맞추기</button>` : ''}</div>`;
   const rows = C.sortComp(S.people).filter(p => !ui.q || p.name.includes(ui.q) || p.team.includes(ui.q));
@@ -1932,8 +1932,8 @@ function vPeople() {
   const hrOf = new Map(); if (admin) for (const x of S.hr) if (hrStatus(x) === '재직') { const p = hrLink(x); if (p && !hrOf.has(p.id)) hrOf.set(p.id, x); }
   const leads = new Set(C.teams(S.people).map(t => orgLeader(t, S.people.filter(p => p.team === t))?.id).filter(Boolean));
   const H = admin && hrOf.size, hv = (p, k) => { const v = hrOf.get(p.id)?.[k]; return v ? esc(v) : '<span class="muted">–</span>'; };
-  h += `<section class="card"><div class="head"><h2>연구소 인원</h2><span class="sub">${S.people.length}명</span></div><div class="tw"><table><thead><tr><th class="c">No</th><th>소속</th><th>성명</th>${H ? '<th>전담여부</th>' : ''}<th>직급</th><th>직위</th><th>부서</th>${H ? '<th>학교</th><th>전공</th><th>학위</th>' : ''}${anyNote ? '<th>비고</th>' : ''}${anyIssue ? '<th>점검</th>' : ''}${admin ? '<th></th>' : ''}</tr></thead><tbody>
-  ${rows.map((p, i) => `<tr><td class="c num muted">${i + 1}</td><td>${esc(p.team)}</td><td><b>${esc(p.name)}</b></td>${H ? `<td>${hv(p, 'kind')}</td>` : ''}<td>${esc(p.rank)}</td><td>${leads.has(p.id) ? '<b>팀장</b>' : '팀원'}</td><td>${esc(p.cat)}</td>${H ? `<td class="l">${hv(p, 'school')}</td><td class="l">${hv(p, 'major')}</td><td>${hv(p, 'degree')}</td>` : ''}${anyNote ? `<td class="muted l">${esc(p.note)}</td>` : ''}${anyIssue ? `<td>${personIssues(p).map(([c, t]) => `<span class="tag ${c}">${t}</span>`).join(' ')}</td>` : ''}${admin ? `<td><button type="button" class="btn sm" data-act="person-edit" data-id="${p.id}">수정</button></td>` : ''}</tr>`).join('')}
+  h += `<section class="card"><div class="head"><h2>연구소 인원</h2><span class="sub">${S.people.length}명</span></div><div class="tw"><table><thead><tr><th class="c">No</th><th>소속</th><th>성명</th>${H ? '<th>전담여부</th>' : ''}<th>직급</th><th>직위</th><th>부서</th><th>내선</th>${H ? '<th>학교</th><th>전공</th><th>학위</th>' : ''}${admin ? '<th>IRIS ID</th><th>국가연구자번호</th>' : ''}${anyNote ? '<th>비고</th>' : ''}${anyIssue ? '<th>점검</th>' : ''}${admin ? '<th></th>' : ''}</tr></thead><tbody>
+  ${rows.map((p, i) => `<tr><td class="c num muted">${i + 1}</td><td>${esc(p.team)}</td><td><b>${esc(p.name)}</b></td>${H ? `<td>${hv(p, 'kind')}</td>` : ''}<td>${esc(p.rank)}</td><td>${leads.has(p.id) ? '<b>팀장</b>' : '팀원'}</td><td>${esc(p.cat)}</td><td class="num">${p.ext ? esc(p.ext) : '<span class="muted">–</span>'}</td>${H ? `<td class="l">${hv(p, 'school')}</td><td class="l">${hv(p, 'major')}</td><td>${hv(p, 'degree')}</td>` : ''}${admin ? `<td class="num">${p.iris ? esc(p.iris) : '<span class="muted">–</span>'}</td><td class="num">${p.rno ? esc(p.rno) : '<span class="muted">–</span>'}</td>` : ''}${anyNote ? `<td class="muted l">${esc(p.note)}</td>` : ''}${anyIssue ? `<td>${personIssues(p).map(([c, t]) => `<span class="tag ${c}">${t}</span>`).join(' ')}</td>` : ''}${admin ? `<td><button type="button" class="btn sm" data-act="person-edit" data-id="${p.id}">수정</button></td>` : ''}</tr>`).join('')}
   </tbody></table></div></section>`;
   return h;
 }
@@ -2422,8 +2422,9 @@ function vSeat(seg) {
   const seat = (v, path, lead, ext) => {
     if (v === '.') return `<div class="st none"></div>`;
     const p = pm.get(nkey(v)); if (p) used.add(p.id);
+    const own = ext; ext = ext || (p && p.ext) || '';
     const hit = q && (nkey(v).includes(q) || (ext && String(ext).includes(q)));
-    if (extMode) return `<div class="st ${lead ? 'lead ' : ''}${p ? tc(p.team) + ' ppl ' : ''}xm${hit ? ' hit' : ''}"><span class="xn">${esc(v && v !== '공석' ? v : '')}</span><input class="st-in" data-act="seat-ext" data-path="${path}" value="${esc(ext || '')}" placeholder="내선" inputmode="numeric" autocomplete="off"></div>`;
+    if (extMode) return `<div class="st ${lead ? 'lead ' : ''}${p ? tc(p.team) + ' ppl ' : ''}xm${hit ? ' hit' : ''}"><span class="xn">${esc(v && v !== '공석' ? v : '')}</span><input class="st-in" data-act="seat-ext" data-path="${path}" value="${esc(own || '')}" placeholder="${esc((p && p.ext) || '내선')}" inputmode="numeric" autocomplete="off"></div>`;
     const cls = ['st', lead ? 'lead' : '', !v || v === '공석' ? 'empty' : '', p ? tc(p.team) + ' ppl' : (v && v !== '공석' ? 'txt' : ''), hit ? 'hit' : ''].filter(Boolean).join(' ');
     return `<div class="${cls}" title="${esc(p ? `${p.name} · ${p.team} · ${p.rank}` : v && v !== '공석' ? v : '빈 자리')}"><input class="st-in" data-act="seat-in" data-path="${path}" list="seatNames" value="${esc(v && v !== '공석' ? v : '')}" placeholder="" autocomplete="off" spellcheck="false">${(() => { const r = p && !lead ? RSHORT(p.rank) : ''; return r || ext ? `<small>${esc(r)}${r && ext ? '<em>·</em>' : ''}${ext ? `<i class="ext">${esc(ext)}</i>` : ''}</small>` : ''; })()}</div>`;
   };
@@ -2501,6 +2502,22 @@ function hrParse(text) {
     return { name: g('name').replace(/\s{2,}/g, ' '), kind: g('kind'), pos: g('pos'), team: g('team'), school: g('school'), major: g('major'), degree: g('degree'), join: day(g('join')), leave: day(lv), moved: !!lv && !day(lv) && /변동|전출|이동/.test(lv) }; })
     .filter(r => r.name);
 }
+const PI_COLS = { name: ['이름', '성명'], ext: ['내선번호', '내선'], iris: ['IRISID', 'IRIS'], rno: ['국가연구자번호', '연구자번호'] };
+function pinfoParse(t) {
+  const lines = String(t || '').replace(/\r/g, '').split('\n').filter(l => l.trim()); if (!lines.length) return { cols: [], rows: [] };
+  const hd = lines[0].split('\t').map(x => x.replace(/\s+/g, '').toUpperCase());
+  const idx = {}; for (const k in PI_COLS) idx[k] = hd.findIndex(x => PI_COLS[k].some(n => x === n.toUpperCase()));
+  if (idx.name < 0) throw new Error('제목 줄에 "이름" 칸이 있어야 합니다.');
+  const cols = Object.keys(idx).filter(k => k !== 'name' && idx[k] >= 0); if (!cols.length) throw new Error('내선번호 · IRIS ID · 국가연구자번호 중 하나 이상의 칸이 있어야 합니다.');
+  const rows = lines.slice(1).map(l => { const c = l.split('\t'), r = { name: String(c[idx.name] || '').trim() }; for (const k of cols) { const x = String(c[idx[k]] || '').trim(); r[k] = x === '-' ? '' : x; } return r; }).filter(r => r.name);
+  return { cols, rows };
+}
+function pinfoDialog() {
+  openDlg(`<h2>기초정보 붙여넣기</h2><form class="form" data-form="pinfo" style="grid-template-columns:1fr">
+    <label class="field">엑셀에서 제목 줄(이름 · 내선번호 · IRIS ID · 국가연구자번호)부터 복사해 붙여넣기<textarea name="t" rows="12" style="width:100%;font:12px var(--font-num);border:1px solid var(--line);border-radius:6px;padding:8px" placeholder="여기에 Ctrl+V" required></textarea></label>
+    <div class="err" id="pierr"></div>
+    <div class="actions"><span class="spacer"></span><button type="button" class="btn" data-act="close">취소</button><button class="btn primary" type="submit">가져오기</button></div></form>`, true);
+}
 function hrPasteDialog() {
   openDlg(`<h2>인사 기록 붙여넣기</h2><form class="form" data-form="hrpaste" style="grid-template-columns:1fr">
     <label class="field">엑셀에서 제목 줄(연번 · 이름 · 전담여부 · 직위 · 부서 · 최종학교명 · 전공 · 최종학위 · 발령일 · 퇴사일)부터 표 전체를 복사해 붙여넣기<textarea name="t" rows="12" style="width:100%;font:12px var(--font-num);border:1px solid var(--line);border-radius:6px;padding:8px" placeholder="여기에 Ctrl+V" required></textarea></label>
@@ -2523,6 +2540,9 @@ function personDialog(id) {
     <label class="field">상세부서 (교육)${sel('eduDept', S.config.eduDeptMap.map(x => x.dept), p.eduDept)}</label>
     <label class="field" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" name="edu" ${p.edu ? 'checked' : ''}> 교육 수료 현황 대상</label>
     <label class="field">근무 상태<select name="status">${['근무', '휴직'].map(v => `<option value="${v === '근무' ? '' : v}"${(p.status || '') === (v === '근무' ? '' : v) ? ' selected' : ''}>${v === '휴직' ? '휴직 (육아휴직 등)' : v}</option>`).join('')}</select></label>
+    <label class="field">내선번호<input name="ext" value="${esc(p.ext || '')}" inputmode="numeric"></label>
+    <label class="field">IRIS ID<input name="iris" value="${esc(p.iris || '')}"></label>
+    <label class="field">국가연구자번호<input name="rno" value="${esc(p.rno || '')}" inputmode="numeric"></label>
     <label class="field">비고<input name="note" value="${esc(p.note)}"></label>
     ${id ? `<div class="field" style="grid-column:1/-1">사진<div class="pphoto">${p.photo ? `<img src="${esc(p.photo)}" alt="">` : '<span class="muted small">없음</span>'}<button type="button" class="btn sm" data-act="photo-file" data-id="${id}">${p.photo ? '바꾸기' : '올리기'}</button>${p.photo ? `<button type="button" class="btn sm danger" data-act="photo-del" data-id="${id}">지우기</button>` : ''}</div></div>` : ''}
     <div class="err" id="perr" style="grid-column:1/-1"></div>
@@ -2678,6 +2698,7 @@ document.addEventListener('click', e => {
       } catch (e) { $('#cfileName').innerHTML = '<span class="muted">없음</span>'; toast('올리지 못했습니다: ' + e.message, true); } }; inp.click(); break; }
     case 'hr-edit': if (!need()) break; hrDialog(d.id); break;
     case 'hr-paste': if (!need()) break; hrPasteDialog(); break;
+    case 'pinfo-paste': if (!need()) break; pinfoDialog(); break;
     case 'hr-del': if (!need()) break; if (!confirm('이 인사 기록을 삭제할까요?')) break; S.hr = S.hr.filter(x => x.id !== d.id); put('hr/' + d.id, null); closeDlg(); hrSync(); render(); toast('삭제했습니다'); break;
     case 'hr-joinfix': if (!need()) break; { let n = 0; for (const x of S.hr) { if (hrStatus(x) !== '재직') continue; const p = hrLink(x); if (p && x.join && p.join !== x.join) { p.join = x.join; const { id, ...doc } = p; put('people/' + id, doc); n++; } } render(); toast(`${n}명의 입사일을 맞췄습니다`); break; }
     case 'org-photo': ui.orgPhoto = !ui.orgPhoto; LS.set('lab_orgphoto', ui.orgPhoto ? '1' : '0'); render(); break;
@@ -2809,6 +2830,7 @@ document.addEventListener('submit', e => {
     const old = S.people.find(p => p.id === id);
     const doc = { team: v.team, name, rank: v.rank, cat: v.cat, eduDept: v.eduDept, edu: !!v.edu, join: v.join || '', note: v.note || '', status: v.status || '', order: old ? old.order : Math.max(0, ...S.people.map(p => p.order || 0)) + 1 };
     if (!doc.status) delete doc.status;
+    for (const k of ['ext', 'iris', 'rno']) { const x = String(v[k] || '').trim(); if (x) doc[k] = x; }
     if (old && old.photo) doc.photo = old.photo;
     if (old) Object.assign(old, doc); else S.people.push({ id, ...doc });
     put('people/' + id, doc); rebuild(); closeDlg(); render(); toast('인원 정보를 저장했습니다');
@@ -2859,6 +2881,17 @@ document.addEventListener('submit', e => {
     if (!doc.part) delete doc.part;
     if (old) Object.assign(old, doc); else S.hr.push({ id, ...doc });
     put('hr/' + id, doc); closeDlg(); hrSync(); render(); toast('인사 기록을 저장했습니다');
+  } else if (f.dataset.form === 'pinfo') {
+    let d; try { d = pinfoParse(v.t); } catch (x) { $('#pierr').textContent = x.message; return; }
+    if (!d.rows.length) { $('#pierr').textContent = '읽을 수 있는 줄이 없습니다.'; return; }
+    const pm = new Map(S.people.map(p => [nkey(p.name), p])), miss = [], ops = [], upd = [];
+    for (const r of d.rows) { const p = pm.get(nkey(r.name)); if (!p) { miss.push(r.name.replace(/\s+/g, '')); continue; }
+      const doc = { ...p }; delete doc.id; for (const k of d.cols) { if (r[k]) doc[k] = r[k]; else delete doc[k]; }
+      upd.push([p, doc]); ops.push({ path: 'people/' + p.id, data: doc }); }
+    if (!ops.length) { $('#pierr').textContent = '명단과 이름이 맞는 사람이 없습니다.'; return; }
+    const btn = f.querySelector('button[type=submit]'); btn.disabled = true; btn.textContent = '저장 중…';
+    putBatch(ops).then(() => { for (const [p, doc] of upd) { for (const k of d.cols) delete p[k]; Object.assign(p, doc); } closeDlg(); render(); toast(`${upd.length}명 반영${miss.length ? ` · 명단에 없는 ${miss.length}명 제외` : ''}`); if (miss.length) openDlg(`<h2>명단에 없어 제외한 이름 · ${miss.length}명</h2><div class="small" style="line-height:1.9">${miss.map(esc).join(', ')}</div><div class="actions"><span class="spacer"></span><button type="button" class="btn primary" data-act="close">확인</button></div>`); })
+      .catch(x => { btn.disabled = false; btn.textContent = '가져오기'; $('#pierr').textContent = '저장하지 못했습니다: ' + x.message; });
   } else if (f.dataset.form === 'hrpaste') {
     let rows; try { rows = hrParse(v.t); } catch (x) { $('#hperr').textContent = x.message; return; }
     if (!rows.length) { $('#hperr').textContent = '읽을 수 있는 줄이 없습니다.'; return; }
