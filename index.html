@@ -309,9 +309,9 @@ th.pch{box-shadow:inset 0 -3px 0 var(--pc)}
 .swk i{width:7px;height:7px;border-radius:2px;background:var(--pc)}
 .legend i.pc0,.legend i.pc1,.legend i.pc2,.legend i.pc3,.legend i.pc4,.legend i.pc5,.legend i.pc6,.legend i.pc7,.legend i.pc8,.legend i.pc9{background:var(--pc)}
 .seatw{overflow-x:auto}
-.seats{display:flex;align-items:flex-start;gap:22px;padding:6px 2px 4px;min-width:max-content}
-.isl{display:grid;grid-template-columns:repeat(var(--c),78px);margin:1px}
-.st{height:46px;border:0;box-shadow:0 0 0 1px var(--ink);background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font:inherit;cursor:pointer;padding:0 2px;position:relative;color:var(--ink)}
+.seats{display:flex;align-items:flex-start;justify-content:center;gap:28px;padding:10px 6px 6px;min-width:max-content}
+.isl{display:grid;grid-template-columns:repeat(var(--c),92px);margin:1px;border-radius:4px}
+.st{height:50px;border:0;box-shadow:0 0 0 1px var(--ink);background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font:inherit;cursor:pointer;padding:0 2px;position:relative;color:var(--ink)}
 .st:hover{background:var(--accent-soft)}
 .st b{font-size:13px;font-weight:700;letter-spacing:.5px}
 .st-in{width:100%;border:0;background:transparent;text-align:center;font:inherit;font-size:13px;font-weight:700;color:var(--ink);padding:0 2px;outline:none;letter-spacing:.3px}
@@ -319,14 +319,16 @@ th.pch{box-shadow:inset 0 -3px 0 var(--pc)}
 .st-in::placeholder{color:var(--muted);font-weight:400;opacity:.7}
 .st:focus-within{background:var(--accent-soft);outline:2px solid var(--accent);outline-offset:-2px;z-index:2}
 .st.txt .st-in{font-weight:500;font-size:11.5px;color:var(--muted)}
-.st.lead .st-in{font-size:13.5px}
+.st.lead .st-in,.st.lead.txt .st-in{font-size:13.5px;font-weight:700;color:var(--ink)}
+.stk>.room{flex:1;height:auto;min-height:90px}
 .st{cursor:text}
 .st small{font-size:10px;color:var(--muted)}
 .st span{font-size:12px;color:var(--muted);text-align:center;line-height:1.2}
-.st.ppl{box-shadow:inset 3px 0 0 var(--pc),0 0 0 1px var(--ink)}
+.st.ppl{background:color-mix(in srgb,var(--pc) 9%,var(--surface));box-shadow:inset 4px 0 0 var(--pc),0 0 0 1px var(--ink)}
 .st.empty span{color:var(--muted);opacity:.7}
 .st.txt span{font-size:11px}
-.st.lead{grid-column:1 / -1;height:46px}
+.st.lead{grid-column:1 / -1;height:50px;background:var(--sunk)}
+.st.lead.ppl{background:color-mix(in srgb,var(--pc) 14%,var(--sunk))}
 .st.lead span{font-size:13.5px;font-weight:700;color:var(--ink)}
 .st.lead b{font-size:13.5px}
 .st.none{background:transparent;cursor:default;box-shadow:none}
@@ -342,10 +344,10 @@ th.pch{box-shadow:inset 0 -3px 0 var(--pc)}
 .pchip2{display:inline-flex;align-items:center;gap:4px;padding:4px 9px;border:1px solid var(--line);border-left:3px solid var(--pc);border-radius:6px;background:var(--surface);font-size:12.5px;font-weight:600;cursor:grab;user-select:none}
 .pchip2 small{font-size:10px;color:var(--muted);font-weight:500}
 .pchip2:active{cursor:grabbing}
-.stk{display:flex;flex-direction:column;gap:22px;align-items:flex-end;align-self:stretch;justify-content:space-between}
-.room{display:flex;align-items:center;justify-content:center;width:170px;height:110px;background:var(--sunk);border:1.5px solid var(--muted);color:var(--ink);font-weight:700;font-size:15px}
-.room.tall{width:60px;height:auto;align-self:stretch;min-height:200px;writing-mode:vertical-rl;letter-spacing:6px}
-.seatlg{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:11.5px;color:var(--muted)}
+.stk{display:flex;flex-direction:column;gap:28px;align-items:flex-end;align-self:stretch;justify-content:space-between}
+.room{display:flex;align-items:center;justify-content:center;width:186px;height:152px;background:repeating-linear-gradient(135deg,var(--sunk) 0 8px,color-mix(in srgb,var(--sunk) 55%,var(--surface)) 8px 16px);border:1.5px solid color-mix(in srgb,var(--muted) 60%,transparent);border-radius:4px;color:var(--muted);font-weight:700;font-size:14px;letter-spacing:1px}
+.room.tall{width:58px;height:auto;align-self:stretch;min-height:200px;writing-mode:vertical-rl;letter-spacing:6px}
+.seatlg{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 16px;font-size:11.5px;color:var(--muted);padding-top:8px;border-top:1px solid var(--line)}
 .seatlg span{display:inline-flex;align-items:center;gap:5px}
 .seatlg i{width:10px;height:10px;border-radius:2px;background:var(--pc)}
 td.sel{background:var(--accent-soft)}
@@ -512,7 +514,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.09 09:42</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.09 09:44</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -2439,6 +2441,7 @@ function seatDialog(path) {
 function seatVal(path) { const { it, rest } = seatGet(path); return rest[0] === 'L' ? it.lead : it.rows[+rest[0]][+rest[1]]; }
 function seatPut(path, v) { const { it, rest } = seatGet(path); if (rest[0] === 'L') it.lead = v; else it.rows[+rest[0]][+rest[1]] = v; }
 function seatSwap(a, b) { if (a === b) return; const va = seatVal(a), vb = seatVal(b); seatPut(a, vb || '공석'); seatPut(b, va || '공석'); put('seat/main', S.seat); render(); }
+document.addEventListener('focusin', e => { if (e.target.dataset?.act === 'seat-in') e.target.select(); });   // 자리 칸을 누르면 이름 전체 선택 → 바로 덮어쓰기
 let seatDrag = null;
 document.addEventListener('dragstart', e => { const el = e.target.closest?.('[data-drag-name],[data-drag-seat]'); if (!el || !admin) return; seatDrag = el.dataset.dragName ? { name: el.dataset.dragName } : { seat: el.dataset.dragSeat }; e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', 'seat'); } catch { } });
 document.addEventListener('dragover', e => { const z = e.target.closest?.('[data-drop-seat]'); if (z && seatDrag) { e.preventDefault(); z.classList.add('over'); } });
@@ -2732,7 +2735,7 @@ document.addEventListener('change', e => {
   else if (a === 'f-asdept') { ui.asDept = t.value; render(); }
   else if (a === 'seat-in') { if (!admin) return; const path = t.dataset.path, val = t.value.trim();
     setTimeout(() => { const nx = document.activeElement?.dataset?.path, sel = document.activeElement?.selectionStart; seatSet(path, val || '공석');
-      const el = nx && document.querySelector(`[data-act="seat-in"][data-path="${nx}"]`); if (el) { el.focus(); try { el.setSelectionRange(el.value.length, el.value.length); } catch { } } }, 0); }
+      const el = nx && document.querySelector(`[data-act="seat-in"][data-path="${nx}"]`); if (el) { el.focus(); el.select(); } }, 0); }
   else if (a === 'f-yryear') { ui.yrYear = t.value; render(); }
   else if (a === 'f-hrst') { ui.hrSt = t.value; render(); }
   else if (a === 'f-hrteam') { ui.hrTeam = t.value; render(); }
