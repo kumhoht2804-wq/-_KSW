@@ -332,6 +332,9 @@ th.pch{box-shadow:inset 0 -3px 0 var(--pc)}
 .seatlg span{display:inline-flex;align-items:center;gap:5px}
 .seatlg i{width:10px;height:10px;border-radius:2px;background:var(--pc)}
 td.sel{background:var(--accent-soft)}
+.mtbl td.fut{background:color-mix(in srgb,var(--sunk) 60%,var(--surface))}
+.mtbl .dm{display:block;font-size:9.5px;line-height:1.1;font-weight:600}
+.mtbl .dm.up{color:var(--ok)}.mtbl .dm.dn{color:var(--bad)}
 .hyear{display:inline-flex;align-items:center;gap:6px}
 .hyear select{height:28px;padding:0 6px;font-size:12px}
 .ostat2{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:start}
@@ -489,7 +492,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.09 09:23</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.09 09:27</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -2321,6 +2324,22 @@ function vHRYear(seg) {
     <tr class="hl"><td><b>합계</b></td>${ranks.map(r => `<td class="num"><b>${A.filter(x => x.pos === r).length}</b></td>`).join('')}<td class="num"><b>${A.length}</b></td><td class="num">${P.length}</td>${dlt(A.length - P.length)}<td class="num"><b>${Object.values(st).reduce((a, x) => a + (x.in || 0), 0)}</b></td><td class="num neg"><b>${Object.values(st).reduce((a, x) => a + (x.out || 0), 0) || '–'}</b></td></tr>
     <tr><td class="muted">비율</td>${ranks.map(r => `<td class="num muted">${A.length ? Math.round(A.filter(x => x.pos === r).length / A.length * 100) : 0}%</td>`).join('')}<td class="num muted">100%</td><td></td><td></td><td></td><td></td></tr>
   </tbody></table></div></section>`;
+  // 월별 현황 (선택 연도)
+  {
+    const mEnd = m => { const d = new Date(Y, m, 0); return `${Y}-${String(m).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+    const nowM = Y === cur ? new Date().getMonth() + 1 : 12, ms = [...Array(12)].map((_, i) => i + 1);
+    const at2 = m => m === nowM && Y === cur ? today() : mEnd(m);
+    const act = ms.map(m => m <= nowM ? hrActiveAt(at2(m)) : null);
+    const mt = hrTeams().filter(t => act.some(L => L && L.some(x => x.team === t)));
+    const ev = (m, f) => S.hr.filter(x => String(f === 'in' ? x.join : x.leave || '').slice(0, 7) === `${Y}-${String(m).padStart(2, '0')}`);
+    const fut = m => m > nowM;
+    h += `<section class="card"><div class="head"><h2>${Y}년 월별 현황</h2><span class="sub">각 월 말일 기준 인원${Y === cur ? ` · 이번 달은 오늘 기준` : ''}</span></div><div class="tw free"><table class="eqtbl ohc mtbl"><thead><tr><th>부서</th>${ms.map(m => `<th${fut(m) ? ' class="muted"' : ''}>${m}월</th>`).join('')}</tr></thead><tbody>
+      ${mt.map(t => `<tr><td class="l"><b>${esc(t)}</b></td>${ms.map((m, i) => { if (fut(m)) return '<td class="fut"></td>'; const n = act[i].filter(x => x.team === t).length, pv = i ? act[i - 1].filter(x => x.team === t).length : P.filter(x => x.team === t).length; return `<td class="num">${n || '<span class="muted">–</span>'}${n !== pv ? `<span class="dm ${n > pv ? 'up' : 'dn'}">${n > pv ? '▲' : '▼'}${Math.abs(n - pv)}</span>` : ''}</td>`; }).join('')}</tr>`).join('')}
+      <tr class="hl"><td><b>합계</b></td>${ms.map((m, i) => fut(m) ? '<td class="fut"></td>' : `<td class="num"><b>${act[i].length}</b></td>`).join('')}</tr>
+      <tr><td class="muted">입사</td>${ms.map(m => { if (fut(m)) return '<td class="fut"></td>'; const L = ev(m, 'in'); return `<td class="num" title="${esc(L.map(x => `${x.name}(${x.team})`).join(', '))}">${L.length || '<span class="muted">–</span>'}</td>`; }).join('')}</tr>
+      <tr><td class="muted">퇴사</td>${ms.map(m => { if (fut(m)) return '<td class="fut"></td>'; const L = ev(m, 'out'); return `<td class="num${L.length ? ' neg' : ''}" title="${esc(L.map(x => `${x.name}(${x.team})`).join(', '))}">${L.length || '<span class="muted">–</span>'}</td>`; }).join('')}</tr>
+    </tbody></table></div><div class="small muted">▲▼는 전월 대비 증감 · 입사·퇴사 숫자에 마우스를 올리면 이름이 보입니다</div></section>`;
+  }
   // 연도별 추이 (연말 인원)
   const ys = years.slice(0, 6).reverse(), allT = hrTeams().filter(t => ys.some(y => hrActiveAt(y === cur ? today() : y + '-12-31').some(x => x.team === t)));
   h += `<section class="card"><div class="head"><h2>연도별 인원 추이</h2><span class="sub">연말 기준 (올해는 오늘 기준)</span></div><div class="tw free"><table class="eqtbl ohc"><thead><tr><th>부서</th>${ys.map(y => `<th>${y}</th>`).join('')}</tr></thead><tbody>
