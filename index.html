@@ -337,6 +337,9 @@ th.pch{box-shadow:inset 0 -3px 0 var(--pc)}
 .st.lead span{font-size:13.5px;font-weight:700;color:var(--ink)}
 .st.lead b{font-size:13.5px}
 .st.none{background:transparent;cursor:default;box-shadow:none}
+.st.none.gap{cursor:text;box-shadow:inset 0 0 0 1px var(--line);background:repeating-linear-gradient(45deg,transparent 0 6px,color-mix(in srgb,var(--line) 35%,transparent) 6px 7px)}
+.st.none.gap .st-in::placeholder{opacity:.35}
+span.st-in{display:block;cursor:default}
 .st.hit{background:var(--warn-soft);outline:2px solid var(--warn);outline-offset:-2px;z-index:1}
 .st:hover{z-index:1}
 .st.over{background:var(--ok-soft);outline:2px dashed var(--ok);outline-offset:-3px;z-index:2}
@@ -519,7 +522,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.09 11:38</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.09 11:58</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -1182,8 +1185,8 @@ function rebuild() {
 }
 const DIRECTORS = ['연구소장', '개발실장', '편집'];   // 부서 전체 수정 ('편집'은 예전 이름)
 let director = false;
-let partLead = false, scoped = false;
-function setRole() { const u = auth?.user, r = u?.role; admin = r === '관리자'; leader = r === '팀장'; partLead = r === '파트장'; scoped = r === '파트장' || r === '보기'; director = DIRECTORS.includes(r); editor = admin || director || leader || partLead; myTeam = u?.team || ''; }
+let partLead = false, scoped = false, viewAll = false;
+function setRole() { const u = auth?.user, r = u?.role; admin = r === '관리자'; leader = r === '팀장'; partLead = r === '파트장'; scoped = r === '파트장' || r === '보기'; director = DIRECTORS.includes(r); viewAll = r === '전체보기'; editor = admin || director || leader || partLead; myTeam = u?.team || ''; }
 // 이 사람의 등급·교육 이수를 고칠 수 있나 (팀장은 자기 팀만)
 function canP(p) { return admin || director || ((leader || partLead) && !!p && p.team === myTeam); }
 // 이 파트의 평가항목을 고칠 수 있나 (관리자만)
@@ -1370,7 +1373,7 @@ function whoUI() {
   const acc = document.querySelector('#tabs a[data-route="accounts"]');
   if (acc) { acc.hidden = !admin; const n = ui.users.filter(x => x.role === '대기').length; acc.innerHTML = '계정 관리' + (n ? ` <span class="badge" title="승인 대기">${n}</span>` : ''); }
   $('#expMenu').hidden = !admin;
-  const st = document.querySelector('#tabs a[data-route="settings"]'); if (st) st.hidden = !(admin || director || leader);
+  const st = document.querySelector('#tabs a[data-route="settings"]'); if (st) st.hidden = !(admin || director || leader || viewAll);
 }
 function vServer() {
   return `<section class="card auth"><h2>서버 연결</h2><p class="muted small">구글 Apps Script에 배포한 웹 앱 주소를 넣어 주세요. 이 브라우저에 기억됩니다.</p>
@@ -1449,7 +1452,7 @@ function pwDialog() {
     <label class="field">새 비밀번호 확인<input name="pw2" type="password" autocomplete="new-password" required></label>
     <div class="err"></div><div class="actions"><button type="button" class="btn" data-act="close">취소</button><button class="btn primary" type="submit">변경</button></div></form>`);
 }
-const ROLE_DESC = { '관리자': '모든 화면 수정 · 계정 관리 · 엑셀/백업 받기', '연구소장': '부서 전체 역량평가 등급·교육 이수 수정', '개발실장': '부서 전체 역량평가 등급·교육 이수 수정', '팀장': '우리 팀 역량평가 등급·교육 이수 수정', '파트장': '우리 팀만 보기 · 우리 팀 역량평가·교육 이수 수정', '보기': '우리 팀만 조회 (기준 정보 제외)' };
+const ROLE_DESC = { '관리자': '모든 화면 수정 · 계정 관리 · 엑셀/백업 받기', '연구소장': '부서 전체 역량평가 등급·교육 이수 수정', '전체보기': '부서 전체 조회 · 자리 배치 보기 (수정 불가)', '개발실장': '부서 전체 역량평가 등급·교육 이수 수정', '팀장': '우리 팀 역량평가 등급·교육 이수 수정', '파트장': '우리 팀만 보기 · 우리 팀 역량평가·교육 이수 수정', '보기': '우리 팀만 조회 (기준 정보 제외)' };
 const teamList = () => `<datalist id="teamlist">${(S.config?.teamOrder || []).map(t => `<option value="${esc(t)}">`).join('')}</datalist>`;
 function acctDialog(id) {
   const u = ui.users.find(x => x.id === id) || { id: '', name: '', role: '보기' };
@@ -1522,7 +1525,7 @@ function confirmDlg(msg, okLabel, fn) {
 
 // ---------- routing ----------
 const ROUTES = ['people', 'asset', 'education', 'assess', 'accounts'];
-const canSet = () => admin || director || leader;   // 기준 정보 보기 · 사진 보기 (팀장 이상)
+const canSet = () => admin || director || leader || viewAll;   // 기준 정보 보기 · 사진 보기 (팀장 이상)
 const orgPh = () => ui.orgPhoto && canSet();
 const route = () => { let h = location.hash.slice(1);
   if (h === 'dashboard') { ui.assessMode = 'sum'; h = 'assess'; history.replaceState(null, '', '#assess'); }   // 예전 주소
@@ -1919,8 +1922,8 @@ function personIssues(p) {
   return out;
 }
 function vPeople() {
-  const seg = `<div class="seg" role="group" aria-label="보기"><button type="button" data-act="pmode" data-v="org" aria-pressed="${ui.peopleMode === 'org'}">조직도·현황</button><button type="button" data-act="pmode" data-v="list" aria-pressed="${ui.peopleMode === 'list'}">명단</button>${admin ? `<button type="button" data-act="pmode" data-v="year" aria-pressed="${ui.peopleMode === 'year'}">연도별 현황</button><button type="button" data-act="pmode" data-v="seat" aria-pressed="${ui.peopleMode === 'seat'}">자리 배치</button><button type="button" data-act="pmode" data-v="hr" aria-pressed="${ui.peopleMode === 'hr'}">인사 기록</button>` : ''}</div>`;
-  if (['hr', 'year', 'seat'].includes(ui.peopleMode) && !admin) ui.peopleMode = 'org';
+  const seg = `<div class="seg" role="group" aria-label="보기"><button type="button" data-act="pmode" data-v="org" aria-pressed="${ui.peopleMode === 'org'}">조직도·현황</button><button type="button" data-act="pmode" data-v="list" aria-pressed="${ui.peopleMode === 'list'}">명단</button>${admin ? `<button type="button" data-act="pmode" data-v="year" aria-pressed="${ui.peopleMode === 'year'}">연도별 현황</button>` : ''}${admin || viewAll ? `<button type="button" data-act="pmode" data-v="seat" aria-pressed="${ui.peopleMode === 'seat'}">자리 배치</button>` : ''}${admin ? `<button type="button" data-act="pmode" data-v="hr" aria-pressed="${ui.peopleMode === 'hr'}">인사 기록</button>` : ''}</div>`;
+  if ((['hr', 'year'].includes(ui.peopleMode) && !admin) || (ui.peopleMode === 'seat' && !admin && !viewAll)) ui.peopleMode = 'org';
   if (ui.peopleMode === 'year') return vHRYear(seg);
   if (ui.peopleMode === 'seat') return vSeat(seg);
   if (ui.peopleMode === 'org') return vOrg(seg);
@@ -2163,7 +2166,7 @@ function vAsset() {
     ${admin && accts.length ? `<label class="field"><span>계정</span><select class="ci" data-act="f-asacct"><option value="">전체</option>${accts.map(x => `<option${x === ui.asAcct ? ' selected' : ''}>${esc(x)}</option>`).join('')}</select></label>` : ''}
     <label class="field"><span>관리부서</span><select class="ci" data-act="f-asdept"><option value="">전체</option>${depts.map(x => `<option${x === ui.asDept ? ' selected' : ''}>${esc(x)}</option>`).join('')}</select></label>
     <label class="field"><span>검색</span><input class="ci" data-act="f-asq" value="${esc(ui.asQ)}" placeholder="${admin ? '자산명·자산번호·취득처·위치' : '자산명·자산번호'}"></label>
-    <span class="spacer"></span>${admin || director ? '<button type="button" class="btn" data-act="as-xlsx">엑셀로 받기</button>' : ''}${admin ? '<button type="button" class="btn" data-act="as-paste">붙여넣기로 가져오기</button><button type="button" class="btn primary" data-act="as-edit">자산 추가</button>' : ''}</div>`;
+    <span class="spacer"></span>${admin || director || viewAll ? '<button type="button" class="btn" data-act="as-xlsx">엑셀로 받기</button>' : ''}${admin ? '<button type="button" class="btn" data-act="as-paste">붙여넣기로 가져오기</button><button type="button" class="btn primary" data-act="as-edit">자산 추가</button>' : ''}</div>`;
   if (!L.length) return h + `<section class="card"><div class="empty">${admin ? '등록된 자산이 없습니다. 엑셀에서 표(제목 줄 포함)를 복사해 <b>붙여넣기로 가져오기</b>로 넣어 주세요.' : '등록된 자산이 없습니다.'}</div></section>`;
   if (admin) {
     const sum = (xs, k) => xs.reduce((a, x) => a + (+x[k] || 0), 0);
@@ -2208,7 +2211,7 @@ function vSW() {
   const aseg = assetSeg();
   let h = `<div class="toolbar">${aseg}<label class="field"><span>사용처</span><select class="ci" data-act="f-swown"><option value="">전체</option>${owners.map(o => `<option${o === ui.swOwner ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select></label>
     <label class="field"><span>라이선스</span><select class="ci" data-act="f-swlic"><option value="">전체</option>${['영구', '기간제'].map(o => `<option${o === ui.swLic ? ' selected' : ''}>${o}</option>`).join('')}</select></label>
-    <label class="field"><span>검색</span><input class="ci" data-act="f-asq" value="${esc(ui.asQ)}" placeholder="SW명·업체명"></label><span class="spacer"></span>${admin || director ? '<button type="button" class="btn" data-act="as-xlsx">엑셀로 받기</button>' : ''}${admin ? '<button type="button" class="btn" data-act="sw-paste">붙여넣기로 가져오기</button><button type="button" class="btn primary" data-act="sw-edit">SW 추가</button>' : ''}</div>`;
+    <label class="field"><span>검색</span><input class="ci" data-act="f-asq" value="${esc(ui.asQ)}" placeholder="SW명·업체명"></label><span class="spacer"></span>${admin || director || viewAll ? '<button type="button" class="btn" data-act="as-xlsx">엑셀로 받기</button>' : ''}${admin ? '<button type="button" class="btn" data-act="sw-paste">붙여넣기로 가져오기</button><button type="button" class="btn primary" data-act="sw-edit">SW 추가</button>' : ''}</div>`;
   if (!L.length) return h + `<section class="card"><div class="empty">${admin ? '등록된 SW가 없습니다. 엑셀 표(제목 줄: 사용처 · SW명 · 보유 수량 · 라이선스 · 계약기간 · 업체명 · 금액 · 비고)를 복사해 <b>붙여넣기로 가져오기</b>로 넣어 주세요.' : '등록된 SW가 없습니다.'}</div></section>`;
   const own = rows.reduce((a, x) => a + (+x.qty || 0), 0), used = rows.reduce((a, x) => a + swUsed(x), 0), soon = rows.filter(x => { const k = dLeft(x.end); return k != null && k <= 60; }).length;
   h += `<div class="kpis"><div class="kpi"><span class="k">SW 계약</span><span class="v">${rows.length}<small>건</small></span></div><div class="kpi"><span class="k">보유 라이선스</span><span class="v">${own}<small>개</small></span></div>
@@ -2421,7 +2424,7 @@ function seatParse(text) {
     const m = b[0].trim().match(/^(\[\[|\[)(.+?)(\]\]|\])$/);
     if (m && b.length === 1) item = { type: 'room', label: m[2].trim(), tall: m[1] === '[[' };
     else { let lead = null, rows = b; if (b[0].trim().startsWith('##')) { lead = b[0].trim().slice(2).trim(); rows = b.slice(1); }
-      const sp = x => { const m2 = String(x).match(/^(.*?)\s*#\s*([\w\-]+)\s*$/); return m2 ? [m2[1].trim(), m2[2]] : [String(x).trim(), '']; };
+      const sp = x => { if (/자리\s*x\)?\s*$/i.test(String(x))) return ['.', '']; const m2 = String(x).match(/^(.*?)\s*#\s*([\w\-]+)\s*$/); return m2 ? [m2[1].trim(), m2[2]] : [String(x).trim(), '']; };
       const cells = rows.map(l => l.split('|').map(sp)), L2 = lead != null ? sp(lead) : ['', ''];
       item = { type: 'island', lead: L2[0], leadExt: L2[1], hasLead: lead != null && (lead !== '' || L2[1] !== ''), rows: cells.map(r => r.map(c => c[0])), ext: cells.map(r => r.map(c => c[1])) };
       if (lead != null && lead === '') item.hasLead = false; }
@@ -2446,25 +2449,25 @@ function seatPeople() { const by = new Map(); for (const p of [...S.heads, ...S.
 function vSeat(seg) {
   const m = S.seat || seatDefault(), pm = seatPeople(), q = nkey(ui.seatQ);
   const T = S.config.teamOrder || [], tc = t => 'pc' + (Math.max(0, T.indexOf(t)) % 10);
-  const extMode = ui.seatMode === 'ext';
-  let h = `<div class="toolbar">${seg}<div class="seg" role="group" aria-label="입력"><button type="button" data-act="seatmode" data-v="name" aria-pressed="${!extMode}">이름 입력</button><button type="button" data-act="seatmode" data-v="ext" aria-pressed="${extMode}">내선번호 입력</button></div><label class="field"><span>찾기</span><input class="ci" data-act="f-seatq" value="${esc(ui.seatQ)}" placeholder="이름·내선"></label><span class="spacer"></span><button type="button" class="btn" data-act="seat-text">배치 편집 (텍스트)</button></div>`;
+  const ro = !admin, extMode = !ro && ui.seatMode === 'ext';
+  let h = ro ? `<div class="toolbar">${seg}<label class="field"><span>찾기</span><input class="ci" data-act="f-seatq" value="${esc(ui.seatQ)}" placeholder="이름·내선"></label></div>` : `<div class="toolbar">${seg}<div class="seg" role="group" aria-label="입력"><button type="button" data-act="seatmode" data-v="name" aria-pressed="${!extMode}">이름 입력</button><button type="button" data-act="seatmode" data-v="ext" aria-pressed="${extMode}">내선번호 입력</button></div><label class="field"><span>찾기</span><input class="ci" data-act="f-seatq" value="${esc(ui.seatQ)}" placeholder="이름·내선"></label><span class="spacer"></span><button type="button" class="btn" data-act="seat-text">배치 편집 (텍스트)</button></div>`;
   const used = new Set();
   const seat = (v, path, lead, ext) => {
-    if (v === '.') return `<div class="st none"></div>`;
+    if (v === '.') return ro ? `<div class="st none"></div>` : `<div class="st none gap" title="없는 자리 · 이름을 입력하면 자리로 바뀝니다"><input class="st-in" data-act="seat-in" data-path="${path}" list="seatNames" value="" placeholder="×" autocomplete="off" spellcheck="false"></div>`;
     const p = pm.get(nkey(v)); if (p) used.add(p.id);
     const own = ext; ext = ext || (p && p.ext) || '';
     const hit = q && (nkey(v).includes(q) || (ext && String(ext).includes(q)));
     if (extMode) return `<div class="st ${lead ? 'lead ' : ''}${p ? tc(p.team) + ' ppl ' : ''}xm${hit ? ' hit' : ''}"><span class="xn">${esc(v && v !== '공석' ? v : '')}</span><input class="st-in" data-act="seat-ext" data-path="${path}" value="${esc(own || '')}" placeholder="${esc((p && p.ext) || '내선')}" inputmode="numeric" autocomplete="off"></div>`;
     const cls = ['st', lead ? 'lead' : '', !v || v === '공석' ? 'empty' : '', p ? tc(p.team) + ' ppl' : (v && v !== '공석' ? 'txt' : ''), hit ? 'hit' : ''].filter(Boolean).join(' ');
-    return `<div class="${cls}" title="${esc(p ? `${p.name} · ${p.team} · ${p.rank}` : v && v !== '공석' ? v : '빈 자리')}"><input class="st-in" data-act="seat-in" data-path="${path}" list="seatNames" value="${esc(v && v !== '공석' ? v : '')}" placeholder="" autocomplete="off" spellcheck="false">${(() => { const r = p && !lead ? RSHORT(p.rank) : ''; return r || ext ? `<small>${esc(r)}${r && ext ? '<em>·</em>' : ''}${ext ? `<i class="ext">${esc(ext)}</i>` : ''}</small>` : ''; })()}</div>`;
+    return `<div class="${cls}" title="${esc(p ? `${p.name} · ${p.team} · ${p.rank}` : v && v !== '공석' ? v : '빈 자리')}">${ro ? `<span class="st-in">${esc(v && v !== '공석' ? v : '')}</span>` : `<input class="st-in" data-act="seat-in" data-path="${path}" list="seatNames" value="${esc(v && v !== '공석' ? v : '')}" placeholder="" autocomplete="off" spellcheck="false">`}${(() => { const r = p && !lead ? RSHORT(p.rank) : ''; return r || ext ? `<small>${esc(r)}${r && ext ? '<em>·</em>' : ''}${ext ? `<i class="ext">${esc(ext)}</i>` : ''}</small>` : ''; })()}</div>`;
   };
   const island = (it, bp) => `<div class="isl" style="--c:${Math.max(...it.rows.map(r => r.length), 1)}">${it.rows.map((r, ri) => r.map((v, ci) => seat(v, `${bp}.${ri}.${ci}`, false, ((it.ext || [])[ri] || [])[ci])).join('') + (r.length < Math.max(...it.rows.map(x => x.length)) ? '<div class="st none"></div>'.repeat(Math.max(...it.rows.map(x => x.length)) - r.length) : '')).join('')}${it.hasLead ? seat(it.lead, `${bp}.L`, true, it.leadExt) : ''}</div>`;
   const item = (it, bp) => it.type === 'room' ? `<div class="room${it.tall ? ' tall' : ''}"><span>${esc(it.label)}</span></div>` : island(it, bp);
-  h += `<section class="card"><div class="head"><h2>자리 배치</h2><span class="sub">${extMode ? '자리마다 내선번호를 입력하세요 · 사람이 바뀌어도 번호는 자리에 남습니다' : '자리에 이름을 바로 입력하세요 (Enter·Tab으로 저장)'}</span></div><div class="seatw"><div class="seats">${m.blocks.map((b, bi) => b.type === 'stack' ? `<div class="stk">${b.items.map((it, ii) => item(it, `${bi}:${ii}`)).join('')}</div>` : item(b, `${bi}`)).join('')}</div></div>`;
+  h += `<section class="card"><div class="head"><h2>자리 배치</h2><span class="sub">${ro ? '' : extMode ? '자리마다 내선번호를 입력하세요 · 사람이 바뀌어도 번호는 자리에 남습니다' : '자리에 이름을 바로 입력하세요 (Enter·Tab으로 저장) · 없는 자리는 x'}</span></div><div class="seatw"><div class="seats">${m.blocks.map((b, bi) => b.type === 'stack' ? `<div class="stk">${b.items.map((it, ii) => item(it, `${bi}:${ii}`)).join('')}</div>` : item(b, `${bi}`)).join('')}</div></div>`;
   const miss = C.sortComp(S.people).filter(p => !used.has(p.id));
   h += `<datalist id="seatNames">${C.sortComp(S.people).map(p => `<option value="${esc(p.name)}">${esc(p.team)} · ${esc(RSHORT(p.rank))}</option>`).join('')}<option value="공석"></datalist>`;
   h += `<div class="seatlg">${C.teams(S.people).map(t => `<span><i class="${tc(t)}"></i>${esc(t)}</span>`).join('')}</div>`;
-  if (miss.length) h += `<div class="small muted">자리 미지정 ${miss.length}명: ${miss.map(p => esc(p.name)).join(', ')}</div>`;
+  if (ro) { /* 보기 전용 */ } else if (miss.length) h += `<div class="small muted">자리 미지정 ${miss.length}명: ${miss.map(p => esc(p.name)).join(', ')}</div>`;
   else h += `<div class="small muted">명단의 모든 인원이 자리에 배치되어 있습니다.</div>`;
   h += `</section>`;
   return h;
@@ -2707,7 +2710,7 @@ document.addEventListener('click', e => {
       <div class="actions"><span class="spacer"></span><button type="button" class="btn" data-act="close">취소</button><button class="btn primary" type="submit">저장</button></div></form>`, true); break;
     case 'as-edit': if (!need()) break; asDialog(d.id); break;
     case 'asmode': ui.asMode = d.v; ui.asQ = ''; render(); break;
-    case 'as-xlsx': if (!(admin || director)) { toast('연구소장·개발실장·관리자만 받을 수 있습니다', true); break; }
+    case 'as-xlsx': if (!(admin || director || viewAll)) { toast('연구소장·개발실장·관리자만 받을 수 있습니다', true); break; }
       (async () => { try { const sw = ui.asMode === 'sw', bytes = await XLSX.build(Export.asset(S, admin, sw ? 'sw' : 'asset'), null); saveFile(`${stamp()}_연구소 ${sw ? 'SW 사용현황' : '자산 보유현황'}.xlsx`, new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })); } catch (e) { toast('엑셀을 만들지 못했습니다: ' + e.message, true); } })(); break;
     case 'sw-edit': if (!need()) break; swDialog(d.id); break;
     case 'sw-paste': if (!need()) break; swPasteDialog(); break;
@@ -2802,7 +2805,7 @@ document.addEventListener('change', e => {
   else if (a === 'seat-ext') { if (!admin) return; const path = t.dataset.path, val = t.value.trim(); const { it, rest } = seatGet(path);
     if (rest[0] === 'L') it.leadExt = val; else { it.ext = it.ext || it.rows.map(r => r.map(() => '')); while (it.ext.length < it.rows.length) it.ext.push([]); it.ext[+rest[0]][+rest[1]] = val; }
     setTimeout(() => { const nx = document.activeElement?.dataset?.path; put('seat/main', S.seat); render(); const el = nx && document.querySelector(`[data-act="seat-ext"][data-path="${nx}"]`); if (el) { el.focus(); el.select(); } }, 0); }
-  else if (a === 'seat-in') { if (!admin) return; const path = t.dataset.path, val = t.value.trim();
+  else if (a === 'seat-in') { if (!admin) return; const path = t.dataset.path, raw = t.value.trim(), val = /^(x|×|\.|없음|자리\s*x)$/i.test(raw) ? '.' : raw;
     setTimeout(() => { const nx = document.activeElement?.dataset?.path, sel = document.activeElement?.selectionStart; seatSet(path, val || '공석');
       const el = nx && document.querySelector(`[data-act="seat-in"][data-path="${nx}"]`); if (el) { el.focus(); el.select(); } }, 0); }
   else if (a === 'f-yryear') { ui.yrYear = t.value; render(); }
