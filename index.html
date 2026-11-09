@@ -342,6 +342,9 @@ th.pch{box-shadow:inset 0 -3px 0 var(--pc)}
 .seatlg span{display:inline-flex;align-items:center;gap:5px}
 .seatlg i{width:10px;height:10px;border-radius:2px;background:var(--pc)}
 td.sel{background:var(--accent-soft)}
+.mtbl tr.tm td{border-top:1.5px solid var(--line);background:color-mix(in srgb,var(--sunk) 35%,var(--surface))}
+.mtbl tr.pr td{font-size:12px}
+.mtbl .pt{color:var(--muted);padding-left:10px}
 .mtbl td.fut{background:color-mix(in srgb,var(--sunk) 60%,var(--surface))}
 .mtbl .dm{display:block;font-size:9.5px;line-height:1.1;font-weight:600}
 .mtbl .dm.up{color:var(--ok)}.mtbl .dm.dn{color:var(--bad)}
@@ -502,7 +505,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.09 09:31</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.09 09:33</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -2267,6 +2270,7 @@ function hrCalc() {
   for (const h of S.hr) { add(String(h.join || '').slice(0, 4), h.team, 'in'); if (h.leave) add(String(h.leave).slice(0, 4), h.team, 'out'); }
   return st;
 }
+const hrPart = h => { const p = hrLink(h); return (p && p.cat) || h.part || ''; };   // 파트는 인원 명단 기준 (지금 없는 사람은 알 수 없음)
 function hrActiveAt(dt) { return S.hr.filter(h => !h.moved && h.join && h.join <= dt && (!h.leave || h.leave > dt)); }
 function hrSync() {   // 관리자: 연도별 입·퇴사 집계를 조직 설정에 보관 (다른 계정은 집계만 봄)
   if (!admin || !S.hr.length) return;
@@ -2344,11 +2348,13 @@ function vHRYear(seg) {
     const ev = (m, f) => S.hr.filter(x => String(f === 'in' ? x.join : x.leave || '').slice(0, 7) === `${Y}-${String(m).padStart(2, '0')}`);
     const fut = m => m > nowM;
     h += `<section class="card"><div class="head"><h2>${Y}년 월별 현황</h2><span class="sub">각 월 말일 기준 인원${Y === cur ? ` · 이번 달은 오늘 기준` : ''}</span></div><div class="tw free"><table class="eqtbl ohc mtbl"><thead><tr><th>부서</th>${ms.map(m => `<th${fut(m) ? ' class="muted"' : ''}>${m}월</th>`).join('')}</tr></thead><tbody>
-      ${mt.map(t => `<tr><td class="l"><b>${esc(t)}</b></td>${ms.map((m, i) => { if (fut(m)) return '<td class="fut"></td>'; const n = act[i].filter(x => x.team === t).length, pv = i ? act[i - 1].filter(x => x.team === t).length : P.filter(x => x.team === t).length; return `<td class="num">${n || '<span class="muted">–</span>'}${n !== pv ? `<span class="dm ${n > pv ? 'up' : 'dn'}">${n > pv ? '▲' : '▼'}${Math.abs(n - pv)}</span>` : ''}</td>`; }).join('')}</tr>`).join('')}
+      ${mt.map(t => { const row = (label, f, cls) => `<tr class="${cls}"><td class="l">${label}</td>${ms.map((m, i) => { if (fut(m)) return '<td class="fut"></td>'; const n = act[i].filter(f).length, pv = i ? act[i - 1].filter(f).length : P.filter(f).length; return `<td class="num">${n || '<span class="muted">–</span>'}${n !== pv ? `<span class="dm ${n > pv ? 'up' : 'dn'}">${n > pv ? '▲' : '▼'}${Math.abs(n - pv)}</span>` : ''}</td>`; }).join('')}</tr>`;
+        const inT = x => x.team === t, parts = [...new Set(act.filter(Boolean).flatMap(L => L.filter(inT).map(hrPart)))].sort((a, b) => (a === '' ? 1 : 0) - (b === '' ? 1 : 0) || (S.config.partOrder.indexOf(a) + 1 || 99) - (S.config.partOrder.indexOf(b) + 1 || 99));
+        return row(`<b>${esc(t)}</b>`, inT, 'tm') + (parts.length > 1 || (parts.length === 1 && parts[0] !== '') ? parts.map(c => row(`<span class="pt">└ ${c ? esc(c) : '파트 정보 없음'}</span>`, x => inT(x) && hrPart(x) === c, 'pr')).join('') : ''); }).join('')}
       <tr class="hl"><td><b>합계</b></td>${ms.map((m, i) => fut(m) ? '<td class="fut"></td>' : `<td class="num"><b>${act[i].length}</b></td>`).join('')}</tr>
       <tr><td class="muted">입사</td>${ms.map(m => { if (fut(m)) return '<td class="fut"></td>'; const L = ev(m, 'in'); return `<td class="num" title="${esc(L.map(x => `${x.name}(${x.team})`).join(', '))}">${L.length || '<span class="muted">–</span>'}</td>`; }).join('')}</tr>
       <tr><td class="muted">퇴사</td>${ms.map(m => { if (fut(m)) return '<td class="fut"></td>'; const L = ev(m, 'out'); return `<td class="num${L.length ? ' neg' : ''}" title="${esc(L.map(x => `${x.name}(${x.team})`).join(', '))}">${L.length || '<span class="muted">–</span>'}</td>`; }).join('')}</tr>
-    </tbody></table></div><div class="small muted">▲▼는 전월 대비 증감 · 입사·퇴사 숫자에 마우스를 올리면 이름이 보입니다</div></section>`;
+    </tbody></table></div><div class="small muted">▲▼는 전월 대비 증감 · 입사·퇴사 숫자에 마우스를 올리면 이름이 보입니다 · 파트는 인원 명단 기준이고, 명단에 없는 사람은 인사 기록 수정에서 파트를 넣으면 나뉩니다</div></section>`;
   }
   // 연도별 추이 (연말 인원)
   const ys = years.slice(0, 6).reverse(), allT = hrTeams().filter(t => ys.some(y => hrActiveAt(y === cur ? today() : y + '-12-31').some(x => x.team === t)));
@@ -2449,6 +2455,7 @@ function hrDialog(id) {
     <label class="field">구분<input name="kind" list="dlKind" value="${esc(x.kind || '')}">${dl('dlKind', ['전담연구원', '연구보조원', '기업부설연구기관장', ...S.hr.map(r => r.kind)])}</label>
     <label class="field">직위<input name="pos" list="dlPos" value="${esc(x.pos || '')}">${dl('dlPos', [...S.config.rankOrder, ...HR_HEADS, ...S.hr.map(r => r.pos)])}</label>
     <label class="field">부서<input name="team" list="dlTeam" value="${esc(x.team || '')}">${dl('dlTeam', [...S.config.teamOrder, ...S.hr.map(r => r.team)])}</label>
+    <label class="field">파트 (명단에 없을 때)<input name="part" list="dlPart" value="${esc(x.part || '')}" placeholder="${esc(hrLink(x)?.cat ? '명단: ' + hrLink(x).cat : '예: HW1')}"><datalist id="dlPart">${S.config.partOrder.map(v => `<option value="${esc(v)}">`).join('')}</datalist></label>
     <label class="field">최종학교<input name="school" value="${esc(x.school || '')}"></label>
     <label class="field">전공<input name="major" value="${esc(x.major || '')}"></label>
     <label class="field">최종학위<input name="degree" list="dlDeg" value="${esc(x.degree || '')}">${dl('dlDeg', ['전문학사', '학사', '석사', '박사', '졸업예정'])}</label>
@@ -2817,7 +2824,8 @@ document.addEventListener('submit', e => {
     if (!v.name.trim()) { $('#hrerr').textContent = '이름을 입력해 주세요.'; return; }
     if (v.st === '퇴사' && !v.leave) { $('#hrerr').textContent = '퇴사일을 입력해 주세요.'; return; }
     const id = f.dataset.id || uid('h'), old = S.hr.find(x => x.id === id);
-    const doc = { name: v.name.trim(), kind: v.kind.trim(), pos: v.pos.trim(), team: v.team.trim(), school: v.school.trim(), major: v.major.trim(), degree: v.degree.trim(), join: v.join || '', leave: v.st === '퇴사' ? v.leave : '', moved: v.st === '부서변동' };
+    const doc = { name: v.name.trim(), kind: v.kind.trim(), pos: v.pos.trim(), team: v.team.trim(), school: v.school.trim(), major: v.major.trim(), degree: v.degree.trim(), part: (v.part || '').trim(), join: v.join || '', leave: v.st === '퇴사' ? v.leave : '', moved: v.st === '부서변동' };
+    if (!doc.part) delete doc.part;
     if (old) Object.assign(old, doc); else S.hr.push({ id, ...doc });
     put('hr/' + id, doc); closeDlg(); hrSync(); render(); toast('인사 기록을 저장했습니다');
   } else if (f.dataset.form === 'hrpaste') {
