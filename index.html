@@ -308,10 +308,15 @@ th.pch{box-shadow:inset 0 -3px 0 var(--pc)}
 .swk span{display:inline-flex;align-items:center;gap:3px}
 .swk i{width:7px;height:7px;border-radius:2px;background:var(--pc)}
 .legend i.pc0,.legend i.pc1,.legend i.pc2,.legend i.pc3,.legend i.pc4,.legend i.pc5,.legend i.pc6,.legend i.pc7,.legend i.pc8,.legend i.pc9{background:var(--pc)}
-.seatw{overflow-x:auto}
+.seatw{overflow-x:auto;--sl:color-mix(in srgb,var(--ink) 38%,var(--surface))}
+.st .ext{font-style:normal;font-weight:600;color:var(--accent);letter-spacing:.2px}
+.st small em{font-style:normal;margin:0 3px;opacity:.6}
+.st.xm .xn{font-size:10.5px;color:var(--muted);line-height:1.1;height:12px}
+.st.xm .st-in{font-size:14px;font-weight:700;color:var(--accent)}
+.st.xm .st-in::placeholder{font-size:11px;font-weight:400}
 .seats{display:flex;align-items:flex-start;justify-content:center;gap:28px;padding:10px 6px 6px;min-width:max-content}
 .isl{display:grid;grid-template-columns:repeat(var(--c),92px);margin:1px;border-radius:4px}
-.st{height:50px;border:0;box-shadow:0 0 0 1px var(--ink);background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font:inherit;cursor:pointer;padding:0 2px;position:relative;color:var(--ink)}
+.st{height:50px;border:0;box-shadow:0 0 0 1px var(--sl);background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font:inherit;cursor:pointer;padding:0 2px;position:relative;color:var(--ink)}
 .st:hover{background:var(--accent-soft)}
 .st b{font-size:13px;font-weight:700;letter-spacing:.5px}
 .st-in{width:100%;border:0;background:transparent;text-align:center;font:inherit;font-size:13px;font-weight:700;color:var(--ink);padding:0 2px;outline:none;letter-spacing:.3px}
@@ -324,7 +329,7 @@ th.pch{box-shadow:inset 0 -3px 0 var(--pc)}
 .st{cursor:text}
 .st small{font-size:10px;color:var(--muted)}
 .st span{font-size:12px;color:var(--muted);text-align:center;line-height:1.2}
-.st.ppl{background:color-mix(in srgb,var(--pc) 9%,var(--surface));box-shadow:inset 4px 0 0 var(--pc),0 0 0 1px var(--ink)}
+.st.ppl{background:color-mix(in srgb,var(--pc) 8%,var(--surface));box-shadow:inset 4px 0 0 var(--pc),0 0 0 1px var(--sl)}
 .st.empty span{color:var(--muted);opacity:.7}
 .st.txt span{font-size:11px}
 .st.lead{grid-column:1 / -1;height:50px;background:var(--sunk)}
@@ -514,7 +519,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.09 10:03</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.09 11:27</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -2386,14 +2391,18 @@ function seatParse(text) {
     const m = b[0].trim().match(/^(\[\[|\[)(.+?)(\]\]|\])$/);
     if (m && b.length === 1) item = { type: 'room', label: m[2].trim(), tall: m[1] === '[[' };
     else { let lead = null, rows = b; if (b[0].trim().startsWith('##')) { lead = b[0].trim().slice(2).trim(); rows = b.slice(1); }
-      item = { type: 'island', lead: lead || '', hasLead: !!lead, rows: rows.map(l => l.split('|').map(x => x.trim())) }; }
+      const sp = x => { const m2 = String(x).match(/^(.*?)\s*#\s*([\w\-]+)\s*$/); return m2 ? [m2[1].trim(), m2[2]] : [String(x).trim(), '']; };
+      const cells = rows.map(l => l.split('|').map(sp)), L2 = lead != null ? sp(lead) : ['', ''];
+      item = { type: 'island', lead: L2[0], leadExt: L2[1], hasLead: lead != null && (lead !== '' || L2[1] !== ''), rows: cells.map(r => r.map(c => c[0])), ext: cells.map(r => r.map(c => c[1])) };
+      if (lead != null && lead === '') item.hasLead = false; }
     if (stack && out.length) { const last = out[out.length - 1]; if (last.type === 'stack') last.items.push(item); else out[out.length - 1] = { type: 'stack', items: [last, item] }; }
     else out.push(item);
   }
   return { blocks: out };
 }
 function seatText(m) {
-  const one = it => it.type === 'room' ? (it.tall ? `[[${it.label}]]` : `[${it.label}]`) : [it.hasLead ? `## ${it.lead}` : '##', ...it.rows.map(r => r.join(' | '))].join('\n');
+  const cx = (v, e) => (e ? `${v || ''} #${e}`.trim() : v || '');
+  const one = it => it.type === 'room' ? (it.tall ? `[[${it.label}]]` : `[${it.label}]`) : [it.hasLead ? `## ${cx(it.lead, it.leadExt)}` : '##', ...it.rows.map((r, ri) => r.map((v, ci) => cx(v, ((it.ext || [])[ri] || [])[ci])).join(' | '))].join('\n');
   return (m && m.blocks || []).map(b => b.type === 'stack' ? b.items.map((it, i) => (i ? '^\n' : '') + one(it)).join('\n\n') : one(b)).join('\n\n');
 }
 // 기본 자리 틀 (사무실 배치 모양만, 이름 없음) — 자리를 눌러 사람을 넣음
@@ -2407,18 +2416,20 @@ function seatPeople() { const by = new Map(); for (const p of S.people) by.set(n
 function vSeat(seg) {
   const m = S.seat || seatDefault(), pm = seatPeople(), q = nkey(ui.seatQ);
   const T = S.config.teamOrder || [], tc = t => 'pc' + (Math.max(0, T.indexOf(t)) % 10);
-  let h = `<div class="toolbar">${seg}<label class="field"><span>찾기</span><input class="ci" data-act="f-seatq" value="${esc(ui.seatQ)}" placeholder="이름"></label><span class="spacer"></span><button type="button" class="btn" data-act="seat-text">배치 편집 (텍스트)</button></div>`;
+  const extMode = ui.seatMode === 'ext';
+  let h = `<div class="toolbar">${seg}<div class="seg" role="group" aria-label="입력"><button type="button" data-act="seatmode" data-v="name" aria-pressed="${!extMode}">이름 입력</button><button type="button" data-act="seatmode" data-v="ext" aria-pressed="${extMode}">내선번호 입력</button></div><label class="field"><span>찾기</span><input class="ci" data-act="f-seatq" value="${esc(ui.seatQ)}" placeholder="이름·내선"></label><span class="spacer"></span><button type="button" class="btn" data-act="seat-text">배치 편집 (텍스트)</button></div>`;
   const used = new Set();
-  const seat = (v, path, lead) => {
+  const seat = (v, path, lead, ext) => {
     if (v === '.') return `<div class="st none"></div>`;
     const p = pm.get(nkey(v)); if (p) used.add(p.id);
-    const hit = q && nkey(v).includes(q);
+    const hit = q && (nkey(v).includes(q) || (ext && String(ext).includes(q)));
+    if (extMode) return `<div class="st ${lead ? 'lead ' : ''}${p ? tc(p.team) + ' ppl ' : ''}xm${hit ? ' hit' : ''}"><span class="xn">${esc(v && v !== '공석' ? v : '')}</span><input class="st-in" data-act="seat-ext" data-path="${path}" value="${esc(ext || '')}" placeholder="내선" inputmode="numeric" autocomplete="off"></div>`;
     const cls = ['st', lead ? 'lead' : '', !v || v === '공석' ? 'empty' : '', p ? tc(p.team) + ' ppl' : (v && v !== '공석' ? 'txt' : ''), hit ? 'hit' : ''].filter(Boolean).join(' ');
-    return `<div class="${cls}" title="${esc(p ? `${p.name} · ${p.team} · ${p.rank}` : v && v !== '공석' ? v : '빈 자리')}"><input class="st-in" data-act="seat-in" data-path="${path}" list="seatNames" value="${esc(v && v !== '공석' ? v : '')}" placeholder="공석" autocomplete="off" spellcheck="false">${p && !lead ? `<small>${esc(RSHORT(p.rank))}</small>` : ''}</div>`;
+    return `<div class="${cls}" title="${esc(p ? `${p.name} · ${p.team} · ${p.rank}` : v && v !== '공석' ? v : '빈 자리')}"><input class="st-in" data-act="seat-in" data-path="${path}" list="seatNames" value="${esc(v && v !== '공석' ? v : '')}" placeholder="" autocomplete="off" spellcheck="false">${(() => { const r = p && !lead ? RSHORT(p.rank) : ''; return r || ext ? `<small>${esc(r)}${r && ext ? '<em>·</em>' : ''}${ext ? `<i class="ext">${esc(ext)}</i>` : ''}</small>` : ''; })()}</div>`;
   };
-  const island = (it, bp) => `<div class="isl" style="--c:${Math.max(...it.rows.map(r => r.length), 1)}">${it.rows.map((r, ri) => r.map((v, ci) => seat(v, `${bp}.${ri}.${ci}`)).join('') + (r.length < Math.max(...it.rows.map(x => x.length)) ? '<div class="st none"></div>'.repeat(Math.max(...it.rows.map(x => x.length)) - r.length) : '')).join('')}${it.hasLead ? seat(it.lead, `${bp}.L`, true) : ''}</div>`;
+  const island = (it, bp) => `<div class="isl" style="--c:${Math.max(...it.rows.map(r => r.length), 1)}">${it.rows.map((r, ri) => r.map((v, ci) => seat(v, `${bp}.${ri}.${ci}`, false, ((it.ext || [])[ri] || [])[ci])).join('') + (r.length < Math.max(...it.rows.map(x => x.length)) ? '<div class="st none"></div>'.repeat(Math.max(...it.rows.map(x => x.length)) - r.length) : '')).join('')}${it.hasLead ? seat(it.lead, `${bp}.L`, true, it.leadExt) : ''}</div>`;
   const item = (it, bp) => it.type === 'room' ? `<div class="room${it.tall ? ' tall' : ''}"><span>${esc(it.label)}</span></div>` : island(it, bp);
-  h += `<section class="card"><div class="head"><h2>자리 배치</h2><span class="sub">자리에 이름을 바로 입력하세요 (Enter·Tab으로 저장)</span></div><div class="seatw"><div class="seats">${m.blocks.map((b, bi) => b.type === 'stack' ? `<div class="stk">${b.items.map((it, ii) => item(it, `${bi}:${ii}`)).join('')}</div>` : item(b, `${bi}`)).join('')}</div></div>`;
+  h += `<section class="card"><div class="head"><h2>자리 배치</h2><span class="sub">${extMode ? '자리마다 내선번호를 입력하세요 · 사람이 바뀌어도 번호는 자리에 남습니다' : '자리에 이름을 바로 입력하세요 (Enter·Tab으로 저장)'}</span></div><div class="seatw"><div class="seats">${m.blocks.map((b, bi) => b.type === 'stack' ? `<div class="stk">${b.items.map((it, ii) => item(it, `${bi}:${ii}`)).join('')}</div>` : item(b, `${bi}`)).join('')}</div></div>`;
   const miss = C.sortComp(S.people).filter(p => !used.has(p.id));
   h += `<datalist id="seatNames">${C.sortComp(S.people).map(p => `<option value="${esc(p.name)}">${esc(p.team)} · ${esc(RSHORT(p.rank))}</option>`).join('')}<option value="공석"></datalist>`;
   h += `<div class="seatlg">${C.teams(S.people).map(t => `<span><i class="${tc(t)}"></i>${esc(t)}</span>`).join('')}</div>`;
@@ -2443,7 +2454,7 @@ function seatDialog(path) {
 function seatVal(path) { const { it, rest } = seatGet(path); return rest[0] === 'L' ? it.lead : it.rows[+rest[0]][+rest[1]]; }
 function seatPut(path, v) { const { it, rest } = seatGet(path); if (rest[0] === 'L') it.lead = v; else it.rows[+rest[0]][+rest[1]] = v; }
 function seatSwap(a, b) { if (a === b) return; const va = seatVal(a), vb = seatVal(b); seatPut(a, vb || '공석'); seatPut(b, va || '공석'); put('seat/main', S.seat); render(); }
-document.addEventListener('focusin', e => { if (e.target.dataset?.act === 'seat-in') e.target.select(); });   // 자리 칸을 누르면 이름 전체 선택 → 바로 덮어쓰기
+document.addEventListener('focusin', e => { if (['seat-in', 'seat-ext'].includes(e.target.dataset?.act)) e.target.select(); });   // 자리 칸을 누르면 이름 전체 선택 → 바로 덮어쓰기
 let seatDrag = null;
 document.addEventListener('dragstart', e => { const el = e.target.closest?.('[data-drag-name],[data-drag-seat]'); if (!el || !admin) return; seatDrag = el.dataset.dragName ? { name: el.dataset.dragName } : { seat: el.dataset.dragSeat }; e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', 'seat'); } catch { } });
 document.addEventListener('dragover', e => { const z = e.target.closest?.('[data-drop-seat]'); if (z && seatDrag) { e.preventDefault(); z.classList.add('over'); } });
@@ -2639,6 +2650,7 @@ document.addEventListener('click', e => {
     case 'year-del': if (!need()) break; if (!confirm(`${d.v}년 마감 자료를 삭제할까요?`)) break; for (const sfx of ['', 'e', 'c']) { delete S.archive['y' + d.v + sfx]; put('archive/y' + d.v + sfx, null); } if (String(ui.eduYear) === String(d.v)) ui.eduYear = ''; render(); toast('삭제했습니다'); break;
     case 'pmode': ui.peopleMode = d.v; ui.q = ''; render(); break;
     case 'seat-cell': if (!need()) break; seatDialog(d.path); break;
+    case 'seatmode': ui.seatMode = d.v; render(); break;
     case 'seat-clear': if (!need()) break; closeDlg(); seatSet(d.path, '공석'); break;
     case 'seat-text': if (!need()) break; openDlg(`<h2>자리 배치 편집</h2><form class="form" data-form="seattext" style="grid-template-columns:1fr"><label class="field">배치표<textarea name="t" rows="22" style="width:100%;font:12.5px/1.5 var(--font-num);border:1px solid var(--line);border-radius:6px;padding:8px">${esc(seatText(S.seat || seatDefault()))}</textarea></label>
       <div class="small muted">빈 줄 = 책상 묶음 구분 · <b>## 이름</b> = 묶음 아래 리더석(##만 쓰면 없음) · <b>A | B</b> = 한 줄 좌석 · <b>.</b> = 자리 없음 · <b>[방]</b> / <b>[[긴 방]]</b> · 묶음 첫 줄 <b>^</b> = 앞 묶음 아래에 쌓기</div>
@@ -2735,6 +2747,9 @@ document.addEventListener('change', e => {
   else if (a === 'f-swlic') { ui.swLic = t.value; render(); }
   else if (a === 'f-asacct') { ui.asAcct = t.value; render(); }
   else if (a === 'f-asdept') { ui.asDept = t.value; render(); }
+  else if (a === 'seat-ext') { if (!admin) return; const path = t.dataset.path, val = t.value.trim(); const { it, rest } = seatGet(path);
+    if (rest[0] === 'L') it.leadExt = val; else { it.ext = it.ext || it.rows.map(r => r.map(() => '')); while (it.ext.length < it.rows.length) it.ext.push([]); it.ext[+rest[0]][+rest[1]] = val; }
+    setTimeout(() => { const nx = document.activeElement?.dataset?.path; put('seat/main', S.seat); render(); const el = nx && document.querySelector(`[data-act="seat-ext"][data-path="${nx}"]`); if (el) { el.focus(); el.select(); } }, 0); }
   else if (a === 'seat-in') { if (!admin) return; const path = t.dataset.path, val = t.value.trim();
     setTimeout(() => { const nx = document.activeElement?.dataset?.path, sel = document.activeElement?.selectionStart; seatSet(path, val || '공석');
       const el = nx && document.querySelector(`[data-act="seat-in"][data-path="${nx}"]`); if (el) { el.focus(); el.select(); } }, 0); }
