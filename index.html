@@ -522,7 +522,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.09 11:58</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.09 13:04</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -2166,7 +2166,7 @@ function vAsset() {
     ${admin && accts.length ? `<label class="field"><span>계정</span><select class="ci" data-act="f-asacct"><option value="">전체</option>${accts.map(x => `<option${x === ui.asAcct ? ' selected' : ''}>${esc(x)}</option>`).join('')}</select></label>` : ''}
     <label class="field"><span>관리부서</span><select class="ci" data-act="f-asdept"><option value="">전체</option>${depts.map(x => `<option${x === ui.asDept ? ' selected' : ''}>${esc(x)}</option>`).join('')}</select></label>
     <label class="field"><span>검색</span><input class="ci" data-act="f-asq" value="${esc(ui.asQ)}" placeholder="${admin ? '자산명·자산번호·취득처·위치' : '자산명·자산번호'}"></label>
-    <span class="spacer"></span>${admin || director || viewAll ? '<button type="button" class="btn" data-act="as-xlsx">엑셀로 받기</button>' : ''}${admin ? '<button type="button" class="btn" data-act="as-paste">붙여넣기로 가져오기</button><button type="button" class="btn primary" data-act="as-edit">자산 추가</button>' : ''}</div>`;
+    <span class="spacer"></span>${admin ? '<button type="button" class="btn" data-act="as-xlsx">엑셀로 받기</button>' : ''}${admin ? '<button type="button" class="btn" data-act="as-paste">붙여넣기로 가져오기</button><button type="button" class="btn primary" data-act="as-edit">자산 추가</button>' : ''}</div>`;
   if (!L.length) return h + `<section class="card"><div class="empty">${admin ? '등록된 자산이 없습니다. 엑셀에서 표(제목 줄 포함)를 복사해 <b>붙여넣기로 가져오기</b>로 넣어 주세요.' : '등록된 자산이 없습니다.'}</div></section>`;
   if (admin) {
     const sum = (xs, k) => xs.reduce((a, x) => a + (+x[k] || 0), 0);
@@ -2211,7 +2211,7 @@ function vSW() {
   const aseg = assetSeg();
   let h = `<div class="toolbar">${aseg}<label class="field"><span>사용처</span><select class="ci" data-act="f-swown"><option value="">전체</option>${owners.map(o => `<option${o === ui.swOwner ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select></label>
     <label class="field"><span>라이선스</span><select class="ci" data-act="f-swlic"><option value="">전체</option>${['영구', '기간제'].map(o => `<option${o === ui.swLic ? ' selected' : ''}>${o}</option>`).join('')}</select></label>
-    <label class="field"><span>검색</span><input class="ci" data-act="f-asq" value="${esc(ui.asQ)}" placeholder="SW명·업체명"></label><span class="spacer"></span>${admin || director || viewAll ? '<button type="button" class="btn" data-act="as-xlsx">엑셀로 받기</button>' : ''}${admin ? '<button type="button" class="btn" data-act="sw-paste">붙여넣기로 가져오기</button><button type="button" class="btn primary" data-act="sw-edit">SW 추가</button>' : ''}</div>`;
+    <label class="field"><span>검색</span><input class="ci" data-act="f-asq" value="${esc(ui.asQ)}" placeholder="SW명·업체명"></label><span class="spacer"></span>${admin ? '<button type="button" class="btn" data-act="as-xlsx">엑셀로 받기</button>' : ''}${admin ? '<button type="button" class="btn" data-act="sw-paste">붙여넣기로 가져오기</button><button type="button" class="btn primary" data-act="sw-edit">SW 추가</button>' : ''}</div>`;
   if (!L.length) return h + `<section class="card"><div class="empty">${admin ? '등록된 SW가 없습니다. 엑셀 표(제목 줄: 사용처 · SW명 · 보유 수량 · 라이선스 · 계약기간 · 업체명 · 금액 · 비고)를 복사해 <b>붙여넣기로 가져오기</b>로 넣어 주세요.' : '등록된 SW가 없습니다.'}</div></section>`;
   const own = rows.reduce((a, x) => a + (+x.qty || 0), 0), used = rows.reduce((a, x) => a + swUsed(x), 0), soon = rows.filter(x => { const k = dLeft(x.end); return k != null && k <= 60; }).length;
   h += `<div class="kpis"><div class="kpi"><span class="k">SW 계약</span><span class="v">${rows.length}<small>건</small></span></div><div class="kpi"><span class="k">보유 라이선스</span><span class="v">${own}<small>개</small></span></div>
@@ -2710,7 +2710,7 @@ document.addEventListener('click', e => {
       <div class="actions"><span class="spacer"></span><button type="button" class="btn" data-act="close">취소</button><button class="btn primary" type="submit">저장</button></div></form>`, true); break;
     case 'as-edit': if (!need()) break; asDialog(d.id); break;
     case 'asmode': ui.asMode = d.v; ui.asQ = ''; render(); break;
-    case 'as-xlsx': if (!(admin || director || viewAll)) { toast('연구소장·개발실장·관리자만 받을 수 있습니다', true); break; }
+    case 'as-xlsx': if (!admin) { toast('관리자만 받을 수 있습니다', true); break; }
       (async () => { try { const sw = ui.asMode === 'sw', bytes = await XLSX.build(Export.asset(S, admin, sw ? 'sw' : 'asset'), null); saveFile(`${stamp()}_연구소 ${sw ? 'SW 사용현황' : '자산 보유현황'}.xlsx`, new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })); } catch (e) { toast('엑셀을 만들지 못했습니다: ' + e.message, true); } })(); break;
     case 'sw-edit': if (!need()) break; swDialog(d.id); break;
     case 'sw-paste': if (!need()) break; swPasteDialog(); break;
