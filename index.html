@@ -522,7 +522,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.09 13:04</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.10 11:58</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -1234,7 +1234,7 @@ async function reload(manual) {
     // 받아오는 사이에 수정이 있었으면 이 응답은 예전 값이라 버리고 잠시 뒤 다시 받음
     if (seq !== writeSeq || busy || Date.now() - lastWrite < 3000) { loading = false; syncUI(); setTimeout(() => reload(), 4000); return; }
     applyDocs(d.docs);
-    if (admin && !busy) { freezeAuto(); initDelivery(); initFsCourses(); }
+    if (admin && !busy) { freezeAuto(); initDelivery(); initFsCourses(); if (S.seat && seatAisle(S.seat)) put('seat/main', S.seat); }
     if (admin) for (const [pid, m] of Object.entries(S.edu)) if (Object.values(m).some(r => r && r.date)) { const m2 = {}; for (const [k, r] of Object.entries(m)) m2[k] = { note: r.note || '' }; S.edu[pid] = m2; put('edu/' + pid, { r: m2 }); } loadedOnce = true; offline = false; if (admin) loadUsers(true); if (manual) toast('최신 데이터로 새로 고쳤습니다'); }
   catch (e) { if (!e.auth) { offline = true; toast('서버에서 데이터를 받지 못했습니다: ' + e.message, true); } }
   loading = false; syncUI(); schedule();
@@ -2439,6 +2439,15 @@ function seatText(m) {
   return (m && m.blocks || []).map(b => b.type === 'stack' ? b.items.map((it, i) => (i ? '^\n' : '') + one(it)).join('\n\n') : one(b)).join('\n\n');
 }
 // 기본 자리 틀 (사무실 배치 모양만, 이름 없음) — 자리를 눌러 사람을 넣음
+function seatAisle(m) {   // 황성식 앞 두 칸은 통로 (자리 없음)
+  if (!m || m.aisleFix) return false; let ch = false;
+  for (const b of m.blocks || []) for (const it of (b.type === 'stack' ? b.items : [b])) {
+    if (it.type !== 'island' || nkey(it.lead) !== '황성식' || !it.rows?.length) continue;
+    const r = it.rows[it.rows.length - 1];
+    if (r.every(c => !c || c === '공석' || c === '.' || /자리\s*x/i.test(c) || /^\d+$/.test(nkey(c)))) { it.rows[it.rows.length - 1] = r.map(() => '.'); if (it.ext) it.ext[it.ext.length - 1] = (it.ext[it.ext.length - 1] || []).map(() => ''); ch = true; }
+  }
+  m.aisleFix = true; return ch;
+}
 function seatDefault() {
   const isl = lead => ({ type: 'island', lead: '', hasLead: lead, rows: [...Array(6)].map(() => ['', '']) });
   return { blocks: [isl(true), isl(true), isl(true), isl(false), isl(true), isl(true),
@@ -2447,7 +2456,7 @@ function seatDefault() {
 }
 function seatPeople() { const by = new Map(); for (const p of [...S.heads, ...S.people]) by.set(nkey(p.name), p); return by; }
 function vSeat(seg) {
-  const m = S.seat || seatDefault(), pm = seatPeople(), q = nkey(ui.seatQ);
+  const m = S.seat || seatDefault(), pm = seatPeople(), q = nkey(ui.seatQ); if (!m.aisleFix) seatAisle(m);
   const T = S.config.teamOrder || [], tc = t => 'pc' + (Math.max(0, T.indexOf(t)) % 10);
   const ro = !admin, extMode = !ro && ui.seatMode === 'ext';
   let h = ro ? `<div class="toolbar">${seg}<label class="field"><span>찾기</span><input class="ci" data-act="f-seatq" value="${esc(ui.seatQ)}" placeholder="이름·내선"></label></div>` : `<div class="toolbar">${seg}<div class="seg" role="group" aria-label="입력"><button type="button" data-act="seatmode" data-v="name" aria-pressed="${!extMode}">이름 입력</button><button type="button" data-act="seatmode" data-v="ext" aria-pressed="${extMode}">내선번호 입력</button></div><label class="field"><span>찾기</span><input class="ci" data-act="f-seatq" value="${esc(ui.seatQ)}" placeholder="이름·내선"></label><span class="spacer"></span><button type="button" class="btn" data-act="seat-text">배치 편집 (텍스트)</button></div>`;
