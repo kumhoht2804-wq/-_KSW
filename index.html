@@ -533,7 +533,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.16 11:01</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.16 13:15</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -2151,7 +2151,7 @@ function orgDialog() {
       return `<div class="otr" data-i="${i}" data-t="${esc(t)}"><span class="fu-act"><button type="button" class="btn sm" data-act="ot-up" title="위로">▲</button><button type="button" class="btn sm" data-act="ot-down" title="아래로">▼</button></span>
         <label class="field">팀 이름<input name="tn-${i}" value="${esc(t)}" required></label>
         <label class="field">팀장<select name="tl-${i}"><option value="">없음</option>${TL.map(p => `<option value="${p.id}"${cur === p ? ' selected' : ''}>${esc(p.name)} ${esc(RSHORT(p.rank))}</option>`).join('')}</select></label>
-        <label class="field">소속 라인<select name="tx-${i}"><option value="__dir"${ln === '__dir' ? ' selected' : ''}>연구소장 직속</option><option value=""${ln === '' ? ' selected' : ''}>개발실장 라인</option>${units.map((u, ui2) => `<option value="u:${ui2}"${'u:' + ui2 === ln ? ' selected' : ''}${u.name ? '' : ' hidden'}>${esc(u.name)}</option>`).join('')}</select></label>
+        <label class="field">소속 라인<select name="tx-${i}"><option value="__dir"${ln === '__dir' ? ' selected' : ''}>연구소장 직속</option><option value=""${ln === '' ? ' selected' : ''}>개발실장 라인</option>${units.map((u, ui2) => `<option value="u:${ui2}"${'u:' + ui2 === ln ? ' selected' : ''}${u.name ? '' : ' hidden'}>${esc(u.name)}</option>`).join('')}<option value="__new">＋ 새 별도 조직…</option></select></label>
         <span class="otn muted small">${TL.length}명</span></div>`; }).join('')}</div>
     <h3 class="fsec">별도 조직 (연구소장 라인)</h3>
     ${units.map((u, i) => `<fieldset class="fu" data-i="${i}"><legend>${u.name ? `${esc(u.name)}<span class="fu-act"><button type="button" class="btn sm" data-act="fu-up" title="위로">▲</button><button type="button" class="btn sm" data-act="fu-down" title="아래로">▼</button><button type="button" class="btn sm danger" data-act="fu-del">삭제</button></span>` : '새 조직 추가'}</legend>
@@ -2870,6 +2870,16 @@ document.addEventListener('change', e => {
   else if (a === 'import-xlsx') { importExcel(t.files); t.value = ''; }
 });
 let qTimer;
+document.addEventListener('change', e => {
+  const sl = e.target; if (sl.value !== '__new' || !sl.matches('form[data-form=org] select[name^=tx-]')) return;
+  const f = sl.form, blank = [...f.querySelectorAll('fieldset.fu')].find(x => !x.querySelector('input[name$=-name]').value.trim());
+  const nm = (prompt('새 별도 조직 이름 (예: 신사업본부)') || '').trim();
+  if (!nm || !blank) { sl.value = sl.dataset.prev || ''; return; }
+  const i = blank.dataset.i, inp = blank.querySelector(`[name=u${i}-name]`); inp.value = nm; inp.dispatchEvent(new Event('input', { bubbles: true }));
+  blank.querySelector('legend').firstChild.textContent = nm;
+  sl.value = 'u:' + i; toast(`'${nm}' 조직을 만들었습니다 · 아래 별도 조직 칸에서 책임자를 적고 저장하세요`);
+});
+document.addEventListener('focusin', e => { if (e.target.matches?.('form[data-form=org] select[name^=tx-]')) e.target.dataset.prev = e.target.value; });
 document.addEventListener('input', e => {
   { const m = e.target.name?.match(/^u(\d+)-name$/); if (m && e.target.closest('form[data-form=org]')) for (const op of document.querySelectorAll(`form[data-form=org] select[name^=tx-] option[value="u:${m[1]}"]`)) { op.textContent = e.target.value.trim(); op.hidden = !e.target.value.trim(); } }
   if (e.target.dataset.act === 'f-asq') { clearTimeout(qTimer); const v = e.target.value; qTimer = setTimeout(() => { ui.asQ = v; const pos = e.target.selectionStart; render(); const el = document.querySelector('[data-act="f-asq"]'); if (el) { el.focus(); el.setSelectionRange(pos, pos); } }, 250); }
