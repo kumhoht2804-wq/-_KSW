@@ -239,6 +239,10 @@ table thead th{text-align:center!important}
 .ohl{position:absolute;top:53px;height:0;border-top:1px solid var(--oln)}
 .obc{display:flex;flex-direction:column;align-items:center;min-width:0;position:relative}
 .obc.ext{padding-top:60px}
+.obc.dir{padding-top:60px}
+.obc.dir::before{content:'';position:absolute;top:53px;left:calc(50% - .5px);height:7px;border-left:1px solid var(--oln)}
+.obc.dir .ob.ghost{visibility:hidden;position:relative}
+.obc.dir .ob.ghost::after{content:'';visibility:visible;position:absolute;left:calc(50% - .5px);top:0;bottom:0;border-left:1px solid var(--oln)}
 .obc.ext::before{content:'';position:absolute;top:53px;left:calc(50% - .5px);height:7px;border-left:1px solid var(--oln)}
 .obc>.oteams{align-self:stretch}
 .oteams{display:flex;align-items:flex-start}
@@ -529,7 +533,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.16 10:51</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.16 10:57</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -2061,7 +2065,7 @@ function vOrg(seg) {
       <div class="oparts">${ps.map(c => partBox(c, TL.filter(p => p.cat === c && p !== ld), 'pc' + pidx(c))).join('')}</div></div>`; };
   const units = scoped ? [] : o.exts.filter(u => u.name);
   const extTeams = new Set(units.flatMap(u => u.teams || []));
-  const mainT = teams.filter(t => !extTeams.has(t));
+  const mainT = teams.filter(t => !extTeams.has(t)), dirT = mainT.filter(t => (o.direct || []).includes(t)), devT = mainT.filter(t => !dirT.includes(t));
   const np = T => T.reduce((a, t) => a + parts(t).length, 0);
   let h = `<div class="toolbar">${seg}${canSet() ? `<button type="button" class="btn" data-act="org-photo" aria-pressed="${!!ui.orgPhoto}">${ui.orgPhoto ? '사진 숨기기' : '사진 보기'}</button>` : ''}<span class="spacer"></span>${admin ? '<button type="button" class="btn" data-act="org-edit">조직 설정</button>' : ''}</div>`;
   const RL = L.filter(p => mainT.includes(p.team));   // 직급별 인원: 별도 조직(신사업본부·SW개발실 등) 제외
@@ -2075,18 +2079,18 @@ function vOrg(seg) {
   h += `<section class="card orgcard"><div class="head"><h2>조직도</h2><span class="sub">기준일 ${today()}</span>${scoped ? `<span class="spacer"></span>${rankTbl}` : ''}</div>${scoped ? '' : `<div class="orankw">${rankTbl}</div>`}<div class="orgw"><div class="org">`;
   if (scoped) h += `<div class="oteams solo">${teams.map(teamHTML).join('')}</div>`;
   else {
-    const cols = [{ w: Math.max(1, np(mainT)) }, ...units.map(u => { const T = teams.filter(t => (u.teams || []).includes(t)), M = extMembers(u); return { u, T, M, w: Math.max(1, np(T) + (M.length ? 1 : 0)) }; })];
+    const cols = [{ w: Math.max(1, np(devT)) }, ...(dirT.length ? [{ dir: true, T: dirT, w: Math.max(1, np(dirT)) }] : []), ...units.map(u => { const T = teams.filter(t => (u.teams || []).includes(t)), M = extMembers(u); return { u, T, M, w: Math.max(1, np(T) + (M.length ? 1 : 0)) }; })];
     const tot = cols.reduce((a, c) => a + c.w, 0); let acc = 0; const ctr = cols.map(c => { const x = (acc + c.w / 2) / tot * 100; acc += c.w; return x; });
-    const devN = L.filter(p => mainT.includes(p.team)).length;
+    const devN = L.filter(p => devT.includes(p.team)).length;
     // 개발실장 세로선이 팀 세로선과 한 줄이 되도록: 양 끝 팀의 가운데에 가장 가까운 팀 위치에 맞춤
-    const ws = mainT.map(t => Math.max(1, parts(t).length)), W = ws.reduce((a, b) => a + b, 0) || 1;
+    const ws = devT.map(t => Math.max(1, parts(t).length)), W = ws.reduce((a, b) => a + b, 0) || 1;
     let pre = 0; const cs = ws.map(w => { const c = (pre + w / 2) / W; pre += w; return c; });
     const mid = cs.length ? (cs[0] + cs.at(-1)) / 2 : .5, snap = cs.length ? cs.reduce((a, c) => Math.abs(c - mid) < Math.abs(a - mid) ? c : a, cs[0]) : .5;
     ctr[0] = snap * cols[0].w / tot * 100;
-    h += `<div class="obr">${units.length ? `<i class="ohl" style="left:${ctr[0]}%;right:${100 - ctr.at(-1)}%"></i>` : ''}
+    h += `<div class="obr">${cols.length > 1 ? `<i class="ohl" style="left:${ctr[0]}%;right:${100 - ctr.at(-1)}%"></i>` : ''}
       <div class="obc main" style="flex:${cols[0].w} 1 0"><div class="olead" style="--x:${snap * 100}%"><div class="ob lead${orgPh() ? ' hasav' : ''}">${orgPh() ? boxAvatar('org:head', (o.photos || {}).head) : ''}<div class="obt"><b>연구소장</b><small>${esc(o.head || '–')}</small></div></div><i class="ovl"></i>
-        <div class="ob lead${orgPh() ? ' hasav' : ''}">${orgPh() ? boxAvatar('org:dev', (o.photos || {}).dev) : ''}<div class="obt"><b>개발실장</b><small>${esc(o.dev || '–')}</small></div><em>${devN}</em></div><i class="ovl"></i></div><div class="oteams">${mainT.map(teamHTML).join('')}</div></div>
-      ${cols.slice(1).map(c => { const n = c.T.reduce((a, t) => a + L.filter(p => p.team === t).length, 0) + c.M.length;
+        <div class="ob lead${orgPh() ? ' hasav' : ''}">${orgPh() ? boxAvatar('org:dev', (o.photos || {}).dev) : ''}<div class="obt"><b>개발실장</b><small>${esc(o.dev || '–')}</small></div><em>${devN}</em></div><i class="ovl"></i></div><div class="oteams">${devT.map(teamHTML).join('')}</div></div>
+      ${cols.slice(1).map(c => { if (c.dir) return `<div class="obc dir" style="flex:${c.w} 1 0"><div class="ob lead ghost"><div class="obt"><b>&nbsp;</b><small>&nbsp;</small></div></div><i class="ovl"></i><div class="oteams">${c.T.map(teamHTML).join('')}</div></div>`; const n = c.T.reduce((a, t) => a + L.filter(p => p.team === t).length, 0) + c.M.length;
         return `<div class="obc ext" style="flex:${c.w} 1 0"><div class="ob lead"><div class="obt"><b>${esc(c.u.name)}</b><small>${esc(c.u.head || '') || '&nbsp;'}</small></div><em>${n}</em></div><i class="ovl"></i>
         <div class="oteams">${c.T.map(teamHTML).join('')}${c.M.length ? `<div class="ot" style="flex:1 1 0"><div class="ob team"><b>${esc(c.u.part || c.u.name)}</b><small>&nbsp;</small><em>${c.M.length}</em></div><div class="oparts">${partBox(c.u.part || c.u.name, c.M, 'direct')}</div></div>` : ''}</div></div>`; }).join('')}</div>`;
   }
@@ -2133,11 +2137,11 @@ function orgDialog() {
     <label class="field">개발실장<input name="dev" value="${esc(o.dev)}"></label>
     <label class="field">현황 연도<input name="year" value="${esc(o.year || String(new Date().getFullYear()))}"></label>
     <h3 class="fsec">팀 (순서 · 이름 · 팀장 · 소속 라인)</h3>
-    <div class="otl" style="grid-column:1/-1">${teams.map((t, i) => { const TL = L.filter(p => p.team === t), cur = orgLeader(t, TL), ln = (o.exts.find(u => (u.teams || []).includes(t)) || {}).name || '';
+    <div class="otl" style="grid-column:1/-1">${teams.map((t, i) => { const TL = L.filter(p => p.team === t), cur = orgLeader(t, TL), ln = (o.exts.find(u => (u.teams || []).includes(t)) || {}).name || ((o.direct || []).includes(t) ? '__dir' : '');
       return `<div class="otr" data-i="${i}" data-t="${esc(t)}"><span class="fu-act"><button type="button" class="btn sm" data-act="ot-up" title="위로">▲</button><button type="button" class="btn sm" data-act="ot-down" title="아래로">▼</button></span>
         <label class="field">팀 이름<input name="tn-${i}" value="${esc(t)}" required></label>
         <label class="field">팀장<select name="tl-${i}"><option value="">없음</option>${TL.map(p => `<option value="${p.id}"${cur === p ? ' selected' : ''}>${esc(p.name)} ${esc(RSHORT(p.rank))}</option>`).join('')}</select></label>
-        <label class="field">소속 라인<select name="tx-${i}"><option value="">개발실장</option>${o.exts.filter(u => u.name).map(u => `<option${u.name === ln ? ' selected' : ''}>${esc(u.name)}</option>`).join('')}</select></label>
+        <label class="field">소속 라인<select name="tx-${i}"><option value="__dir"${ln === '__dir' ? ' selected' : ''}>연구소장 직속</option><option value=""${ln === '' ? ' selected' : ''}>개발실장 라인</option>${o.exts.filter(u => u.name).map(u => `<option${u.name === ln ? ' selected' : ''}>${esc(u.name)}</option>`).join('')}</select></label>
         <span class="otn muted small">${TL.length}명</span></div>`; }).join('')}</div>
     <h3 class="fsec">별도 조직 (연구소장 라인)</h3>
     ${units.map((u, i) => `<fieldset class="fu" data-i="${i}"><legend>${u.name ? `${esc(u.name)}<span class="fu-act"><button type="button" class="btn sm" data-act="fu-up" title="위로">▲</button><button type="button" class="btn sm" data-act="fu-down" title="아래로">▼</button><button type="button" class="btn sm danger" data-act="fu-del">삭제</button></span>` : '새 조직 추가'}</legend>
@@ -2973,7 +2977,7 @@ document.addEventListener('submit', e => {
     const nn = TR.map(r => r.name); if (new Set(nn).size !== nn.length) { toast('팀 이름이 겹칩니다', true); return; }
     const oldEx = o.exts, ex = []; for (const i of [...f.querySelectorAll('fieldset.fu')].map(x => x.dataset.i)) { const nm = v['u' + i + '-name'].trim(); if (!nm) continue;
       const prev = oldEx[+i] || {}; ex.push({ name: nm, head: v['u' + i + '-head'].trim(), teams: TR.filter(r => r.line && r.line === prev.name).map(r => r.name), part: v['u' + i + '-part'].trim(), members: v['u' + i + '-members'].trim() }); }
-    o.exts = ex;
+    o.exts = ex; o.direct = TR.filter(r => r.line === '__dir').map(r => r.name);
     const ren = TR.filter(r => r.name !== r.old), ops = [];
     for (const r of ren) {
       for (const p of S.people.filter(p => p.team === r.old)) { p.team = r.name; const { id, ...doc } = p; ops.push({ path: 'people/' + id, data: doc }); }
