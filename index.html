@@ -388,6 +388,10 @@ td.neg{color:var(--bad);font-weight:700}
 .fu .chk{display:flex;flex-wrap:wrap;gap:6px 14px;padding-top:6px}
 .fu .chk label{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;white-space:nowrap}
 .fu .chk input{margin:0}
+.otl{display:flex;flex-direction:column;gap:6px}
+.otr{display:grid;grid-template-columns:auto 1fr 1fr 1fr 48px;gap:10px;align-items:end;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+.otr .fu-act{padding-bottom:6px}
+.otr .otn{padding-bottom:10px;text-align:right}
 .fu legend{font-size:12px;font-weight:600;padding:0 4px;color:var(--muted)}
 .fu textarea{width:100%;font:inherit;border:1px solid var(--line);border-radius:6px;padding:6px 8px;background:var(--surface);color:var(--ink)}
 /* ---- 팀별 도넛 ---- */
@@ -525,7 +529,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.16 10:49</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.16 10:51</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -2128,14 +2132,18 @@ function orgDialog() {
     <label class="field">연구소장<input name="head" value="${esc(o.head)}"></label>
     <label class="field">개발실장<input name="dev" value="${esc(o.dev)}"></label>
     <label class="field">현황 연도<input name="year" value="${esc(o.year || String(new Date().getFullYear()))}"></label>
-    <h3 class="fsec">팀장</h3>
-    ${teams.map(t => { const TL = L.filter(p => p.team === t), cur = orgLeader(t, TL);
-      return `<label class="field">${esc(t)}<select name="lead-${esc(t)}"><option value="">없음</option>${TL.map(p => `<option value="${p.id}"${cur === p ? ' selected' : ''}>${esc(p.name)} ${esc(RSHORT(p.rank))}</option>`).join('')}</select></label>`; }).join('')}
+    <h3 class="fsec">팀 (순서 · 이름 · 팀장 · 소속 라인)</h3>
+    <div class="otl" style="grid-column:1/-1">${teams.map((t, i) => { const TL = L.filter(p => p.team === t), cur = orgLeader(t, TL), ln = (o.exts.find(u => (u.teams || []).includes(t)) || {}).name || '';
+      return `<div class="otr" data-i="${i}" data-t="${esc(t)}"><span class="fu-act"><button type="button" class="btn sm" data-act="ot-up" title="위로">▲</button><button type="button" class="btn sm" data-act="ot-down" title="아래로">▼</button></span>
+        <label class="field">팀 이름<input name="tn-${i}" value="${esc(t)}" required></label>
+        <label class="field">팀장<select name="tl-${i}"><option value="">없음</option>${TL.map(p => `<option value="${p.id}"${cur === p ? ' selected' : ''}>${esc(p.name)} ${esc(RSHORT(p.rank))}</option>`).join('')}</select></label>
+        <label class="field">소속 라인<select name="tx-${i}"><option value="">개발실장</option>${o.exts.filter(u => u.name).map(u => `<option${u.name === ln ? ' selected' : ''}>${esc(u.name)}</option>`).join('')}</select></label>
+        <span class="otn muted small">${TL.length}명</span></div>`; }).join('')}</div>
     <h3 class="fsec">별도 조직 (연구소장 라인)</h3>
     ${units.map((u, i) => `<fieldset class="fu" data-i="${i}"><legend>${u.name ? `${esc(u.name)}<span class="fu-act"><button type="button" class="btn sm" data-act="fu-up" title="위로">▲</button><button type="button" class="btn sm" data-act="fu-down" title="아래로">▼</button><button type="button" class="btn sm danger" data-act="fu-del">삭제</button></span>` : '새 조직 추가'}</legend>
       <label class="field">조직명<input name="u${i}-name" value="${esc(u.name)}" placeholder="예: SW개발실"></label>
       <label class="field">책임자<input name="u${i}-head" value="${esc(u.head || '')}" placeholder="예: 심종현 상무"></label>
-      <div class="field">명단의 팀 포함<div class="chk">${teams.map(t => `<label><input type="checkbox" name="u${i}-t-${esc(t)}"${(u.teams || []).includes(t) ? ' checked' : ''}> ${esc(t)}</label>`).join(' ')}</div></div>
+      <div class="field">포함 팀<div class="muted small" style="padding-top:8px">${u.name ? (teams.filter(t => (u.teams || []).includes(t)).map(esc).join(', ') || '없음') + ' · 위 팀 목록의 소속 라인에서 정합니다' : '저장 후 위 팀 목록에서 이 조직으로 팀을 옮길 수 있습니다'}</div></div>
       <label class="field">추가 파트명<input name="u${i}-part" value="${esc(u.part || '')}" placeholder="예: SW개발"></label>
       <label class="field" style="grid-column:span 2">추가 인원 (한 줄에 한 명 · 이름 직급)<textarea name="u${i}-members" rows="3" placeholder="이승우 수석&#10;정종의 수석">${esc(u.members || '')}</textarea></label></fieldset>`).join('')}
     <h3 class="fsec">${S.hr.length ? '팀·파트별 TO' : '팀·파트별 TO · 퇴사 · 충원'}</h3>
@@ -2745,6 +2753,8 @@ document.addEventListener('click', e => {
     case 'hr-paste': if (!need()) break; hrPasteDialog(); break;
     case 'pinfo-paste': if (!need()) break; pinfoDialog(); break;
     case 'head-edit': if (!need()) break; headDialog(d.k); break;
+    case 'ot-up': { const r = t.closest('.otr'), pv = r?.previousElementSibling; if (pv) pv.before(r); break; }
+    case 'ot-down': { const r = t.closest('.otr'), nx = r?.nextElementSibling; if (nx) nx.after(r); break; }
     case 'fu-del': { const fs = t.closest('fieldset.fu'); if (fs && confirm(`'${fs.querySelector('input').value || '이 조직'}'을(를) 삭제할까요? 저장을 눌러야 반영됩니다.`)) fs.remove(); break; }
     case 'fu-up': { const fs = t.closest('fieldset.fu'), pv = fs?.previousElementSibling; if (pv && pv.matches('fieldset.fu')) pv.before(fs); break; }
     case 'fu-down': { const fs = t.closest('fieldset.fu'), nx = fs?.nextElementSibling; if (nx && nx.matches('fieldset.fu') && nx.querySelector('.fu-act')) nx.after(fs); break; }
@@ -2959,12 +2969,23 @@ document.addEventListener('submit', e => {
       .catch(x => { btn.disabled = false; btn.textContent = '가져오기'; $('#hperr').textContent = '저장하지 못했습니다: ' + x.message; });
   } else if (f.dataset.form === 'org') {
     const o = orgCfg(); o.head = v.head.trim(); o.dev = v.dev.trim(); o.year = v.year.trim();
-    for (const t of S.config.teamOrder) if (('lead-' + t) in v) o.leaders[t] = v['lead-' + t];
-    const ex = []; for (const i of [...f.querySelectorAll('fieldset.fu')].map(x => x.dataset.i)) { const nm = v['u' + i + '-name'].trim(); if (!nm) continue;
-      ex.push({ name: nm, head: v['u' + i + '-head'].trim(), teams: S.config.teamOrder.filter(t => ('u' + i + '-t-' + t) in v), part: v['u' + i + '-part'].trim(), members: v['u' + i + '-members'].trim() }); }
+    const TR = [...f.querySelectorAll('.otr')].map(x => ({ old: x.dataset.t, i: x.dataset.i })).map(r => ({ ...r, name: v['tn-' + r.i].trim() || r.old, lead: v['tl-' + r.i], line: v['tx-' + r.i] }));
+    const nn = TR.map(r => r.name); if (new Set(nn).size !== nn.length) { toast('팀 이름이 겹칩니다', true); return; }
+    const oldEx = o.exts, ex = []; for (const i of [...f.querySelectorAll('fieldset.fu')].map(x => x.dataset.i)) { const nm = v['u' + i + '-name'].trim(); if (!nm) continue;
+      const prev = oldEx[+i] || {}; ex.push({ name: nm, head: v['u' + i + '-head'].trim(), teams: TR.filter(r => r.line && r.line === prev.name).map(r => r.name), part: v['u' + i + '-part'].trim(), members: v['u' + i + '-members'].trim() }); }
     o.exts = ex;
+    const ren = TR.filter(r => r.name !== r.old), ops = [];
+    for (const r of ren) {
+      for (const p of S.people.filter(p => p.team === r.old)) { p.team = r.name; const { id, ...doc } = p; ops.push({ path: 'people/' + id, data: doc }); }
+      delete o.leaders[r.old];
+      for (const k of Object.keys(o.to)) if (k.startsWith(r.old + '|')) { o.to[r.name + k.slice(r.old.length)] = o.to[k]; delete o.to[k]; }
+      if (o.hrStats) for (const y of Object.values(o.hrStats)) if (y && typeof y === 'object' && r.old in y) { y[r.name] = y[r.old]; delete y[r.old]; }
+    }
+    for (const r of TR) o.leaders[r.name] = r.lead;
+    S.config.teamOrder = [...nn, ...S.config.teamOrder.filter(t => !TR.some(r => r.old === t) && !nn.includes(t))];
     for (const [key, val] of Object.entries(v)) { const m = key.match(/^n-(to|out|in)-(.+)$/); if (!m) continue; const n = val === '' ? null : Math.round(+val); o.to[m[2]] = { ...(o.to[m[2]] || {}), [m[1]]: n }; }
-    saveOrg(); closeDlg(); render(); toast('조직 정보를 저장했습니다');
+    saveOrg(); if (ops.length) putBatch(ops).catch(x => toast('팀 이름 변경 저장 실패: ' + x.message, true)); rebuild(); closeDlg(); render(); toast('조직 정보를 저장했습니다');
+    if (ren.length) api('users').then(d => Promise.all((d.users || []).filter(u => ren.some(r => r.old === u.team)).map(u => api('userSave', { user: { id: u.id, name: u.name, role: u.role, active: u.active, team: ren.find(r => r.old === u.team).name, rank: u.rank } })))).catch(() => toast('계정 소속은 계정 관리에서 직접 바꿔 주세요', true));
   } else if (f.dataset.form === 'hist') {
     const id = uid('h'); const doc = { ver: v.ver, rev: +v.rev || 0, date: v.date, author: v.author, change: v.change, note: '' };
     S.history.push({ id, ...doc }); put('history/' + id, doc); render();
