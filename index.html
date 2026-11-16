@@ -495,6 +495,9 @@ body.dense .kpi .v{font-size:20px}
 body.dense .notice{padding:6px 10px}
 body.dense .toolbar{gap:8px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+.fu legend{display:flex;align-items:center;gap:10px}
+.fu-act{display:inline-flex;gap:4px;font-weight:400}
+.fu-act .btn{padding:1px 8px}
 </style>
 </head>
 <body class="dense">
@@ -522,7 +525,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.10 11:58</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.16 10:49</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -2129,8 +2132,8 @@ function orgDialog() {
     ${teams.map(t => { const TL = L.filter(p => p.team === t), cur = orgLeader(t, TL);
       return `<label class="field">${esc(t)}<select name="lead-${esc(t)}"><option value="">없음</option>${TL.map(p => `<option value="${p.id}"${cur === p ? ' selected' : ''}>${esc(p.name)} ${esc(RSHORT(p.rank))}</option>`).join('')}</select></label>`; }).join('')}
     <h3 class="fsec">별도 조직 (연구소장 라인)</h3>
-    ${units.map((u, i) => `<fieldset class="fu"><legend>${u.name ? esc(u.name) : '새 조직 추가'}</legend>
-      <label class="field">조직명${u.name ? ' (지우면 삭제)' : ''}<input name="u${i}-name" value="${esc(u.name)}" placeholder="예: SW개발실"></label>
+    ${units.map((u, i) => `<fieldset class="fu" data-i="${i}"><legend>${u.name ? `${esc(u.name)}<span class="fu-act"><button type="button" class="btn sm" data-act="fu-up" title="위로">▲</button><button type="button" class="btn sm" data-act="fu-down" title="아래로">▼</button><button type="button" class="btn sm danger" data-act="fu-del">삭제</button></span>` : '새 조직 추가'}</legend>
+      <label class="field">조직명<input name="u${i}-name" value="${esc(u.name)}" placeholder="예: SW개발실"></label>
       <label class="field">책임자<input name="u${i}-head" value="${esc(u.head || '')}" placeholder="예: 심종현 상무"></label>
       <div class="field">명단의 팀 포함<div class="chk">${teams.map(t => `<label><input type="checkbox" name="u${i}-t-${esc(t)}"${(u.teams || []).includes(t) ? ' checked' : ''}> ${esc(t)}</label>`).join(' ')}</div></div>
       <label class="field">추가 파트명<input name="u${i}-part" value="${esc(u.part || '')}" placeholder="예: SW개발"></label>
@@ -2742,6 +2745,9 @@ document.addEventListener('click', e => {
     case 'hr-paste': if (!need()) break; hrPasteDialog(); break;
     case 'pinfo-paste': if (!need()) break; pinfoDialog(); break;
     case 'head-edit': if (!need()) break; headDialog(d.k); break;
+    case 'fu-del': { const fs = t.closest('fieldset.fu'); if (fs && confirm(`'${fs.querySelector('input').value || '이 조직'}'을(를) 삭제할까요? 저장을 눌러야 반영됩니다.`)) fs.remove(); break; }
+    case 'fu-up': { const fs = t.closest('fieldset.fu'), pv = fs?.previousElementSibling; if (pv && pv.matches('fieldset.fu')) pv.before(fs); break; }
+    case 'fu-down': { const fs = t.closest('fieldset.fu'), nx = fs?.nextElementSibling; if (nx && nx.matches('fieldset.fu') && nx.querySelector('.fu-act')) nx.after(fs); break; }
     case 'hr-del': if (!need()) break; if (!confirm('이 인사 기록을 삭제할까요?')) break; S.hr = S.hr.filter(x => x.id !== d.id); put('hr/' + d.id, null); closeDlg(); hrSync(); render(); toast('삭제했습니다'); break;
     case 'hr-joinfix': if (!need()) break; { let n = 0; for (const x of S.hr) { if (hrStatus(x) !== '재직') continue; const p = hrLink(x); if (p && x.join && p.join !== x.join) { p.join = x.join; const { id, ...doc } = p; put('people/' + id, doc); n++; } } render(); toast(`${n}명의 입사일을 맞췄습니다`); break; }
     case 'org-photo': ui.orgPhoto = !ui.orgPhoto; LS.set('lab_orgphoto', ui.orgPhoto ? '1' : '0'); render(); break;
@@ -2954,7 +2960,7 @@ document.addEventListener('submit', e => {
   } else if (f.dataset.form === 'org') {
     const o = orgCfg(); o.head = v.head.trim(); o.dev = v.dev.trim(); o.year = v.year.trim();
     for (const t of S.config.teamOrder) if (('lead-' + t) in v) o.leaders[t] = v['lead-' + t];
-    const ex = []; for (let i = 0; ('u' + i + '-name') in v; i++) { const nm = v['u' + i + '-name'].trim(); if (!nm) continue;
+    const ex = []; for (const i of [...f.querySelectorAll('fieldset.fu')].map(x => x.dataset.i)) { const nm = v['u' + i + '-name'].trim(); if (!nm) continue;
       ex.push({ name: nm, head: v['u' + i + '-head'].trim(), teams: S.config.teamOrder.filter(t => ('u' + i + '-t-' + t) in v), part: v['u' + i + '-part'].trim(), members: v['u' + i + '-members'].trim() }); }
     o.exts = ex;
     for (const [key, val] of Object.entries(v)) { const m = key.match(/^n-(to|out|in)-(.+)$/); if (!m) continue; const n = val === '' ? null : Math.round(+val); o.to[m[2]] = { ...(o.to[m[2]] || {}), [m[1]]: n }; }
