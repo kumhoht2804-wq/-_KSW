@@ -533,7 +533,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.16 10:57</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.16 11:01</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -1547,6 +1547,15 @@ window.addEventListener('hashchange', () => { render(); window.scrollTo(0, 0); }
 // ---------- render ----------
 // 다시 그려도 같은 화면이면 스크롤 위치(창, 표 안쪽 가로·세로) 유지
 let lastViewKey = '';
+function orgFix() {   // 개발실장 세로선을 실제 팀 위치에 맞춤
+  const br = document.querySelector('.obr'), main = br?.querySelector('.obc.main'), ld = main?.querySelector('.olead'); if (!ld) return;
+  const ts = [...main.querySelectorAll(':scope > .oteams > .ot')]; if (!ts.length) return;
+  const mr = main.getBoundingClientRect(), cs = ts.map(t => { const r = t.getBoundingClientRect(); return r.left + r.width / 2 - mr.left; });
+  const mid = (cs[0] + cs.at(-1)) / 2, x = cs.reduce((a, c) => Math.abs(c - mid) < Math.abs(a - mid) ? c : a, cs[0]);
+  ld.style.setProperty('--x', x + 'px');
+  const hl = br.querySelector(':scope > .ohl'); if (hl) { const b = br.getBoundingClientRect(), last = [...br.querySelectorAll(':scope > .obc')].at(-1).getBoundingClientRect(); hl.style.left = (mr.left - b.left + x - .5) + 'px'; hl.style.right = (b.right - (last.left + last.width / 2) - .5) + 'px'; }
+}
+window.addEventListener('resize', () => orgFix()); try { document.fonts.ready.then(() => orgFix()); } catch { }
 function render() {
   const key = route() + '|' + ui.assessMode + '|' + ui.part + '|' + ui.eduMode + '|' + ui.eduDept + '|' + ui.setPart + '|' + !!auth;
   const same = key === lastViewKey;
@@ -1577,6 +1586,7 @@ function renderInner() {
   if ((leader || scoped) && !S.people.some(p => p.team === myTeam)) html += `<div class="notice bad">${esc(auth.user.role)} 계정의 소속이 '${esc(myTeam || '미지정')}'인데, 인원 명단에 이 소속의 인원이 없어 볼 수 있는(수정할 수 있는) 사람이 없습니다. 관리자에게 계정 소속을 명단의 팀 이름(${esc((S.config.teamOrder || []).join(', '))})과 똑같이 바꿔 달라고 하세요.</div>`;
   html += ({ assess: vAssess, education: vEdu, people: vPeople, asset: vAsset, accounts: vAccounts })[r]();
   v.innerHTML = html;
+  orgFix();
 }
 
 // ===== 종합 =====
@@ -2137,17 +2147,17 @@ function orgDialog() {
     <label class="field">개발실장<input name="dev" value="${esc(o.dev)}"></label>
     <label class="field">현황 연도<input name="year" value="${esc(o.year || String(new Date().getFullYear()))}"></label>
     <h3 class="fsec">팀 (순서 · 이름 · 팀장 · 소속 라인)</h3>
-    <div class="otl" style="grid-column:1/-1">${teams.map((t, i) => { const TL = L.filter(p => p.team === t), cur = orgLeader(t, TL), ln = (o.exts.find(u => (u.teams || []).includes(t)) || {}).name || ((o.direct || []).includes(t) ? '__dir' : '');
+    <div class="otl" style="grid-column:1/-1">${teams.map((t, i) => { const TL = L.filter(p => p.team === t), cur = orgLeader(t, TL), xi = o.exts.findIndex(u => (u.teams || []).includes(t)), ln = xi >= 0 ? 'u:' + xi : (o.direct || []).includes(t) ? '__dir' : '';
       return `<div class="otr" data-i="${i}" data-t="${esc(t)}"><span class="fu-act"><button type="button" class="btn sm" data-act="ot-up" title="위로">▲</button><button type="button" class="btn sm" data-act="ot-down" title="아래로">▼</button></span>
         <label class="field">팀 이름<input name="tn-${i}" value="${esc(t)}" required></label>
         <label class="field">팀장<select name="tl-${i}"><option value="">없음</option>${TL.map(p => `<option value="${p.id}"${cur === p ? ' selected' : ''}>${esc(p.name)} ${esc(RSHORT(p.rank))}</option>`).join('')}</select></label>
-        <label class="field">소속 라인<select name="tx-${i}"><option value="__dir"${ln === '__dir' ? ' selected' : ''}>연구소장 직속</option><option value=""${ln === '' ? ' selected' : ''}>개발실장 라인</option>${o.exts.filter(u => u.name).map(u => `<option${u.name === ln ? ' selected' : ''}>${esc(u.name)}</option>`).join('')}</select></label>
+        <label class="field">소속 라인<select name="tx-${i}"><option value="__dir"${ln === '__dir' ? ' selected' : ''}>연구소장 직속</option><option value=""${ln === '' ? ' selected' : ''}>개발실장 라인</option>${units.map((u, ui2) => `<option value="u:${ui2}"${'u:' + ui2 === ln ? ' selected' : ''}${u.name ? '' : ' hidden'}>${esc(u.name)}</option>`).join('')}</select></label>
         <span class="otn muted small">${TL.length}명</span></div>`; }).join('')}</div>
     <h3 class="fsec">별도 조직 (연구소장 라인)</h3>
     ${units.map((u, i) => `<fieldset class="fu" data-i="${i}"><legend>${u.name ? `${esc(u.name)}<span class="fu-act"><button type="button" class="btn sm" data-act="fu-up" title="위로">▲</button><button type="button" class="btn sm" data-act="fu-down" title="아래로">▼</button><button type="button" class="btn sm danger" data-act="fu-del">삭제</button></span>` : '새 조직 추가'}</legend>
       <label class="field">조직명<input name="u${i}-name" value="${esc(u.name)}" placeholder="예: SW개발실"></label>
       <label class="field">책임자<input name="u${i}-head" value="${esc(u.head || '')}" placeholder="예: 심종현 상무"></label>
-      <div class="field">포함 팀<div class="muted small" style="padding-top:8px">${u.name ? (teams.filter(t => (u.teams || []).includes(t)).map(esc).join(', ') || '없음') + ' · 위 팀 목록의 소속 라인에서 정합니다' : '저장 후 위 팀 목록에서 이 조직으로 팀을 옮길 수 있습니다'}</div></div>
+      <div class="field">포함 팀<div class="muted small" style="padding-top:8px">${u.name ? (teams.filter(t => (u.teams || []).includes(t)).map(esc).join(', ') || '없음') + ' · 위 팀 목록의 소속 라인에서 정합니다' : '이름을 쓰면 위 팀 목록의 소속 라인에서 고를 수 있습니다'}</div></div>
       <label class="field">추가 파트명<input name="u${i}-part" value="${esc(u.part || '')}" placeholder="예: SW개발"></label>
       <label class="field" style="grid-column:span 2">추가 인원 (한 줄에 한 명 · 이름 직급)<textarea name="u${i}-members" rows="3" placeholder="이승우 수석&#10;정종의 수석">${esc(u.members || '')}</textarea></label></fieldset>`).join('')}
     <h3 class="fsec">${S.hr.length ? '팀·파트별 TO' : '팀·파트별 TO · 퇴사 · 충원'}</h3>
@@ -2861,6 +2871,7 @@ document.addEventListener('change', e => {
 });
 let qTimer;
 document.addEventListener('input', e => {
+  { const m = e.target.name?.match(/^u(\d+)-name$/); if (m && e.target.closest('form[data-form=org]')) for (const op of document.querySelectorAll(`form[data-form=org] select[name^=tx-] option[value="u:${m[1]}"]`)) { op.textContent = e.target.value.trim(); op.hidden = !e.target.value.trim(); } }
   if (e.target.dataset.act === 'f-asq') { clearTimeout(qTimer); const v = e.target.value; qTimer = setTimeout(() => { ui.asQ = v; const pos = e.target.selectionStart; render(); const el = document.querySelector('[data-act="f-asq"]'); if (el) { el.focus(); el.setSelectionRange(pos, pos); } }, 250); }
   if (e.target.dataset.act === 'f-seatq') { clearTimeout(qTimer); const v = e.target.value; qTimer = setTimeout(() => { ui.seatQ = v; const pos = e.target.selectionStart; render(); const el = document.querySelector('[data-act="f-seatq"]'); if (el) { el.focus(); el.setSelectionRange(pos, pos); } }, 200); }
   if (e.target.dataset.act === 'f-hrq') { clearTimeout(qTimer); const v = e.target.value; qTimer = setTimeout(() => { ui.hrQ = v; const pos = e.target.selectionStart; render(); const el = document.querySelector('[data-act="f-hrq"]'); if (el) { el.focus(); el.setSelectionRange(pos, pos); } }, 250); }
@@ -2976,7 +2987,7 @@ document.addEventListener('submit', e => {
     const TR = [...f.querySelectorAll('.otr')].map(x => ({ old: x.dataset.t, i: x.dataset.i })).map(r => ({ ...r, name: v['tn-' + r.i].trim() || r.old, lead: v['tl-' + r.i], line: v['tx-' + r.i] }));
     const nn = TR.map(r => r.name); if (new Set(nn).size !== nn.length) { toast('팀 이름이 겹칩니다', true); return; }
     const oldEx = o.exts, ex = []; for (const i of [...f.querySelectorAll('fieldset.fu')].map(x => x.dataset.i)) { const nm = v['u' + i + '-name'].trim(); if (!nm) continue;
-      const prev = oldEx[+i] || {}; ex.push({ name: nm, head: v['u' + i + '-head'].trim(), teams: TR.filter(r => r.line && r.line === prev.name).map(r => r.name), part: v['u' + i + '-part'].trim(), members: v['u' + i + '-members'].trim() }); }
+      ex.push({ name: nm, head: v['u' + i + '-head'].trim(), teams: TR.filter(r => r.line === 'u:' + i).map(r => r.name), part: v['u' + i + '-part'].trim(), members: v['u' + i + '-members'].trim() }); }
     o.exts = ex; o.direct = TR.filter(r => r.line === '__dir').map(r => r.name);
     const ren = TR.filter(r => r.name !== r.old), ops = [];
     for (const r of ren) {
