@@ -600,7 +600,7 @@ body.nocap input,body.nocap textarea,body.nocap [contenteditable="true"]{-webkit
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">금호HT 모듈개발연구소 · v2026.11.17 18:46</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">금호HT 모듈개발연구소 · v2026.11.17 18:48</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -1959,18 +1959,16 @@ document.addEventListener('dragstart', e => { if (document.body.classList.contai
 
 // ---------- TASK 현황 (주간 지연 · 수기 입력) ----------
 const TK_DEPTS = ['연구 기획', '연구소 기구', '연구소 HW', '연구소 PCB', '연구소 SW', '연구소 개발', '모듈생산', '모듈기술', '품질팀', '영업팀', '면광원생산팀', '광학설계팀'];
-const tkDate = k => { const a = String(k).split('-').map(Number); return new Date(a[0], a[1] - 1, a[2]); };
-const tkKey = d => { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() - (x.getDay() + 6) % 7); return x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0'); };
-const tkShift = (k, n) => { const d = tkDate(k); d.setDate(d.getDate() + n); return tkKey(d); };
-function tkInfo(k) { const mon = tkDate(k), thu = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + 3), sun = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + 6);
-  return { month: thu.getFullYear() * 12 + thu.getMonth(), label: (thu.getMonth() + 1) + '월 ' + (Math.floor((thu.getDate() - 1) / 7) + 1) + '주차', range: (mon.getMonth() + 1) + '/' + mon.getDate() + '~' + (sun.getMonth() + 1) + '/' + sun.getDate() }; }
+const tkKey = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+const tkShift = (k, n) => { const [y, m] = String(k).split('-').map(Number); return tkKey(new Date(y, m - 1 + n, 1)); };
+function tkInfo(k) { const [y, m] = String(k).split('-').map(Number); return { label: m + '월', range: y + '년' }; }
 function tkData() {
-  if (!S.dev.task) { const cur = tkKey(new Date()), m = tkInfo(cur).month, w = []; let k = cur; while (tkInfo(k).month === m) { w.unshift(k); k = tkShift(k, -7); } S.dev.task = { weeks: w, depts: TK_DEPTS.slice(), val: {} }; }
-  const T = S.dev.task; T.weeks = T.weeks || []; T.depts = T.depts || []; T.val = T.val || {}; return T;
+  if (!S.dev.taskm) { const cur = tkKey(new Date()), w = []; for (let i = 5; i >= 0; i--) w.push(tkShift(cur, -i)); S.dev.taskm = { weeks: w, depts: TK_DEPTS.slice(), val: {} }; }
+  const T = S.dev.taskm; T.weeks = T.weeks || []; T.depts = T.depts || []; T.val = T.val || {}; return T;
 }
 let tkTimer = null;
-const tkSave = now => { clearTimeout(tkTimer); const go = () => put('dev/task', S.dev.task); if (now) go(); else tkTimer = setTimeout(go, 600); };
-const tkGet = (w, d) => { const v = (S.dev.task.val[w] || {})[d]; return v === undefined || v === null || v === '' ? null : v; };
+const tkSave = now => { clearTimeout(tkTimer); const go = () => put('dev/taskm', S.dev.taskm); if (now) go(); else tkTimer = setTimeout(go, 600); };
+const tkGet = (w, d) => { const v = (tkData().val[w] || {})[d]; return v === undefined || v === null || v === '' ? null : v; };
 function tkColor(i, n) { const a = .32 + .68 * (n <= 1 ? 1 : i / (n - 1)); return `rgba(229,72,77,${a.toFixed(2)})`; }
 function tkChartSvg(T, W) {
   const D = T.depts, Wk = T.weeks, n = D.length, m = Wk.length, H = 340, L = 44, R = 10, Tp = 24, B = (W - L - R) / Math.max(1, n) < 70 ? 58 : 26, ih = H - Tp - B;
@@ -1982,7 +1980,7 @@ function tkChartSvg(T, W) {
   const rot = gw < 70, labels = [];
   D.forEach((d, i) => { const cx = L + gw * i + gw / 2, x0 = cx - bw * m / 2, pts = [];
     Wk.forEach((w, j) => { const v = tkGet(w, d); if (v == null) return; const x = x0 + bw * j, yy = y(v);
-      s += `<rect class="dvbar" x="${(x + .5).toFixed(1)}" y="${yy.toFixed(1)}" width="${(bw - 1).toFixed(1)}" height="${(Tp + ih - yy).toFixed(1)}" rx="2.5" fill="${tkColor(j, m)}" style="--d:${j * 90 + i * 15}ms"><title>${esc(d)} · ${tkInfo(w).label}: ${v}건</title></rect>`;
+      s += `<rect class="dvbar" x="${(x + .5).toFixed(1)}" y="${yy.toFixed(1)}" width="${(bw - 1).toFixed(1)}" height="${(Tp + ih - yy).toFixed(1)}" rx="2.5" fill="${tkColor(j, m)}" style="--d:${j * 90 + i * 15}ms"><title>${esc(d)} · ${tkInfo(w).range} ${tkInfo(w).label}: ${v}건</title></rect>`;
       pts.push([x + bw / 2, yy]); labels.push([x + bw / 2, yy - 6, v]); });
     if (pts.length > 1) s += `<polyline class="dvln" points="${pts.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ')}" fill="none" stroke="#2f5bea" stroke-width="2" style="--d:${500 + i * 30}ms"/>`;
     pts.forEach((p, k) => { s += `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${k === pts.length - 1 ? 3.6 : 2.8}" fill="${k === pts.length - 1 ? '#2f5bea' : 'var(--surface)'}" stroke="${k === pts.length - 1 ? 'var(--surface)' : '#2f5bea'}" stroke-width="1.6"/>`; });
@@ -1994,12 +1992,12 @@ function dvTaskView() {
   const T = tkData(), cur = tkKey(new Date()), ed = admin && DV.taskEdit, W = T.weeks, D = T.depts;
   const sum = w => { let t = 0, any = false; D.forEach(d => { const v = tkGet(w, d); if (v != null) { t += v; any = true; } }); return any ? t : null; };
   const last = W.length ? sum(W[W.length - 1]) : null, prev = W.length > 1 ? sum(W[W.length - 2]) : null, diff = last != null && prev != null ? last - prev : null;
-  const lg = `<div class="dvlg">${W.map((w, j) => `<span><i style="background:${tkColor(j, W.length)}"></i>${tkInfo(w).label}</span>`).join('')}<span><i style="background:#2f5bea;height:3px;border-radius:2px"></i>주차별 추이</span></div>`;
-  let h = `<div class="dvkpis"><div class="dvk"><span>${W.length ? tkInfo(W[W.length - 1]).label + ' 지연' : '지연'}</span><b class="cu">${last ?? '–'}</b></div><div class="dvk"><span>전주</span><b class="cu">${prev ?? '–'}</b></div><div class="dvk"><span>전주 대비</span><b style="color:${diff > 0 ? 'var(--bad)' : diff < 0 ? 'var(--ok)' : 'inherit'}">${diff == null ? '–' : (diff > 0 ? '▲' : diff < 0 ? '▼' : '') + Math.abs(diff)}</b></div><div class="dvk"><span>부서</span><b class="cu">${D.length}</b></div></div>`;
+  const lg = `<div class="dvlg">${W.map((w, j) => `<span><i style="background:${tkColor(j, W.length)}"></i>${tkInfo(w).label}</span>`).join('')}<span><i style="background:#2f5bea;height:3px;border-radius:2px"></i>월별 추이</span></div>`;
+  let h = `<div class="dvkpis"><div class="dvk"><span>${W.length ? tkInfo(W[W.length - 1]).label + ' 지연' : '지연'}</span><b class="cu">${last ?? '–'}</b></div><div class="dvk"><span>전월</span><b class="cu">${prev ?? '–'}</b></div><div class="dvk"><span>전월 대비</span><b style="color:${diff > 0 ? 'var(--bad)' : diff < 0 ? 'var(--ok)' : 'inherit'}">${diff == null ? '–' : (diff > 0 ? '▲' : diff < 0 ? '▼' : '') + Math.abs(diff)}</b></div><div class="dvk"><span>부서</span><b class="cu">${D.length}</b></div></div>`;
   h += `<section class="card dvcard"><div class="head"><h2>부서별 업무(지연) 현황</h2>${admin ? `<button type="button" class="btn sm" data-act="dv-kedit">${ed ? '완료' : '편집'}</button>` : ''}<span class="spacer"></span><span class="sub">단위: 건</span></div><div class="dvbody">${dvChart(Wd => tkChartSvg(T, Wd), 340)}${lg}</div></section>`;
-  const th = W.map((w, j) => { const f = tkInfo(w); return `<th class="${w === cur ? 'dvcur' : ''}">${f.label}${ed ? `<button type="button" class="tkx" data-act="dv-kwdel" data-j="${j}" title="이 주 삭제">×</button>` : ''}<br><small class="muted">${f.range}</small></th>`; }).join('');
+  const th = W.map((w, j) => { const f = tkInfo(w); return `<th class="${w === cur ? 'dvcur' : ''}">${f.label}${ed ? `<button type="button" class="tkx" data-act="dv-kwdel" data-j="${j}" title="이 달 삭제">×</button>` : ''}<br><small class="muted">${f.range}</small></th>`; }).join('');
   const rows = D.map((d, i) => `<tr><td class="l">${ed ? `<input class="ci" data-act="dv-kd" data-i="${i}" value="${esc(d)}" style="width:120px"><button type="button" class="tkx" data-act="dv-kddel" data-i="${i}" title="부서 삭제">×</button>` : `<b>${esc(d)}</b>`}</td>${W.map((w, j) => { const v = tkGet(w, d); return ed ? `<td><input class="ci onum tkin" data-act="dv-kv" data-j="${j}" data-i="${i}" value="${v ?? ''}" inputmode="numeric"></td>` : `<td class="num${w === cur ? ' dvcur' : ''}">${v ?? '–'}</td>`; }).join('')}</tr>`).join('');
-  h += `<section class="card"><div class="head"><h2>주차별 지연</h2>${ed ? '<span class="spacer"></span><button type="button" class="btn sm" data-act="dv-kwprev">＋ 이전 주</button><button type="button" class="btn sm" data-act="dv-kwnext">＋ 다음 주</button><button type="button" class="btn sm" data-act="dv-kdadd">＋ 부서</button>' : ''}</div>
+  h += `<section class="card"><div class="head"><h2>월별 지연</h2>${ed ? '<span class="spacer"></span><button type="button" class="btn sm" data-act="dv-kwprev">＋ 이전 달</button><button type="button" class="btn sm" data-act="dv-kwnext">＋ 다음 달</button><button type="button" class="btn sm" data-act="dv-kdadd">＋ 부서</button><button type="button" class="btn sm primary" data-act="dv-kpaste">표 붙여넣기</button>' : ''}</div>
     <div class="tw free"><table class="dvtbl tktbl"><thead><tr><th style="text-align:left;min-width:140px">부서</th>${th}</tr></thead><tbody>${rows}<tr class="sum"><td class="l">합계</td>${W.map(w => `<td class="num${w === cur ? ' dvcur' : ''}">${sum(w) ?? '–'}</td>`).join('')}</tr></tbody></table></div></section>`;
   return h;
 }
@@ -2007,10 +2005,13 @@ document.addEventListener('click', e => {
   const t = e.target.closest('[data-act^="dv-k"]'); if (!t || !admin) return;
   const a = t.dataset.act, T = tkData();
   if (a === 'dv-kedit') { DV.taskEdit = !DV.taskEdit; if (!DV.taskEdit) tkSave(true); render(); return; }
-  if (a === 'dv-kwprev') T.weeks.unshift(tkShift(T.weeks[0] || tkKey(new Date()), -7));
-  else if (a === 'dv-kwnext') T.weeks.push(T.weeks.length ? tkShift(T.weeks[T.weeks.length - 1], 7) : tkKey(new Date()));
-  else if (a === 'dv-kwdel') { const w = T.weeks[+t.dataset.j]; if (!confirm(tkInfo(w).label + ' 기록을 삭제할까요?')) return; T.weeks.splice(+t.dataset.j, 1); delete T.val[w]; }
+  if (a === 'dv-kwprev') T.weeks.unshift(tkShift(T.weeks[0] || tkKey(new Date()), -1));
+  else if (a === 'dv-kwnext') T.weeks.push(T.weeks.length ? tkShift(T.weeks[T.weeks.length - 1], 1) : tkKey(new Date()));
+  else if (a === 'dv-kwdel') { const w = T.weeks[+t.dataset.j]; if (!confirm(tkInfo(w).range + ' ' + tkInfo(w).label + ' 기록을 삭제할까요?')) return; T.weeks.splice(+t.dataset.j, 1); delete T.val[w]; }
   else if (a === 'dv-kdadd') T.depts.push('새 부서');
+  else if (a === 'dv-kpaste') { openDlg(`<h2>TASK 현황 붙여넣기</h2><div class="form" style="grid-template-columns:1fr"><label class="field">첫 줄: 부서 · 8월 · 9월 · 10월 … / 아래 줄: 부서별 지연 건수<textarea id="tkText" rows="12" style="width:100%;font:12px var(--font-num);border:1px solid var(--line);border-radius:6px;padding:8px" placeholder="여기에 Ctrl+V"></textarea></label><div class="err" id="tkErr"></div><div class="actions"><span class="spacer"></span><button type="button" class="btn" data-act="close">취소</button><button type="button" class="btn primary" data-act="dv-kpsave">가져오기</button></div></div>`, true); setTimeout(() => $('#tkText')?.focus(), 30); return; }
+  else if (a === 'dv-kpsave') { const r = tkParse($('#tkText').value); if (r.err) { $('#tkErr').textContent = r.err; return; }
+    if (!confirm(`${r.depts.length}개 부서 · ${r.weeks.length}개월로 TASK 현황을 바꿀까요?`)) return; S.dev.taskm = r.T; closeDlg(); tkSave(true); render(); toast(`${r.depts.length}개 부서 · ${r.weeks.length}개월 반영`); return; }
   else if (a === 'dv-kddel') { const d = T.depts[+t.dataset.i]; if (!confirm(`'${d}' 부서를 삭제할까요?`)) return; T.depts.splice(+t.dataset.i, 1); Object.values(T.val).forEach(o => delete o[d]); }
   else return;
   tkSave(true); render();
@@ -2029,6 +2030,22 @@ document.addEventListener('paste', e => {
   raw.replace(/\r/g, '').replace(/\n+$/, '').split('\n').forEach((line, ri) => { const d = T.depts[i0 + ri]; if (!d) return; line.split('\t').forEach((c, ci) => { const w = T.weeks[j0 + ci]; if (!w) return; const s = c.replace(/[,\s]/g, ''), v = s === '' ? null : Math.round(Number(s)); T.val[w] = T.val[w] || {}; if (v === null || !isFinite(v)) delete T.val[w][d]; else T.val[w][d] = v; n++; }); });
   tkSave(true); render(); toast(`${n}칸 붙여넣기`);
 });
+
+function tkParse(text) {
+  const R = dvTSV(text).map(r => r.map(c => String(c).trim())).filter(r => r.some(Boolean));
+  const hi = R.findIndex(r => r.filter(c => /^(\d{2,4}[.\-\/년]\s*)?\d{1,2}\s*월?$/.test(c.replace(/\s/g, ''))).length >= 1);
+  if (hi < 0) return { err: '첫 줄에 월(예: 8월, 2026-08)이 있어야 합니다.' };
+  const H = R[hi], now = new Date(), cy = now.getFullYear(), cm = now.getMonth() + 1, cols = [];
+  H.forEach((c, i) => { const t = c.replace(/\s/g, ''); let m = t.match(/^(\d{2,4})[.\-\/년](\d{1,2})월?$/), y, mo;
+    if (m) { y = +m[1]; if (y < 100) y += 2000; mo = +m[2]; } else if ((m = t.match(/^(\d{1,2})월?$/)) && i > 0) { mo = +m[1]; y = mo <= cm ? cy : cy - 1; } else return;
+    if (mo >= 1 && mo <= 12) cols.push({ i, k: y + '-' + String(mo).padStart(2, '0') }); });
+  if (!cols.length) return { err: '월 칸을 찾지 못했습니다.' };
+  const T = { weeks: [...new Set(cols.map(c => c.k))].sort(), depts: [], val: {} };
+  R.slice(hi + 1).forEach(r => { const d = r[0]; if (!d || /^(합계|계|total)$/i.test(d)) return; if (!T.depts.includes(d)) T.depts.push(d);
+    cols.forEach(c => { const s = String(r[c.i] ?? '').replace(/[,\s]/g, ''); if (s === '' || s === '-') return; const v = Math.round(Number(s)); if (!isFinite(v)) return; (T.val[c.k] = T.val[c.k] || {})[d] = v; }); });
+  if (!T.depts.length) return { err: '부서 줄이 없습니다.' };
+  return { T, depts: T.depts, weeks: T.weeks };
+}
 
 // ---------- routing ----------
 const ROUTES = ['people', 'asset', 'education', 'assess', 'dev', 'accounts'];
