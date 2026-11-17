@@ -527,7 +527,7 @@ body.dense .toolbar{gap:8px}
 .dvcard.s2{grid-column:span 2}.dvcard.s3{grid-column:span 3}.dvcard.s4{grid-column:span 4}
 .dvcard{gap:6px;padding:12px 14px}.dvcard .head h2{font-size:14px}
 .dvbody{display:flex;flex-direction:column;gap:6px;min-height:0;flex:1;justify-content:center}
-.dvtr{display:grid;grid-template-columns:minmax(0,3fr) minmax(200px,2fr);gap:18px;align-items:center}
+.dvtr{display:flex;flex-direction:column;gap:10px}
 .dvtrc .dvlg{justify-content:flex-start;padding-left:40px}
 @media(max-width:1300px){.dvgrid6{grid-template-columns:repeat(2,minmax(0,1fr))}.dvcard.s2,.dvcard.s3,.dvcard.s4{grid-column:span 1}.dvcard.s4{grid-column:1/-1}.dvkpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:900px){.dvwrap{grid-template-columns:1fr}.dvside{position:static;min-height:0}.dvside nav{flex-direction:row}.dvgrid6{grid-template-columns:1fr}.dvtr{grid-template-columns:1fr}}
@@ -1737,9 +1737,9 @@ function dvBarsSvg(items, o, W) {
     s += rot ? `<text transform="translate(${cx.toFixed(1)} ${T + ih + 12}) rotate(-40)" class="dvx" text-anchor="end">${esc(x.l)}</text>` : `<text x="${cx.toFixed(1)}" y="${T + ih + 16}" class="dvx" text-anchor="middle">${esc(x.l)}</text>`; });
   return s + '</svg>';
 }
-function dvLine(T) { return dvChart(W => dvLineSvg(T, W), 210) + `<div class="dvlg">${T.series.map((se, i) => `<span><i style="background:${DV_TCOL[i % DV_TCOL.length]};border-radius:50%"></i>${esc(se.name)}</span>`).join('')}</div>`; }
+function dvLine(T) { return dvChart(W => dvLineSvg(T, W), 190) + `<div class="dvlg">${T.series.map((se, i) => `<span><i style="background:${DV_TCOL[i % DV_TCOL.length]};border-radius:50%"></i>${esc(se.name)}</span>`).join('')}</div>`; }
 function dvLineSvg(T, W) {
-  const m = T.months, n = m.length, H = 210, L = 40, R = 16, Tp = 22, B = 26, ih = H - Tp - B;
+  const m = T.months, n = m.length, H = 190, L = 40, R = 16, Tp = 22, B = 26, ih = H - Tp - B;
   const all = T.series.flatMap(s => s.values.filter(v => v != null)), ax = dvAxis(Math.max(1, ...all));
   const x = j => L + (n <= 1 ? (W - L - R) / 2 : (W - L - R) * (j + .5) / n), y = v => Tp + ih - v / ax.top * ih;
   let s = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" class="dvsvg">`;
