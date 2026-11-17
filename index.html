@@ -507,12 +507,39 @@ body.dense .toolbar{gap:8px}
 .fu-act{display:inline-flex;gap:4px;font-weight:400}
 .fu-act .btn{padding:1px 8px}
 
-.dvgrid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
-@media(max-width:1200px){.dvgrid3{grid-template-columns:1fr 1fr}}@media(max-width:760px){.dvgrid3{grid-template-columns:1fr}}
-.dvcard{gap:8px}.dvcard .head h2{font-size:14px}.dvbody{display:flex;flex-direction:column;gap:8px;min-height:0;flex:1;justify-content:center}
+.dvwrap{display:grid;grid-template-columns:220px minmax(0,1fr);gap:16px;align-items:start}
+.dvside{position:sticky;top:12px;background:#1c2536;color:#c9d1df;border-radius:var(--r);padding:20px 12px 14px;display:flex;flex-direction:column;gap:14px;min-height:calc(100vh - 140px)}
+.dvbrand{color:#fff;font-size:17px;font-weight:700;line-height:1.35;padding:0 8px 14px;border-bottom:1px solid rgba(255,255,255,.1)}
+.dvside nav{display:flex;flex-direction:column;gap:3px}
+.dvnav{display:flex;gap:10px;align-items:center;width:100%;border:0;background:none;color:#c9d1df;font:600 13.5px var(--font-body);padding:11px 12px;border-radius:9px;cursor:pointer;text-align:left}
+.dvnav span{width:16px;text-align:center;opacity:.85}.dvnav:hover{background:rgba(255,255,255,.07);color:#fff}
+.dvnav.on{background:#2f5bea;color:#fff;box-shadow:0 4px 12px rgba(47,91,234,.35)}
+.dvopt{display:flex;flex-direction:column;gap:6px;font-size:11.5px;color:#8f9bb0;padding:0 6px}
+.dvopt select{width:100%;height:32px;background:#26324a;color:#fff;border:1px solid #34425f}
+.dvmeta{margin-top:auto;font-size:11.5px;color:#8f9bb0;line-height:1.6;padding:12px 6px 0;border-top:1px solid rgba(255,255,255,.08)}.dvmeta b{color:#fff;font:700 15px var(--font-num);margin-right:2px}
+.dvwarn{color:#ffb4b4}.dvpaste{width:100%}
+.dvmain{display:flex;flex-direction:column;gap:12px;min-width:0}
+.dvkpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.dvk{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;border-left:4px solid #2f5bea}
+.dvk span{width:100%;font-size:12px;color:var(--muted);font-weight:600}.dvk b{font:800 26px/1.1 var(--font-num)}.dvk em{font-style:normal;font-size:12px;color:var(--muted)}
+.dvgrid6{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
+.dvcard.s2{grid-column:span 2}.dvcard.s3{grid-column:span 3}.dvcard.s4{grid-column:span 4}
+.dvcard{gap:8px;min-height:300px}.dvcard .head h2{font-size:14px}
+.dvbody{display:flex;flex-direction:column;gap:8px;min-height:0;flex:1;justify-content:center}
+.dvtr{display:grid;grid-template-columns:minmax(0,3fr) minmax(220px,2fr);gap:16px;align-items:center}
+@media(max-width:1300px){.dvgrid6{grid-template-columns:repeat(2,minmax(0,1fr))}.dvcard.s2,.dvcard.s3,.dvcard.s4{grid-column:span 1}.dvcard.s4{grid-column:1/-1}.dvkpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:900px){.dvwrap{grid-template-columns:1fr}.dvside{position:static;min-height:0}.dvside nav{flex-direction:row}.dvgrid6{grid-template-columns:1fr}.dvtr{grid-template-columns:1fr}}
+.dvhero{background:linear-gradient(120deg,#1c2536 0%,#24407a 60%,#2f5bea 100%);color:#fff;border-radius:var(--r);padding:26px 28px;display:flex;align-items:center;gap:24px;flex-wrap:wrap;justify-content:space-between}
+.dvh1{display:flex;flex-direction:column;gap:4px}.dvhk{font-size:13px;font-weight:600;color:#c8d4ef;letter-spacing:.3px}
+.dvhv{display:flex;align-items:baseline;gap:6px}.dvhv b{font:800 46px/1 var(--font-num);letter-spacing:-1px}.dvhv em{font-style:normal;font-size:20px;font-weight:700;color:#dfe6f7}
+.dvhs{font-size:12px;color:#aebbd8}
+.dvhcs{display:grid;grid-template-columns:repeat(4,minmax(96px,1fr));gap:10px}
+.dvhc{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16);border-radius:10px;padding:10px 14px;display:flex;align-items:baseline;gap:5px;flex-wrap:wrap}
+.dvhc span{width:100%;font-size:12px;font-weight:700;color:#c8d4ef}.dvhc b{font:800 24px/1.1 var(--font-num)}.dvhc em{font-style:normal;font-size:11.5px;color:#c8d4ef}
+
 .dvsvg{width:100%;height:auto;display:block;overflow:visible}
-.dvd{display:grid;grid-template-columns:minmax(150px,200px) 1fr;gap:12px;align-items:center}
-.dvd .dvsvg{max-width:200px;margin:auto}
+.dvd{display:grid;grid-template-columns:minmax(140px,180px) minmax(0,1fr);gap:14px;align-items:center}
+.dvd .dvsvg{max-width:180px;margin:auto}
 .dvl{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;font-size:12px;min-width:0}
 .dvl li{display:grid;grid-template-columns:10px 1fr auto 46px;gap:6px;align-items:center}
 .dvl i,.dvlg i{width:10px;height:10px;border-radius:3px;display:inline-block}
@@ -529,7 +556,7 @@ body.dense .toolbar{gap:8px}
 .dvtrend{width:100%;font-size:12px}.dvtrend th,.dvtrend td{padding:4px 6px;text-align:center}.dvtrend td.l{text-align:left;white-space:nowrap}
 .dvtrend.ed input.ci{width:58px;height:26px;text-align:center}.dvdot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:middle}
 .dvtbl td.l{text-align:left}.dvtbl tr.sum td{background:var(--sunk);font-weight:700}
-.dvsumw{background:#fff;padding:10px;border-radius:6px;border:1px solid var(--line)}
+.dvsumw{background:#fff;padding:14px;border-radius:6px;border:1px solid var(--line);display:flex;justify-content:center}
 </style>
 </head>
 <body class="dense">
@@ -558,7 +585,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.17 14:21</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.17 14:33</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -1531,8 +1558,8 @@ function vAccounts() {
     </tbody></table></div>${teamList()}<p class="muted small">팀장·파트장·보기는 소속을 인원 명단의 팀 이름과 똑같이 맞춰 주세요.</p>` : '<p class="muted small">대기 중인 가입 신청이 없습니다.</p>'}</section>`;
   h += `<section class="card"><div class="head"><h2>계정 관리</h2><span class="sub">관리자 ${cnt('관리자')} · 연구소장 ${cnt('연구소장')} · 개발실장 ${cnt('개발실장') + cnt('편집')} · 팀장 ${cnt('팀장')} · 파트장 ${cnt('파트장')} · 보기 ${cnt('보기')}</span><span class="spacer"></span><button type="button" class="btn primary" data-act="acct-edit">계정 직접 추가</button></div>
     <div class="chk">${Object.entries(ROLE_DESC).map(([r, d]) => `<span class="tag">${r} · ${d}</span>`).join('')}</div>
-    <div class="tw free"><table><thead><tr><th>아이디</th><th>이름</th><th>부서</th><th>직급</th><th>역할</th><th>상태</th><th>가입일</th><th>마지막 로그인</th><th style="width:190px"></th></tr></thead><tbody>
-    ${act.map(u => `<tr><td class="num">${esc(u.id)}${u.id === auth.user.id ? ' <span class="tag">나</span>' : ''}</td><td><b>${esc(u.name)}</b></td><td>${esc(u.team || '–')}${['팀장', '파트장', '보기'].includes(u.role) && !(S.config?.teamOrder || []).includes(u.team) ? ' <span class="tag bad" title="인원 명단의 팀 이름과 달라 수정 권한이 작동하지 않습니다">명단과 다름</span>' : ''}</td><td>${esc(u.rank || '–')}</td><td><span class="tag ${u.role === '관리자' ? 'ok' : ''}">${esc(u.role)}</span></td><td>${u.active ? '<span class="tag ok">사용</span>' : '<span class="tag bad">중지</span>'}</td><td class="num muted">${esc(String(u.created).slice(0, 10))}</td><td class="num muted">${esc(u.lastLogin || '–')}</td>
+    <div class="tw free"><table><thead><tr><th>아이디</th><th>이름</th><th>부서</th><th>직급</th><th>역할</th><th>개발 현황</th><th>상태</th><th>가입일</th><th>마지막 로그인</th><th style="width:190px"></th></tr></thead><tbody>
+    ${act.map(u => `<tr><td class="num">${esc(u.id)}${u.id === auth.user.id ? ' <span class="tag">나</span>' : ''}</td><td><b>${esc(u.name)}</b></td><td>${esc(u.team || '–')}${['팀장', '파트장', '보기'].includes(u.role) && !(S.config?.teamOrder || []).includes(u.team) ? ' <span class="tag bad" title="인원 명단의 팀 이름과 달라 수정 권한이 작동하지 않습니다">명단과 다름</span>' : ''}</td><td>${esc(u.rank || '–')}</td><td><span class="tag ${u.role === '관리자' ? 'ok' : ''}">${esc(u.role)}</span></td><td class="c"><input type="checkbox" data-act="acct-dev" data-id="${esc(u.id)}"${u.role === '관리자' || u.dev ? ' checked' : ''}${u.role === '관리자' ? ' disabled title="관리자는 항상 볼 수 있습니다"' : ''}></td><td>${u.active ? '<span class="tag ok">사용</span>' : '<span class="tag bad">중지</span>'}</td><td class="num muted">${esc(String(u.created).slice(0, 10))}</td><td class="num muted">${esc(u.lastLogin || '–')}</td>
       <td class="r">${u.id === auth.user.id ? '' : `<button type="button" class="btn sm" data-act="acct-edit" data-id="${esc(u.id)}">수정</button> <button type="button" class="btn sm" data-act="acct-toggle" data-id="${esc(u.id)}">${u.active ? '중지' : '사용'}</button> <button type="button" class="btn sm danger" data-act="acct-del" data-id="${esc(u.id)}">삭제</button>`}</td></tr>`).join('')}
     </tbody></table></div></section>
     <section class="card"><div class="head"><h2>엑셀 잠금 비밀번호</h2><span class="tag ${ui.lockSet ? 'ok' : 'bad'}">${ui.lockSet ? '설정됨' : '미설정 · 잠금 없이 내보내짐'}</span><span class="spacer"></span><button type="button" class="btn" data-act="lockpw">${ui.lockSet ? '변경' : '설정'}</button></div>
@@ -1562,7 +1589,7 @@ function confirmDlg(msg, okLabel, fn) {
 }
 
 // ===== 연구소 개발 현황 (개발 차종 현황 · 개발 현황 요약표) =====
-const canDev = () => admin || director || viewAll;
+const canDev = () => admin || !!(auth && auth.user && auth.user.dev);
 const DV = { mode: 'car', basis: 'item', sort: 'sales', q: '', trendEdit: false };
 const DV_FACT = ['광주공장', '천진공장', '베트남공장', '인도공장'];
 const DV_COLORS = ['#5B8FF9', '#61DDAA', '#F6BD16', '#E8684A', '#9270CA', '#78D3F8', '#F08BB4', '#A0B4C8'];
@@ -1663,7 +1690,7 @@ function dvDonut(labels, values, o = {}) {
 function dvAxis(max) { if (max <= 0) return { top: 1, step: 1 }; const raw = max * 1.15 / 4, p = Math.pow(10, Math.floor(Math.log10(raw))), m = raw / p, st = (m <= 1 ? 1 : m <= 2 ? 2 : m <= 2.5 ? 2.5 : m <= 5 ? 5 : 10) * p; return { top: st * 4, step: st }; }
 function dvBars(items, o = {}) {
   if (!items.length) return '<div class="empty">데이터 없음</div>';
-  const n = items.length, bw = 40, W = Math.max(360, n * bw + 60), H = 230, L = 46, B = 64, T = 22, ih = H - B - T, ax = dvAxis(Math.max(...items.map(x => x.v)));
+  const n = items.length, bw = 48, W = Math.max(640, n * bw + 60), H = 280, L = 46, B = 64, T = 22, ih = H - B - T, ax = dvAxis(Math.max(...items.map(x => x.v)));
   const y = v => T + ih - (v / ax.top) * ih, cw = (W - L - 8) / n, rot = n > 6;
   let s = `<svg viewBox="0 0 ${W} ${H}" class="dvsvg bars">`;
   for (let k = 0; k <= 4; k++) { const v = ax.step * k, yy = y(v); s += `<line x1="${L}" x2="${W - 6}" y1="${yy}" y2="${yy}" class="dvgrid"/><text x="${L - 6}" y="${yy + 3}" class="dvtick" text-anchor="end">${dvFmt(v)}</text>`; }
@@ -1690,11 +1717,14 @@ function dvLine(T) {
 function vDev() {
   if (!canDev()) return `<section class="card"><div class="empty">권한이 없습니다.</div></section>`;
   const D = dvData();
-  const seg = `<div class="seg" role="group"><button type="button" data-act="dv-mode" data-v="car" aria-pressed="${DV.mode === 'car'}">개발 차종 현황</button><button type="button" data-act="dv-mode" data-v="sum" aria-pressed="${DV.mode === 'sum'}">개발 현황 요약표</button></div>`;
-  const info = D ? `<span class="sub">${D.meta.n.toLocaleString()}행 · ${esc(D.meta.savedAt)} 반영${D.meta.miss && D.meta.miss.length ? ` · <span style="color:var(--bad)">못 찾은 열: ${esc(D.meta.miss.join(', '))}</span>` : ''}</span>` : '';
-  let h = `<div class="toolbar">${seg}${info}<span class="spacer"></span>${DV.mode === 'car' && D ? `<label class="field"><span>프로젝트 수 기준</span><select class="ci" data-act="dv-basis"><option value="item"${DV.basis === 'item' ? ' selected' : ''}>아이템(관리번호) 수</option><option value="vehicle"${DV.basis === 'vehicle' ? ' selected' : ''}>차종 수</option></select></label>` : ''}${admin ? '<button type="button" class="btn primary" data-act="dv-paste">차종시트 붙여넣기</button>' : ''}</div>`;
-  if (!D) return h + `<section class="card"><div class="empty">${admin ? '엑셀 차종시트에서 제목 줄부터 표 전체를 복사해 <b>차종시트 붙여넣기</b>로 넣어 주세요.' : '아직 등록된 개발 차종 데이터가 없습니다.'}</div></section>`;
-  return h + (DV.mode === 'sum' ? dvSummaryView(D) : dvCarView(D));
+  const nav = (v, t, ico) => `<button type="button" class="dvnav${DV.mode === v ? ' on' : ''}" data-act="dv-mode" data-v="${v}"><span>${ico}</span>${t}</button>`;
+  const side = `<aside class="dvside"><div class="dvbrand">연구소<br>개발 현황</div>
+    <nav>${nav('car', '개발 차종 현황', '▦')}${nav('sum', '개발 현황 요약표', '▤')}</nav>
+    ${D && DV.mode === 'car' ? `<label class="dvopt">프로젝트 수 기준<select class="ci" data-act="dv-basis"><option value="item"${DV.basis === 'item' ? ' selected' : ''}>아이템(관리번호) 수</option><option value="vehicle"${DV.basis === 'vehicle' ? ' selected' : ''}>차종 수</option></select></label>` : ''}
+    <div class="dvmeta">${D ? `<b class="cu">${D.meta.n.toLocaleString()}</b>행<br>${esc(D.meta.savedAt)}${D.meta.miss && D.meta.miss.length ? `<br><span class="dvwarn">못 찾은 열: ${esc(D.meta.miss.join(', '))}</span>` : ''}` : '데이터 없음'}</div>
+    ${admin ? '<button type="button" class="btn primary dvpaste" data-act="dv-paste">차종시트 붙여넣기</button>' : ''}</aside>`;
+  const body = !D ? `<section class="card"><div class="empty">${admin ? '엑셀 차종시트에서 제목 줄부터 표 전체를 복사해 <b>차종시트 붙여넣기</b>로 넣어 주세요.' : '아직 등록된 개발 차종 데이터가 없습니다.'}</div></section>` : (DV.mode === 'sum' ? dvSummaryView(D) : dvCarView(D));
+  return `<div class="dvwrap">${side}<div class="dvmain">${body}</div></div>`;
 }
 function dvCarView(D) {
   const rows = D.rows.filter(r => r.car), veh = DV.basis === 'vehicle', cu = veh ? '개 차종' : '건';
@@ -1716,14 +1746,19 @@ function dvCarView(D) {
   const c2 = []; ['SL국내', 'SL인도', 'SL중국'].forEach(g => DV_CUS.filter(d => d.group === g).forEach(d => c2.push({ l: d.chart, v: agg[d.id].sales, c: DV_GRP[g] })));
   sl.filter(a => !DV_CUS.some(d => agg[d.id] === a)).forEach(a => c2.push({ l: a.chart, v: a.sales, c: DV_GRP['SL 기타'] }));
   const T = (S.dev && S.dev.trend) || DV_TREND0;
-  const card = (t, body, unit, extra) => `<section class="card dvcard"><div class="head"><h2>${t}</h2>${extra || ''}<span class="spacer"></span>${unit ? `<span class="sub">단위: ${unit}</span>` : ''}</div><div class="dvbody">${body}</div></section>`;
-  let h = '<div class="dvgrid3">';
-  h += card('월별 프로젝트 수', dvLine(T) + dvTrendTable(T), '건', admin ? `<button type="button" class="btn sm" data-act="dv-tedit">${DV.trendEdit ? '완료' : '편집'}</button>` : '');
+  const card = (t, body, unit, extra, span) => `<section class="card dvcard s${span || 2}"><div class="head"><h2>${t}</h2>${extra || ''}<span class="spacer"></span>${unit ? `<span class="sub">단위: ${unit}</span>` : ''}</div><div class="dvbody">${body}</div></section>`;
+  const stg = { P0: new Set(), P1: new Set(), P2: new Set(), 'M/SOP': new Set() };
+  rows.forEach((r, i) => { const t = dvN(r.stage), k = /^P0$/.test(t) ? 'P0' : /^P1$/.test(t) ? 'P1' : /^P2$/.test(t) ? 'P2' : /^(M\/?SOP|SOP|M)$/.test(t) ? 'M/SOP' : ''; if (k) stg[k].add(idOf(r, i)); });
+  const ids = new Set(rows.map(idOf)), totS = sum(all);
+  let h = `<div class="dvkpis"><div class="dvk"><span>프로젝트</span><b class="cu">${ids.size.toLocaleString()}</b><em>${cu}</em></div><div class="dvk"><span>개발 차종</span><b class="cu">${new Set(rows.map(r => r.cust + '|' + r.car)).size}</b><em>개</em></div><div class="dvk"><span>고객사</span><b class="cu">${new Set(rows.map(r => r.cust).filter(Boolean)).size}</b><em>곳</em></div><div class="dvk"><span>연간 매출 합계</span><b class="cu">${dvFmt(totS)}</b><em>백만원</em></div></div>`;
+  h += '<div class="dvgrid6">';
+  h += card('월별 프로젝트 수', `<div class="dvtr"><div>${dvLine(T)}</div><div>${dvTrendTable(T)}</div></div>`, '건', admin ? `<button type="button" class="btn sm" data-act="dv-tedit">${DV.trendEdit ? '완료' : '편집'}</button>` : '', 4);
+  h += card('공정 단계별 프로젝트 수', dvDonut(Object.keys(stg), Object.values(stg).map(x => x.size), { unit: cu, center: '프로젝트 수' }), cu);
   h += card('고객사 비율', dvDonut(ccl.map(x => x[0]), ccl.map(x => x[1]), { unit: cu, center: '프로젝트 수', pie: true }), cu);
   h += card('국내 및 해외 공장', dvDonut(fcl.map(noG), fcl.map(f => fcnt[f].size), { unit: cu, center: '프로젝트 수' }), cu);
   h += card('공장별 매출', dvDonut(fl.map(noG), fl.map(f => fac[f]), { unit: '백만원', center: '매출 합계' }), '백만원');
-  h += card('고객사별 연간 매출액', dvBars(c1.map(x => ({ l: x.l, v: x.v })), { unit: '백만원' }), '백만원', `<select class="ci" data-act="dv-sort" style="height:26px;font-size:12px"><option value="sales"${DV.sort === 'sales' ? ' selected' : ''}>매출 큰 순</option><option value="fixed"${DV.sort === 'fixed' ? ' selected' : ''}>지정 순서</option></select>`);
-  h += card('SL 고객사별 연간 매출액', dvBars(c2, { unit: '백만원', legend: Object.entries(DV_GRP).filter(([g]) => c2.some(x => x.c === DV_GRP[g])) }), '백만원');
+  h += card('고객사별 연간 매출액', dvBars(c1.map(x => ({ l: x.l, v: x.v })), { unit: '백만원' }), '백만원', `<select class="ci" data-act="dv-sort" style="height:26px;font-size:12px"><option value="sales"${DV.sort === 'sales' ? ' selected' : ''}>매출 큰 순</option><option value="fixed"${DV.sort === 'fixed' ? ' selected' : ''}>지정 순서</option></select>`, 3);
+  h += card('SL 고객사별 연간 매출액', dvBars(c2, { unit: '백만원', legend: Object.entries(DV_GRP).filter(([g]) => c2.some(x => x.c === DV_GRP[g])) }), '백만원', '', 3);
   h += '</div>';
   const tot = sum(all), pct = v => tot ? (v / tot * 100).toFixed(1) + '%' : '0.0%';
   const line = (a, first) => `<tr>${first || ''}<td class="l">${esc(a.label)}</td><td class="num">${a.vehicles.size}</td><td class="num">${a.items}</td><td class="num">${dvFmt(a.sales)}</td><td class="num">${pct(a.sales)}</td></tr>`;
@@ -1771,7 +1806,7 @@ function dvSummary(D) {
 function dvSummaryView(D) {
   const r = dvSummary(D);
   if (!r.count) return `<section class="card"><div class="empty">개발단계가 P0 · P1 · P2 · SOP인 아이템이 없습니다. (완성차 · 고객 · 차종명 · 아이템명 · 개발단계 · 이관 · 매출액 열 확인)</div></section>`;
-  const B = 'border:1px solid #a6a6a6;', TD = B + 'padding:2px 6px;font-size:13px;font-family:Malgun Gothic,sans-serif;height:20px;white-space:nowrap;color:#222;background:#fff;', ed = admin || director ? ' contenteditable="true"' : '';
+  const B = 'border:1px solid #a6a6a6;', TD = B + 'padding:2px 6px;font-size:13px;font-family:Malgun Gothic,sans-serif;height:20px;white-space:nowrap;color:#222;background:#fff;', ed = admin ? ' contenteditable="true"' : '';
   let t = `<table class="dvsum" style="border-collapse:collapse;min-width:1000px;background:#fff">`;
   t += `<tr><td colspan="4" style="border:0;background:#fff"></td><td colspan="2" style="border:0;text-align:left;padding:0 0 4px;background:#fff"><span style="background:#595959;color:#fff;font-size:12px;font-weight:bold;padding:2px 10px;">Total ${dvEok(r.total).replace('억', '')}억</span></td><td style="border:0;background:#fff"></td></tr>`;
   t += '<tr>' + ['고객사', '차종', '아이템', '매출액', 'SOP', '생산처', '개발단계'].map(s => `<td style="${TD}background:#d9d9d9;font-weight:bold;text-align:center;">${s}</td>`).join('') + '</tr>';
@@ -1787,8 +1822,11 @@ function dvSummaryView(D) {
   r.summary.forEach((s, i) => { const top = i ? '' : 'border-top:2px solid #404040;';
     t += `<tr><td style="${TD}${top}"${ed}>${esc(s.label)}</td><td colspan="2" style="${TD}${top}"${ed}><b>${esc(s.car)}</b>(${s.cnt})</td><td style="${TD}${top}text-align:right;"${ed}>${dvEok(s.rev)}</td><td style="${TD}${top}text-align:center;"${ed}></td><td style="${TD}${top}font-size:10px;text-align:center;"${ed}>${esc(s.sites)}</td><td style="${TD}${top}text-align:center;">${esc(s.phase)}</td></tr>`; });
   t += '</table>';
-  return `<div class="kpis"><div class="kpi"><span class="k">인식된 아이템</span><span class="v">${r.count}<small>개</small></span></div><div class="kpi"><span class="k">P0 차종</span><span class="v">${r.p0.length}<small>개</small></span></div><div class="kpi"><span class="k">Total 매출</span><span class="v">${(Math.round(r.total / 10) / 10).toLocaleString()}<small>억</small></span></div></div>
-  <section class="card"><div class="head"><h2>개발 현황 요약표</h2><span class="spacer"></span><button type="button" class="btn primary" data-act="dv-copy">표 복사 (PPT · 엑셀 붙여넣기용)</button></div>
+  const ph = k => r.summary.find(x => x.phase === k);
+  const chip = (k, n, u) => `<div class="dvhc"><span>${k}</span><b class="cu">${n}</b><em>${u}</em></div>`;
+  return `<section class="dvhero"><div class="dvh1"><span class="dvhk">개발 현황 요약표</span><div class="dvhv"><b class="cu">${Math.round(r.total / 100).toLocaleString()}</b><em>억</em></div><span class="dvhs">P0 · P1 · P2 · SOP 아이템 ${r.count}개 · 연간 매출 합계</span></div>
+    <div class="dvhcs">${chip('P0', r.p0.length, '차종')}${['P1', 'P2', 'SOP'].map(k => chip(k, ph(k) ? ph(k).cnt : 0, '아이템')).join('')}</div></section>
+  <section class="card"><div class="head"><h2>요약표</h2><span class="spacer"></span><button type="button" class="btn primary" data-act="dv-copy">표 복사 (PPT · 엑셀 붙여넣기용)</button></div>
   <div class="tw free dvsumw">${t}</div></section>`;
 }
 
@@ -1818,6 +1856,7 @@ document.addEventListener('click', e => {
 });
 document.addEventListener('change', e => {
   const a = e.target.dataset?.act;
+  if (a === 'acct-dev' && admin) { const u = ui.users.find(x => x.id === e.target.dataset.id); if (u) acctCall('userSave', { user: { ...u, dev: e.target.checked } }, e.target.checked ? `${u.name} · 개발 현황 보기 허용` : `${u.name} · 개발 현황 보기 해제`); return; }
   if (a === 'dv-basis') { DV.basis = e.target.value; render(); }
   else if (a === 'dv-sort') { DV.sort = e.target.value; render(); }
 });
