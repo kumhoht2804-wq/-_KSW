@@ -528,7 +528,7 @@ body.dense .toolbar{gap:8px}
 .dvcard{gap:6px;padding:12px 14px}.dvcard .head h2{font-size:14px}
 .dvbody{display:flex;flex-direction:column;gap:6px;min-height:0;flex:1;justify-content:center}
 .dvtr{display:flex;flex-direction:column;gap:10px}
-.dvtrc .dvlg{justify-content:flex-start;padding-left:40px}
+
 @media(max-width:1300px){.dvgrid6{grid-template-columns:repeat(2,minmax(0,1fr))}.dvcard.s2,.dvcard.s3,.dvcard.s4{grid-column:span 1}.dvcard.s4{grid-column:1/-1}.dvkpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:900px){.dvwrap{grid-template-columns:1fr}.dvside{position:static;min-height:0}.dvside nav{flex-direction:row}.dvgrid6{grid-template-columns:1fr}.dvtr{grid-template-columns:1fr}}
 .dvhero{background:var(--surface);border:1px solid var(--line);border-top:3px solid var(--accent);border-radius:var(--r);padding:18px 22px;display:flex;align-items:center;gap:24px;flex-wrap:wrap;justify-content:space-between}
@@ -541,12 +541,12 @@ body.dense .toolbar{gap:8px}
 
 .dvsvg{width:100%;height:auto;display:block;overflow:visible}
 .dvch{width:100%}.dvch .dvsvg{width:auto}
-.dvd{display:grid;grid-template-columns:150px minmax(0,1fr);gap:16px;align-items:center;padding:4px 2px}
+.dvd{display:grid;grid-template-columns:150px auto;gap:22px;align-items:center;justify-content:center;padding:4px 2px}
 .dvd .dvsvg{width:150px}
 .dvl{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;font-size:12px;min-width:0}
-.dvl li{display:grid;grid-template-columns:10px 1fr auto 46px;gap:6px;align-items:center}
+.dvl{display:grid;grid-template-columns:10px auto auto auto;column-gap:8px;row-gap:5px;align-items:center}.dvl li{display:contents}
 .dvl i,.dvlg i{width:10px;height:10px;border-radius:3px;display:inline-block}
-.dvl span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dvl b{font:600 12px var(--font-num);text-align:right}.dvl em{font-style:normal;color:var(--muted);text-align:right;font-size:11px}
+.dvl span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px;padding-right:6px}.dvl b{font:600 12px var(--font-num);text-align:right}.dvl em{font-style:normal;color:var(--muted);text-align:right;font-size:11px}
 .dvlg{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--muted);justify-content:center}.dvlg span{display:inline-flex;align-items:center;gap:5px}
 .dvin{fill:#fff;font:700 11px var(--font-num);text-anchor:middle;pointer-events:none}
 .dvc1{fill:var(--muted);font:600 12px var(--font-body);text-anchor:middle}.dvc2{fill:var(--ink);font:800 21px var(--font-num);text-anchor:middle}
@@ -557,7 +557,7 @@ body.dense .toolbar{gap:8px}
 .dvln{stroke-dasharray:1200;stroke-dashoffset:1200;animation:dvdraw 1.1s ease forwards;animation-delay:var(--d,0ms)}
 @keyframes dvgrow{from{transform:scaleY(0)}to{transform:scaleY(1)}}@keyframes dvfade{from{opacity:0}to{opacity:1}}@keyframes dvdraw{to{stroke-dashoffset:0}}
 @media (prefers-reduced-motion:reduce){.dvbar,.dvarc,.dvln{animation:none;stroke-dashoffset:0}}
-.dvtrend{width:100%;font-size:12px}.dvtrend th,.dvtrend td{padding:4px 6px;text-align:center}.dvtrend td.l{text-align:left;white-space:nowrap}
+.dvtrend{width:100%;font-size:12.5px;table-layout:fixed;border-collapse:collapse}.dvtrend th,.dvtrend td{padding:6px 4px;text-align:center;font-variant-numeric:tabular-nums}.dvtrend th:first-child,.dvtrend td:first-child{width:130px}.dvtrend td.l{text-align:left;white-space:nowrap;font-weight:600}.dvtrend td.num{font-weight:600;color:var(--ink)}
 .dvtrend.ed input.ci{width:54px;height:26px;text-align:center}.dvtrend .dvcur{background:var(--accent-soft);font-weight:700}.dvdot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:middle}
 .dvtbl td.l{text-align:left}.dvtbl tr.sum td{background:var(--sunk);font-weight:700}
 .dvsumw{background:#fff;padding:14px;border-radius:6px;border:1px solid var(--line);display:flex;justify-content:center}
@@ -590,7 +590,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">금호HT 모듈개발연구소 · v2026.11.17 17:23</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">금호HT 모듈개발연구소 · v2026.11.17 17:29</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -1737,17 +1737,17 @@ function dvBarsSvg(items, o, W) {
     s += rot ? `<text transform="translate(${cx.toFixed(1)} ${T + ih + 12}) rotate(-40)" class="dvx" text-anchor="end">${esc(x.l)}</text>` : `<text x="${cx.toFixed(1)}" y="${T + ih + 16}" class="dvx" text-anchor="middle">${esc(x.l)}</text>`; });
   return s + '</svg>';
 }
-function dvLine(T) { return dvChart(W => dvLineSvg(T, W), 190) + `<div class="dvlg">${T.series.map((se, i) => `<span><i style="background:${DV_TCOL[i % DV_TCOL.length]};border-radius:50%"></i>${esc(se.name)}</span>`).join('')}</div>`; }
+function dvLine(T) { return dvChart(W => dvLineSvg(T, W), 170); }
 function dvLineSvg(T, W) {
-  const m = T.months, n = m.length, H = 190, L = 40, R = 16, Tp = 22, B = 26, ih = H - Tp - B;
+  const m = T.months, n = m.length, H = 170, L = 130, R = 0, Tp = 14, B = 10, ih = H - Tp - B;
   const all = T.series.flatMap(s => s.values.filter(v => v != null)), ax = dvAxis(Math.max(1, ...all));
   const x = j => L + (n <= 1 ? (W - L - R) / 2 : (W - L - R) * (j + .5) / n), y = v => Tp + ih - v / ax.top * ih;
   let s = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" class="dvsvg">`;
   for (let k = 0; k <= 4; k++) { const v = ax.step * k; s += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" class="dvgrid"/><text x="${L - 5}" y="${y(v) + 3}" class="dvtick" text-anchor="end">${dvFmt(v)}</text>`; }
-  m.forEach((lb, j) => { s += `<text x="${x(j)}" y="${H - 6}" class="dvx" text-anchor="middle">${esc(lb)}</text>`; });
+  m.forEach((_, j) => { s += `<line x1="${x(j)}" x2="${x(j)}" y1="${Tp}" y2="${Tp + ih}" class="dvgrid" stroke-dasharray="2 3"/>`; });
   T.series.forEach((se, i) => { const c = DV_TCOL[i % DV_TCOL.length], pts = m.map((_, j) => se.values[j] == null ? null : [x(j), y(se.values[j]), se.values[j]]).filter(Boolean);
     if (pts.length > 1) s += `<polyline class="dvln" points="${pts.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ')}" fill="none" stroke="${c}" stroke-width="2.4" style="--d:${i * 150}ms"/>`;
-    pts.forEach(p => { s += `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="3.6" fill="var(--surface)" stroke="${c}" stroke-width="2"/><text x="${p[0].toFixed(1)}" y="${(i % 2 ? p[1] + 15 : p[1] - 7).toFixed(1)}" class="dvval cu" text-anchor="middle" fill="${c}">${dvFmt(p[2])}</text>`; }); });
+    pts.forEach(p => { s += `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="4" fill="var(--surface)" stroke="${c}" stroke-width="2.2"><title>${esc(se.name)}: ${dvFmt(p[2])}</title></circle>`; }); });
   return s + '</svg>';
 }
 
