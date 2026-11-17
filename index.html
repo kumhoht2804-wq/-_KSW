@@ -560,6 +560,7 @@ body.dense .toolbar{gap:8px}
 .dvtrend.ed input.ci{width:58px;height:26px;text-align:center}.dvdot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:middle}
 .dvtbl td.l{text-align:left}.dvtbl tr.sum td{background:var(--sunk);font-weight:700}
 .dvsumw{background:#fff;padding:14px;border-radius:6px;border:1px solid var(--line);display:flex;justify-content:center}
+.cu,.kpi .v,.ob em,.dvk b,.dvhc b,.dvhv b{font-variant-numeric:tabular-nums}
 </style>
 </head>
 <body class="dense">
@@ -588,7 +589,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.17 14:40</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.17 14:45</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -1833,7 +1834,7 @@ function dvSummaryView(D) {
   const seenS = {}, seenL = {};
   r.p0.forEach((x, i) => { const c = x.unrep ? 'color:#a6a6a6;' : 'color:#0000ff;', k = x.site + '|' + x.label; t += '<tr>';
     if (!seenL[k]) { seenL[k] = 1; t += `<td rowspan="${ls[k]}" style="${TD}vertical-align:middle;"${ed}>${esc(x.label)}</td>`; }
-    t += `<td style="${TD}${c}"${ed}>${esc(x.car)}</td><td style="${TD}${c}"${ed}>${esc(x.itemText)}</td>`;
+    t += `<td style="${TD}${c}"${ed}>${esc(x.car)}</td><td style="${TD}${c}text-align:left;"${ed}>${esc(x.itemText)}</td>`;
     t += x.unrep ? `<td colspan="2" style="${TD}color:#a6a6a6;font-size:11px;text-align:center;"${ed}>미수주보고</td>` : `<td style="${TD}${c}text-align:right;"${ed}>${dvEok(x.rev)}</td><td style="${TD}${c}text-align:center;"${ed}></td>`;
     if (!seenS[x.site]) { seenS[x.site] = 1; t += `<td rowspan="${ss[x.site]}" style="${TD}background:${SITE_COLOR[x.site] || '#e7e6e6'};text-align:center;vertical-align:middle;"${ed}>${esc(x.site)}</td>`; }
     if (!i) t += `<td rowspan="${r.p0.length}" style="${TD}text-align:center;vertical-align:middle;">P0</td>`;
@@ -1892,18 +1893,19 @@ document.addEventListener('input', e => {
 const CU = new Map();
 function countUp() {
   if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  const r = route(), seen = {};
+  const r = route(), seen = {}, ctx = r + ':' + ({ dev: DV.mode, people: ui.peopleMode, education: ui.eduMode, assess: ui.assessMode, asset: ui.asMode })[r];
   document.querySelectorAll('#view .kpi .v, #view .cu, #view .ob em').forEach(el => {
     const tn = [...el.childNodes].find(n => n.nodeType === 3 && /\d/.test(n.nodeValue)); if (!tn) return;
     const m = tn.nodeValue.match(/^(\D*?)(-?\d[\d,]*(?:\.\d+)?)([\s\S]*)$/); if (!m) return;
     const to = parseFloat(m[2].replace(/,/g, '')); if (!isFinite(to)) return;
-    const base = r + '|' + (el.closest('.kpi')?.querySelector('.k')?.textContent || el.closest('.card,.dvcard')?.querySelector('h2')?.textContent || '') + '|' + el.tagName;
+    const box = el.closest('.kpi,.dvk,.dvhc,.dvh1'), base = ctx + '|' + (box ? (box.querySelector('.k,span')?.textContent || '') : (el.closest('.card,.dvcard')?.querySelector('h2')?.textContent || '')) + '|' + el.tagName;
     const k = base + '#' + (seen[base] = (seen[base] || 0) + 1);
     const from = CU.has(k) ? CU.get(k) : 0; CU.set(k, to);
     if (from === to) return;
     const dec = (m[2].split('.')[1] || '').length, comma = /,/.test(m[2]) || Math.abs(to) >= 1000, t0 = performance.now(), dur = 700;
     const f = v => comma ? v.toLocaleString('ko-KR', { minimumFractionDigits: dec, maximumFractionDigits: dec }) : v.toFixed(dec);
-    const step = now => { const p = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - p, 3); tn.nodeValue = m[1] + f(from + (to - from) * e) + m[3]; if (p < 1 && tn.isConnected) requestAnimationFrame(step); };
+    const step = now => { const p = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - p, 3); tn.nodeValue = m[1] + f(from + (to - from) * e) + m[3]; if (p < 1 && tn.isConnected) requestAnimationFrame(step); else el.style.minWidth = ''; };
+    if (!(el instanceof SVGElement)) { tn.nodeValue = m[1] + f(from) + m[3]; const w0 = el.getBoundingClientRect().width; tn.nodeValue = m[1] + f(to) + m[3]; const w = Math.max(w0, el.getBoundingClientRect().width); if (getComputedStyle(el).display === 'inline') el.style.display = 'inline-block'; el.style.minWidth = w + 'px'; el.style.textAlign = el.style.textAlign || 'inherit'; }
     tn.nodeValue = m[1] + f(from) + m[3]; requestAnimationFrame(step);
   });
 }
