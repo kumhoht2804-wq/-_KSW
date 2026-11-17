@@ -506,6 +506,30 @@ body.dense .toolbar{gap:8px}
 .fu legend{display:flex;align-items:center;gap:10px}
 .fu-act{display:inline-flex;gap:4px;font-weight:400}
 .fu-act .btn{padding:1px 8px}
+
+.dvgrid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media(max-width:1200px){.dvgrid3{grid-template-columns:1fr 1fr}}@media(max-width:760px){.dvgrid3{grid-template-columns:1fr}}
+.dvcard{gap:8px}.dvcard .head h2{font-size:14px}.dvbody{display:flex;flex-direction:column;gap:8px;min-height:0;flex:1;justify-content:center}
+.dvsvg{width:100%;height:auto;display:block;overflow:visible}
+.dvd{display:grid;grid-template-columns:minmax(150px,200px) 1fr;gap:12px;align-items:center}
+.dvd .dvsvg{max-width:200px;margin:auto}
+.dvl{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;font-size:12px;min-width:0}
+.dvl li{display:grid;grid-template-columns:10px 1fr auto 46px;gap:6px;align-items:center}
+.dvl i,.dvlg i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.dvl span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dvl b{font:600 12px var(--font-num);text-align:right}.dvl em{font-style:normal;color:var(--muted);text-align:right;font-size:11px}
+.dvlg{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--muted);justify-content:center}.dvlg span{display:inline-flex;align-items:center;gap:5px}
+.dvin{fill:#fff;font:700 10px var(--font-num);text-anchor:middle;pointer-events:none}.dvin.sm{font-weight:600;font-size:8.5px;opacity:.95}
+.dvc1{fill:var(--muted);font:600 11px var(--font-body);text-anchor:middle}.dvc2{fill:var(--ink);font:800 18px var(--font-num);text-anchor:middle}
+.dvgrid{stroke:var(--line);stroke-width:1}.dvtick{fill:var(--muted);font:10px var(--font-num)}.dvx{fill:var(--muted);font:10.5px var(--font-body)}.dvval{fill:var(--ink);font:700 10px var(--font-num)}
+.dvbar{transform-box:fill-box;transform-origin:bottom;animation:dvgrow .7s cubic-bezier(.2,.8,.2,1) both;animation-delay:var(--d,0ms)}
+.dvarc{animation:dvfade .6s ease both;animation-delay:var(--d,0ms)}
+.dvln{stroke-dasharray:1200;stroke-dashoffset:1200;animation:dvdraw 1.1s ease forwards;animation-delay:var(--d,0ms)}
+@keyframes dvgrow{from{transform:scaleY(0)}to{transform:scaleY(1)}}@keyframes dvfade{from{opacity:0}to{opacity:1}}@keyframes dvdraw{to{stroke-dashoffset:0}}
+@media (prefers-reduced-motion:reduce){.dvbar,.dvarc,.dvln{animation:none;stroke-dashoffset:0}}
+.dvtrend{width:100%;font-size:12px}.dvtrend th,.dvtrend td{padding:4px 6px;text-align:center}.dvtrend td.l{text-align:left;white-space:nowrap}
+.dvtrend.ed input.ci{width:58px;height:26px;text-align:center}.dvdot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:middle}
+.dvtbl td.l{text-align:left}.dvtbl tr.sum td{background:var(--sunk);font-weight:700}
+.dvsumw{background:#fff;padding:10px;border-radius:6px;border:1px solid var(--line)}
 </style>
 </head>
 <body class="dense">
@@ -517,6 +541,7 @@ body.dense .toolbar{gap:8px}
       <a href="#asset" data-route="asset">자산</a>
       <a href="#education" data-route="education">교육</a>
       <a href="#assess" data-route="assess">역량평가</a>
+      <a href="#dev" data-route="dev" hidden>연구소 개발 현황</a>
       <a href="#accounts" data-route="accounts" hidden>계정 관리</a>
     </nav>
     <div class="spacer"></div>
@@ -533,7 +558,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.16 13:21</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.17 14:21</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -1182,7 +1207,7 @@ const LS = { get: k => { try { return localStorage.getItem(k); } catch { return 
 let API_URL = DEFAULT_API || LS.get('lab_api') || '';
 
 // ---------- state ----------
-const S = { config: null, parts: [], people: [], grades: {}, courses: [], edu: {}, history: [], items: {}, archive: {}, hr: [], asset: [], sw: [], seat: null, heads: [] };
+const S = { config: null, parts: [], people: [], grades: {}, courses: [], edu: {}, history: [], items: {}, archive: {}, hr: [], asset: [], sw: [], seat: null, heads: [], dev: {} };
 let C = null, admin = false, editor = false, leader = false, myTeam = '', offline = false, loadedOnce = false, auth = null;
 const ui = { assessMode: 'sum', part: null, eduMode: 'sum', eduYear: '', yrYear: '', seatQ: '', asMode: 'list', swOwner: '', swLic: '', asAcct: '', asDept: '', asQ: '', hrYear: '', hrSt: '재직', hrTeam: '', hrQ: '', peopleMode: 'org', orgPhoto: LS.get('lab_orgphoto') !== '0', eduDept: '', q: '', team: '', lv: '', guideDept: '', guideType: '', setPart: null, drafts: {}, users: [], lockSet: false, setup: false, signup: false, signupDone: '' };
 try { auth = JSON.parse(LS.get('lab_auth') || 'null'); } catch { auth = null; }
@@ -1213,7 +1238,7 @@ async function api(action, payload) {
   return d;
 }
 function applyDocs(docs) {
-  const by = { config: null, parts: [], people: [], grades: {}, courses: [], edu: {}, history: [], archive: {}, hr: [], asset: [], sw: [], seat: null, heads: [] };
+  const by = { config: null, parts: [], people: [], grades: {}, courses: [], edu: {}, history: [], archive: {}, hr: [], asset: [], sw: [], seat: null, heads: [], dev: {} };
   for (const [path, data] of Object.entries(docs)) {
     const [col, id] = path.split('/');
     if (col === 'config') { if (id === 'main') by.config = { id, ...data }; }
@@ -1221,6 +1246,7 @@ function applyDocs(docs) {
     else if (col === 'edu') by.edu[id] = data.r || {};
     else if (col === 'archive') by.archive[id] = data;
     else if (col === 'seat') { if (id === 'main') by.seat = data; }
+    else if (col === 'dev') by.dev[id] = data;
     else if (by[col]) by[col].push({ id, ...data });
   }
   by.heads = by.people.filter(p => p.head); by.people = by.people.filter(p => !p.head);
@@ -1384,6 +1410,7 @@ function whoUI() {
   const acc = document.querySelector('#tabs a[data-route="accounts"]');
   if (acc) { acc.hidden = !admin; const n = ui.users.filter(x => x.role === '대기').length; acc.innerHTML = '계정 관리' + (n ? ` <span class="badge" title="승인 대기">${n}</span>` : ''); }
   $('#expMenu').hidden = !admin;
+  const dvt = document.querySelector('#tabs a[data-route="dev"]'); if (dvt) dvt.hidden = !canDev();
   const st = document.querySelector('#tabs a[data-route="settings"]'); if (st) st.hidden = !(admin || director || leader || viewAll);
 }
 function vServer() {
@@ -1417,7 +1444,7 @@ function startSession(d) {
 function logout(silent) {
   if (auth && !silent) api('logout').catch(() => { });
   auth = null; LS.set('lab_auth', null); setRole(); ui.drafts = {}; ui.users = []; usersLoaded = false;
-  Object.assign(S, { config: null, parts: [], people: [], grades: {}, courses: [], edu: {}, history: [], archive: {}, hr: [], asset: [], sw: [], seat: null, heads: [] }); C = null; loadedOnce = false;
+  Object.assign(S, { config: null, parts: [], people: [], grades: {}, courses: [], edu: {}, history: [], archive: {}, hr: [], asset: [], sw: [], seat: null, heads: [], dev: {} }); C = null; loadedOnce = false;
   whoUI(); syncUI(); checkSetup(); render();
 }
 async function checkSetup() {
@@ -1534,14 +1561,303 @@ function confirmDlg(msg, okLabel, fn) {
   $('#okBtn').onclick = () => { closeDlg(); fn(); };
 }
 
+// ===== 연구소 개발 현황 (개발 차종 현황 · 개발 현황 요약표) =====
+const canDev = () => admin || director || viewAll;
+const DV = { mode: 'car', basis: 'item', sort: 'sales', q: '', trendEdit: false };
+const DV_FACT = ['광주공장', '천진공장', '베트남공장', '인도공장'];
+const DV_COLORS = ['#5B8FF9', '#61DDAA', '#F6BD16', '#E8684A', '#9270CA', '#78D3F8', '#F08BB4', '#A0B4C8'];
+const DV_PARTS = [
+  { re: /HW/, name: 'HW', dept: '연구소 HW' }, { re: /^개발/, name: '개발', dept: '연구소 개발' }, { re: /광학/, name: '광학', dept: '광학설계팀' },
+  { re: /S\/?W|SW/, name: 'S/W', dept: '연구소 SW' }, { re: /PCB/, name: 'PCB', dept: '연구소 PCB' }, { re: /기구설계/, name: '기구설계', dept: '연구소 기구' }, { re: /기구개발/, name: '기구개발', dept: '연구소 기구' }];
+const DV_OWNER_EXCL = /단계|현황|일정|시작|종료|완료|일자|날짜|금액|매출|판매|수량|이관|공장|비고/;
+const DV_CUS = [
+  { id: 'dg', table: 'SL대구', chart: 'SL대구(라이팅)', group: 'SL국내', re: /^SL대구(?!.*성산)/ }, { id: 'dgs', table: 'SL대구_성산', chart: 'SL대구(성산)', group: 'SL국내', re: /^SL.*성산|^SL대구.*성산/ },
+  { id: 'as', table: 'SL안산', chart: 'SL안산', group: 'SL국내', re: /^SL안산/ }, { id: 'jr', table: 'SL진량', chart: 'SL진량', group: 'SL국내', re: /^SL진[량랑]/ },
+  { id: 'ca', table: 'SL천안', chart: 'SL천안(서봉)', group: 'SL국내', re: /^SL천안/ }, { id: 'lx', table: 'SL루막스', chart: 'SL루막스(인도)', group: 'SL인도', re: /^SL루[막믹]스/ },
+  { id: 'ap', table: 'SL AP', chart: 'SL AP', group: 'SL인도', re: /^SLAP/ }, { id: 'bj', table: 'SL북경', chart: 'SL북경', group: 'SL중국', re: /^SL북경/ },
+  { id: 'yd', table: 'SL연대', chart: 'SL연대', group: 'SL중국', re: /^SL연대/ }, { id: 'sh', table: 'SL상해', chart: 'SL상해', group: 'SL중국', re: /^SL상해/ },
+  { id: 'sb', table: '세방', chart: '세방', group: '', re: /세방/ }, { id: 'cp', table: '카펙발레오', chart: '카펙발레오', group: '', re: /카펙|발레오/ },
+  { id: 'ur', table: '유러코퍼레이션', chart: '유러코퍼레이션', group: '', re: /유러/ }, { id: 'zk', table: 'ZKW', chart: 'ZKW', group: '', re: /ZKW/ },
+  { id: 'il', table: '강소일흥', chart: '강소일흥', group: '', re: /일흥/ }, { id: 'sy', table: '북경서연이화', chart: '북경서연이화', group: '', re: /서연이화/ },
+  { id: 'mk', table: 'MAKO', chart: 'MAKO', group: '', re: /MAKO/ }, { id: 'jy', table: '천진지풍', chart: '천진지풍', group: '', re: /지[풍용]/ },
+  { id: 'bs', table: 'BSI', chart: 'BSI', group: '', re: /^BSI/ }, { id: 'mn', table: 'MINDA', chart: 'MINDA', group: '', re: /MINDA/ }];
+const DV_C1_ORDER = ['ZKW', '강소일흥', '북경서연이화', 'MAKO', '카펙발레오', '세방', '유러코퍼레이션', '천진지풍', 'BSI', 'MINDA'];
+const DV_GRP = { 'SL국내': '#5B8FF9', 'SL인도': '#E0A800', 'SL중국': '#D9482B', 'SL 기타': '#999' };
+const DV_TREND0 = { months: ['8월', '9월', '10월'], series: [{ name: '26년 PJT수', values: [160, 159, 179] }, { name: '25년 PJT수', values: [144, 119, 122] }, { name: '26년 차종수', values: [32, 31, 37] }] };
+const DV_TCOL = ['#16202A', '#9aa0a6', '#2f6fdb', '#e8684a', '#61ddaa', '#9270ca'];
+const SITE_ORDER = ['인도', '광주', '천진', '베트남'];
+const SITE_COLOR = { '인도': '#b7dee8', '광주': '#8db4e2', '천진': '#ff9999', '베트남': '#fac090' };
+
+const dvN = v => String(v ?? '').replace(/[\s\n()（）]/g, '').toUpperCase();
+const dvNum = v => { const n = parseFloat(String(v ?? '').replace(/[,\s]/g, '')); return isFinite(n) ? n : 0; };
+const dvFmt = n => Math.round(n).toLocaleString('ko-KR');
+const dvFact = v => { const t = String(v ?? '').replace(/\s/g, ''); if (!t || /광주/.test(t)) return '광주공장'; if (/천진/.test(t)) return '천진공장'; if (/베트남/.test(t)) return '베트남공장'; if (/인도/.test(t)) return '인도공장'; return t; };
+
+function dvTSV(t) {
+  const rows = []; let row = [], cell = '', q = false; t = String(t || '');
+  for (let i = 0; i < t.length; i++) { const c = t[i];
+    if (q) { if (c === '"') { if (t[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += c; }
+    else if (c === '"' && cell === '') q = true; else if (c === '\t') { row.push(cell); cell = ''; } else if (c === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; } else if (c !== '\r') cell += c; }
+  if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
+  return rows;
+}
+function dvParse(text) {
+  const R = dvTSV(text).filter(r => r.some(v => String(v).trim()));
+  const hi = R.findIndex(r => r.some(v => /^(차종|차종명|아이템명)$/.test(dvN(v))));
+  if (hi < 0) throw new Error('제목 줄(고객 · 차종명 · 아이템명 · 개발단계 · 이관 · 연간 매출액)이 있는 행부터 복사해 주세요.');
+  const H = R[hi], sub = R[hi + 1] || [];
+  const hasSub = sub.filter(v => /^(소속|이름|개발단계|개발현황|이관|년|월)$/.test(dvN(v))).length >= 2;
+  let top = '';
+  const cols = H.map((h, i) => { const s = dvN(h); if (s) top = s; const sb = hasSub ? dvN(sub[i]) : ''; return { i, top, sub: sb, merged: !s, label: top + sb }; });
+  const body = R.slice(hi + (hasSub ? 2 : 1));
+  const by = (re, f) => cols.find(c => re.test(c.label) && (!f || f(c)));
+  const share = (c, re) => { let n = 0, t = 0; body.forEach(r => { const v = dvN(r[c.i]); if (v) { t++; if (re.test(v)) n++; } }); return t ? n / t : 0; };
+  const C = {
+    car: by(/^차종명?$/) || by(/차종/), cust: by(/^고객사?$/) || by(/^고객(?!사?P)/), oem: by(/^완성차/), item: by(/아이템/), mg: by(/관리번호/), sales: by(/매출액/),
+    stage: by(/개발단계/) || by(/단계/) || cols.find(c => share(c, /^(P0|P1|P2|M\/?SOP|SOP|M)$/) > .6), trans: by(/이관/) || cols.find(c => share(c, /(인도|천진|베트남|광주)/) > .5) };
+  if (!C.car) throw new Error("'차종명' 열을 찾지 못했습니다.");
+  const owners = [];
+  DV_PARTS.forEach(p => {
+    let f = cols.filter(x => p.re.test(x.top) && /이름/.test(x.label) && !/소속/.test(x.label) && !DV_OWNER_EXCL.test(x.top));
+    if (!f.length && !hasSub) cols.forEach((x, k) => { if (x.merged || !p.re.test(x.top) || DV_OWNER_EXCL.test(x.top)) return; if (cols[k + 1] && cols[k + 1].merged) f.push(cols[k + 1]); });
+    f.forEach(c => owners.push({ name: p.name, dept: p.dept, label: String(H[c.i] || H[c.i - 1] || p.name).trim() || p.name, i: c.i }));
+  });
+  const g = (r, c) => c ? String(r[c.i] ?? '').trim() : '';
+  const rows = body.filter(r => g(r, C.car) || g(r, C.item)).map(r => [g(r, C.mg), g(r, C.oem), g(r, C.cust), g(r, C.car), g(r, C.item), g(r, C.stage), g(r, C.trans), dvNum(g(r, C.sales)), r.join(' ').includes('수주보고') ? 1 : 0, owners.map(o => String(r[o.i] ?? '').trim())]);
+  const miss = [['sales', '연간 매출액'], ['trans', '이관'], ['stage', '개발단계'], ['cust', '고객'], ['item', '아이템명']].filter(([k]) => !C[k]).map(x => x[1]);
+  return { rows, owners: owners.map(({ i, ...o }) => o), miss };
+}
+let dvCache = null;
+function dvData() {
+  const m = S.dev && S.dev.meta; if (!m) return null;
+  if (dvCache && dvCache.key === m.savedAt + '|' + m.chunks) return dvCache;
+  const raw = []; for (let i = 0; i < (m.chunks || 0); i++) raw.push(...((S.dev['c' + i] || {}).rows || []));
+  dvCache = { key: m.savedAt + '|' + m.chunks, meta: m, rows: raw.map(a => ({ mg: a[0], oem: a[1], cust: a[2], car: a[3], item: a[4], stage: a[5], trans: a[6], sales: +a[7] || 0, unrep: !!a[8], own: a[9] || [] })) };
+  return dvCache;
+}
+function dvSave(text) {
+  const d = dvParse(text);
+  if (!d.rows.length) throw new Error('읽을 수 있는 행이 없습니다.');
+  const chunks = []; let cur = [], len = 0;
+  for (const r of d.rows) { const l = JSON.stringify(r).length + 1; if (len + l > 38000 && cur.length) { chunks.push(cur); cur = []; len = 0; } cur.push(r); len += l; }
+  if (cur.length) chunks.push(cur);
+  const old = (S.dev.meta || {}).chunks || 0;
+  const meta = { savedAt: new Date().toLocaleString('ko-KR'), by: auth.user.name, chunks: chunks.length, n: d.rows.length, owners: d.owners, miss: d.miss };
+  const ops = chunks.map((rows, i) => ({ path: 'dev/c' + i, data: { rows } }));
+  for (let i = chunks.length; i < old; i++) ops.push({ path: 'dev/c' + i, data: null });
+  ops.push({ path: 'dev/meta', data: meta });
+  return putBatch(ops).then(() => { for (let i = 0; i < Math.max(old, chunks.length); i++) delete S.dev['c' + i]; chunks.forEach((rows, i) => S.dev['c' + i] = { rows }); S.dev.meta = meta; dvCache = null; return d; });
+}
+
+// ---------- SVG 차트 ----------
+function dvDonut(labels, values, o = {}) {
+  const tot = values.reduce((a, b) => a + b, 0), R = o.pie ? 46 : 70, W = o.pie ? 92 : 34, Cf = 2 * Math.PI * R;
+  let acc = 0;
+  const segs = values.map((v, i) => { const f = tot ? v / tot : 0, a0 = acc; acc += f; const mid = (a0 + f / 2) * 2 * Math.PI - Math.PI / 2, rr = o.pie ? 62 : 70;
+    return { v, f, i, dash: `${Math.max(0, f * Cf - (values.length > 1 ? 1.5 : 0))} ${Cf}`, off: -a0 * Cf, x: 100 + Math.cos(mid) * rr, y: 100 + Math.sin(mid) * rr }; });
+  return `<div class="dvd"><svg viewBox="0 0 200 200" class="dvsvg">${segs.map(s => `<circle class="dvarc" cx="100" cy="100" r="${R}" fill="none" stroke="${DV_COLORS[s.i % DV_COLORS.length]}" stroke-width="${W}" stroke-dasharray="${s.dash}" stroke-dashoffset="${s.off}" transform="rotate(-90 100 100)" style="--d:${s.i * 70}ms"><title>${esc(labels[s.i])}: ${dvFmt(s.v)}${o.unit || ''}</title></circle>`).join('')}
+    ${segs.filter(s => s.f >= .06).map(s => `<text x="${s.x.toFixed(1)}" y="${(s.y - 3).toFixed(1)}" class="dvin cu">${dvFmt(s.v)}</text><text x="${s.x.toFixed(1)}" y="${(s.y + 9).toFixed(1)}" class="dvin sm">${(s.f * 100).toFixed(1)}%</text>`).join('')}
+    ${o.pie ? '' : `<text x="100" y="94" class="dvc1">${esc(o.center || '합계')}</text><text x="100" y="116" class="dvc2 cu">${dvFmt(tot)}</text>`}</svg>
+    <ul class="dvl">${labels.map((l, i) => `<li><i style="background:${DV_COLORS[i % DV_COLORS.length]}"></i><span>${esc(l)}</span><b class="cu">${dvFmt(values[i])}</b><em>${tot ? (values[i] / tot * 100).toFixed(1) : '0.0'}%</em></li>`).join('')}</ul></div>`;
+}
+function dvAxis(max) { if (max <= 0) return { top: 1, step: 1 }; const raw = max * 1.15 / 4, p = Math.pow(10, Math.floor(Math.log10(raw))), m = raw / p, st = (m <= 1 ? 1 : m <= 2 ? 2 : m <= 2.5 ? 2.5 : m <= 5 ? 5 : 10) * p; return { top: st * 4, step: st }; }
+function dvBars(items, o = {}) {
+  if (!items.length) return '<div class="empty">데이터 없음</div>';
+  const n = items.length, bw = 40, W = Math.max(360, n * bw + 60), H = 230, L = 46, B = 64, T = 22, ih = H - B - T, ax = dvAxis(Math.max(...items.map(x => x.v)));
+  const y = v => T + ih - (v / ax.top) * ih, cw = (W - L - 8) / n, rot = n > 6;
+  let s = `<svg viewBox="0 0 ${W} ${H}" class="dvsvg bars">`;
+  for (let k = 0; k <= 4; k++) { const v = ax.step * k, yy = y(v); s += `<line x1="${L}" x2="${W - 6}" y1="${yy}" y2="${yy}" class="dvgrid"/><text x="${L - 6}" y="${yy + 3}" class="dvtick" text-anchor="end">${dvFmt(v)}</text>`; }
+  items.forEach((x, i) => { const cx = L + cw * i + cw / 2, w = Math.min(34, cw * .62), yy = y(x.v), h = T + ih - yy;
+    s += `<rect class="dvbar" x="${(cx - w / 2).toFixed(1)}" y="${yy.toFixed(1)}" width="${w.toFixed(1)}" height="${Math.max(0, h).toFixed(1)}" rx="4" fill="${x.c || o.color || '#5B8FF9'}" style="--d:${i * 40}ms"><title>${esc(x.l)}: ${dvFmt(x.v)}${o.unit || ''}</title></rect>`;
+    s += `<text x="${cx.toFixed(1)}" y="${(yy - 5).toFixed(1)}" class="dvval cu" text-anchor="middle">${dvFmt(x.v)}</text>`;
+    s += rot ? `<text transform="translate(${cx.toFixed(1)} ${T + ih + 12}) rotate(-40)" class="dvx" text-anchor="end">${esc(x.l)}</text>` : `<text x="${cx.toFixed(1)}" y="${T + ih + 16}" class="dvx" text-anchor="middle">${esc(x.l)}</text>`; });
+  return s + '</svg>' + (o.legend ? `<div class="dvlg">${o.legend.map(([l, c]) => `<span><i style="background:${c}"></i>${esc(l)}</span>`).join('')}</div>` : '');
+}
+function dvLine(T) {
+  const m = T.months, n = m.length, W = 380, H = 190, L = 34, R = 14, Tp = 18, B = 24, ih = H - Tp - B;
+  const all = T.series.flatMap(s => s.values.filter(v => v != null)), ax = dvAxis(Math.max(1, ...all));
+  const x = j => L + (n <= 1 ? (W - L - R) / 2 : (W - L - R) * (j + .5) / n), y = v => Tp + ih - v / ax.top * ih;
+  let s = `<svg viewBox="0 0 ${W} ${H}" class="dvsvg">`;
+  for (let k = 0; k <= 4; k++) { const v = ax.step * k; s += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" class="dvgrid"/><text x="${L - 5}" y="${y(v) + 3}" class="dvtick" text-anchor="end">${dvFmt(v)}</text>`; }
+  m.forEach((lb, j) => { s += `<text x="${x(j)}" y="${H - 6}" class="dvx" text-anchor="middle">${esc(lb)}</text>`; });
+  T.series.forEach((se, i) => { const c = DV_TCOL[i % DV_TCOL.length], pts = m.map((_, j) => se.values[j] == null ? null : [x(j), y(se.values[j]), se.values[j]]).filter(Boolean);
+    if (pts.length > 1) s += `<polyline class="dvln" points="${pts.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ')}" fill="none" stroke="${c}" stroke-width="2.4" style="--d:${i * 150}ms"/>`;
+    pts.forEach(p => { s += `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="3.6" fill="var(--surface)" stroke="${c}" stroke-width="2"/><text x="${p[0].toFixed(1)}" y="${(i % 2 ? p[1] + 15 : p[1] - 7).toFixed(1)}" class="dvval cu" text-anchor="middle" fill="${c}">${dvFmt(p[2])}</text>`; }); });
+  return s + `</svg><div class="dvlg">${T.series.map((se, i) => `<span><i style="background:${DV_TCOL[i % DV_TCOL.length]};border-radius:50%"></i>${esc(se.name)}</span>`).join('')}</div>`;
+}
+
+// ---------- 화면 ----------
+function vDev() {
+  if (!canDev()) return `<section class="card"><div class="empty">권한이 없습니다.</div></section>`;
+  const D = dvData();
+  const seg = `<div class="seg" role="group"><button type="button" data-act="dv-mode" data-v="car" aria-pressed="${DV.mode === 'car'}">개발 차종 현황</button><button type="button" data-act="dv-mode" data-v="sum" aria-pressed="${DV.mode === 'sum'}">개발 현황 요약표</button></div>`;
+  const info = D ? `<span class="sub">${D.meta.n.toLocaleString()}행 · ${esc(D.meta.savedAt)} 반영${D.meta.miss && D.meta.miss.length ? ` · <span style="color:var(--bad)">못 찾은 열: ${esc(D.meta.miss.join(', '))}</span>` : ''}</span>` : '';
+  let h = `<div class="toolbar">${seg}${info}<span class="spacer"></span>${DV.mode === 'car' && D ? `<label class="field"><span>프로젝트 수 기준</span><select class="ci" data-act="dv-basis"><option value="item"${DV.basis === 'item' ? ' selected' : ''}>아이템(관리번호) 수</option><option value="vehicle"${DV.basis === 'vehicle' ? ' selected' : ''}>차종 수</option></select></label>` : ''}${admin ? '<button type="button" class="btn primary" data-act="dv-paste">차종시트 붙여넣기</button>' : ''}</div>`;
+  if (!D) return h + `<section class="card"><div class="empty">${admin ? '엑셀 차종시트에서 제목 줄부터 표 전체를 복사해 <b>차종시트 붙여넣기</b>로 넣어 주세요.' : '아직 등록된 개발 차종 데이터가 없습니다.'}</div></section>`;
+  return h + (DV.mode === 'sum' ? dvSummaryView(D) : dvCarView(D));
+}
+function dvCarView(D) {
+  const rows = D.rows.filter(r => r.car), veh = DV.basis === 'vehicle', cu = veh ? '개 차종' : '건';
+  const idOf = (r, i) => veh ? r.cust + '|' + r.car : (r.mg || 'row' + i);
+  const fac = {}, fcnt = {}; DV_FACT.forEach(f => { fac[f] = 0; fcnt[f] = new Set(); });
+  rows.forEach((r, i) => { const f = dvFact(r.trans); fac[f] = (fac[f] || 0) + r.sales; (fcnt[f] = fcnt[f] || new Set()).add(idOf(r, i)); });
+  const noG = f => f.replace(/공장$/, ''), fl = Object.keys(fac).filter(f => DV_FACT.includes(f) || fac[f]), fcl = Object.keys(fcnt).filter(f => DV_FACT.includes(f) || fcnt[f].size);
+  const cc = new Map();
+  rows.forEach((r, i) => { const raw = r.cust || '(고객 미기재)', k = dvN(raw), d = DV_CUS.find(x => x.re.test(k)), nm = (/^SL/.test(k) || (d && /^SL/.test(d.group))) ? 'SL그룹' : (d ? d.table : raw); if (!cc.has(nm)) cc.set(nm, new Set()); cc.get(nm).add(idOf(r, i)); });
+  const ccl = [...cc].map(([n, s]) => [n, s.size]).sort((a, b) => (b[0] === 'SL그룹') - (a[0] === 'SL그룹') || b[1] - a[1]);
+  const agg = {}, add = (id, d) => agg[id] = agg[id] || { ...d, sales: 0, items: 0, vehicles: new Set() };
+  DV_CUS.forEach(d => add(d.id, { label: d.table, grp: d.group, chart: d.chart }));
+  rows.forEach(r => { const raw = r.cust || '(고객 미기재)', k = dvN(raw), d = DV_CUS.find(x => x.re.test(k)); const a = d ? agg[d.id] : add('x:' + raw, { label: raw, grp: /^SL/.test(k) ? 'SL 기타' : '', chart: raw }); a.sales += r.sales; a.items++; a.vehicles.add(r.car); });
+  const all = Object.values(agg), isSL = a => /^SL/.test(a.grp) || /^SL/.test(a.label), sl = all.filter(isSL), oth = all.filter(a => !isSL(a)), sum = l => l.reduce((t, a) => t + a.sales, 0);
+  let c1 = [{ l: 'SL그룹', v: sum(sl), n: sl.reduce((t, a) => t + a.items, 0) }];
+  DV_C1_ORDER.forEach(n => { const a = oth.find(x => x.label === n); c1.push({ l: n, v: a ? a.sales : 0, n: a ? a.items : 0 }); });
+  oth.filter(a => !DV_C1_ORDER.includes(a.label)).forEach(a => c1.push({ l: a.label, v: a.sales, n: a.items }));
+  c1 = c1.filter(x => Math.round(x.v) || x.n); if (DV.sort === 'sales') c1.sort((a, b) => b.v - a.v);
+  const c2 = []; ['SL국내', 'SL인도', 'SL중국'].forEach(g => DV_CUS.filter(d => d.group === g).forEach(d => c2.push({ l: d.chart, v: agg[d.id].sales, c: DV_GRP[g] })));
+  sl.filter(a => !DV_CUS.some(d => agg[d.id] === a)).forEach(a => c2.push({ l: a.chart, v: a.sales, c: DV_GRP['SL 기타'] }));
+  const T = (S.dev && S.dev.trend) || DV_TREND0;
+  const card = (t, body, unit, extra) => `<section class="card dvcard"><div class="head"><h2>${t}</h2>${extra || ''}<span class="spacer"></span>${unit ? `<span class="sub">단위: ${unit}</span>` : ''}</div><div class="dvbody">${body}</div></section>`;
+  let h = '<div class="dvgrid3">';
+  h += card('월별 프로젝트 수', dvLine(T) + dvTrendTable(T), '건', admin ? `<button type="button" class="btn sm" data-act="dv-tedit">${DV.trendEdit ? '완료' : '편집'}</button>` : '');
+  h += card('고객사 비율', dvDonut(ccl.map(x => x[0]), ccl.map(x => x[1]), { unit: cu, center: '프로젝트 수', pie: true }), cu);
+  h += card('국내 및 해외 공장', dvDonut(fcl.map(noG), fcl.map(f => fcnt[f].size), { unit: cu, center: '프로젝트 수' }), cu);
+  h += card('공장별 매출', dvDonut(fl.map(noG), fl.map(f => fac[f]), { unit: '백만원', center: '매출 합계' }), '백만원');
+  h += card('고객사별 연간 매출액', dvBars(c1.map(x => ({ l: x.l, v: x.v })), { unit: '백만원' }), '백만원', `<select class="ci" data-act="dv-sort" style="height:26px;font-size:12px"><option value="sales"${DV.sort === 'sales' ? ' selected' : ''}>매출 큰 순</option><option value="fixed"${DV.sort === 'fixed' ? ' selected' : ''}>지정 순서</option></select>`);
+  h += card('SL 고객사별 연간 매출액', dvBars(c2, { unit: '백만원', legend: Object.entries(DV_GRP).filter(([g]) => c2.some(x => x.c === DV_GRP[g])) }), '백만원');
+  h += '</div>';
+  const tot = sum(all), pct = v => tot ? (v / tot * 100).toFixed(1) + '%' : '0.0%';
+  const line = (a, first) => `<tr>${first || ''}<td class="l">${esc(a.label)}</td><td class="num">${a.vehicles.size}</td><td class="num">${a.items}</td><td class="num">${dvFmt(a.sales)}</td><td class="num">${pct(a.sales)}</td></tr>`;
+  let tb = '';
+  ['SL국내', 'SL인도', 'SL중국', 'SL 기타'].forEach(g => { const l = all.filter(a => a.grp === g); l.forEach((a, i) => tb += line(a, i ? '' : `<td rowspan="${l.length}"><b>${g}</b></td>`)); });
+  tb += `<tr class="sum"><td colspan="2">SL그룹 소계</td><td></td><td class="num">${sl.reduce((t, a) => t + a.items, 0)}</td><td class="num">${dvFmt(sum(sl))}</td><td class="num">${pct(sum(sl))}</td></tr>`;
+  oth.forEach((a, i) => tb += line(a, i ? '' : `<td rowspan="${oth.length}"><b>기타 고객</b></td>`));
+  tb += `<tr class="sum"><td colspan="2">합계</td><td></td><td class="num">${rows.length}</td><td class="num">${dvFmt(tot)}</td><td class="num">100%</td></tr>`;
+  h += `<section class="card"><div class="head"><h2>고객사 현황</h2><span class="sub">연간 매출 합계 <b class="cu">${dvFmt(tot)}</b>백만원</span><span class="spacer"></span><span class="sub">단위: 백만원</span></div><div class="tw"><table class="dvtbl"><thead><tr><th>구분</th><th>고객사</th><th>차종 수</th><th>아이템 수</th><th>연간 매출액</th><th>비중</th></tr></thead><tbody>${tb}</tbody></table></div></section>`;
+  const O = D.meta.owners || [];
+  if (O.length) {
+    const q = dvN(DV.q), map = new Map();
+    rows.forEach(r => { const k = r.cust + '|' + r.car; if (!map.has(k)) map.set(k, { cust: r.cust, car: r.car, o: O.map(() => new Set()) }); const g = map.get(k); O.forEach((_, i) => String(r.own[i] || '').split(/[\/,，、;\n]+/).map(s => s.trim()).filter(s => s && !/^(-|미정|없음)$/.test(s)).forEach(n => g.o[i].add(n))); });
+    const L = [...map.values()].filter(x => !q || dvN(x.cust + x.car).includes(q));
+    h += `<section class="card"><div class="head"><h2>차종별 파트 담당자</h2><span class="sub">${L.length}개 차종</span><span class="spacer"></span><label class="field"><span>검색</span><input class="ci" data-act="dv-q" value="${esc(DV.q)}" placeholder="차종 · 고객"></label></div>
+      <div class="tw" style="max-height:520px"><table class="dvtbl"><thead><tr><th>고객</th><th>차종</th>${O.map(o => `<th>${esc(o.label)}<br><small class="muted">${esc(o.dept)}</small></th>`).join('')}</tr></thead><tbody>${L.map(x => `<tr><td class="l">${esc(x.cust)}</td><td class="l">${esc(x.car)}</td>${x.o.map(s => `<td>${esc([...s].join(', '))}</td>`).join('')}</tr>`).join('')}</tbody></table></div></section>`;
+  }
+  return h;
+}
+function dvTrendTable(T) {
+  const dot = i => `<i class="dvdot" style="background:${DV_TCOL[i % DV_TCOL.length]}"></i>`;
+  if (!DV.trendEdit) return `<table class="dvtrend"><thead><tr><th></th>${T.months.map(m => `<th>${esc(m)}</th>`).join('')}</tr></thead><tbody>${T.series.map((s, i) => `<tr><td class="l">${dot(i)}${esc(s.name)}</td>${T.months.map((_, j) => `<td class="num">${s.values[j] == null ? '–' : dvFmt(s.values[j])}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+  return `<div class="tw free"><table class="dvtrend ed"><thead><tr><th></th>${T.months.map((m, j) => `<th><input class="ci" data-act="dv-t" data-t="m" data-j="${j}" value="${esc(m)}">${T.months.length > 1 ? `<button type="button" class="btn sm" data-act="dv-tdel" data-j="${j}">×</button>` : ''}</th>`).join('')}<th></th></tr></thead><tbody>
+    ${T.series.map((s, i) => `<tr><td>${dot(i)}<input class="ci" data-act="dv-t" data-t="n" data-i="${i}" value="${esc(s.name)}" style="width:96px"></td>${T.months.map((_, j) => `<td><input class="ci onum" data-act="dv-t" data-t="v" data-i="${i}" data-j="${j}" value="${s.values[j] ?? ''}" inputmode="numeric"></td>`).join('')}<td>${T.series.length > 1 ? `<button type="button" class="btn sm" data-act="dv-sdel" data-i="${i}">×</button>` : ''}</td></tr>`).join('')}</tbody></table></div>
+    <div style="display:flex;gap:6px"><button type="button" class="btn sm" data-act="dv-tadd">＋ 월</button><button type="button" class="btn sm" data-act="dv-sadd">＋ 항목</button></div>`;
+}
+
+// ---------- 개발 현황 요약표 ----------
+function dvEok(m) { const e = m / 100; return e >= 100 ? Math.round(e).toLocaleString() + '억' : (Math.round(e * 10) / 10).toFixed(1).replace(/\.0$/, '') + '억'; }
+function dvSummary(D) {
+  const data = D.rows.filter(r => r.item && /^(P\d+|.*SOP.*)$/i.test(r.stage)).map(r => ({ oem: r.oem, cust: r.cust, car: r.car, item: r.item, phase: r.stage, site: r.trans, siteF: r.trans || '광주', rev: r.sales, unrep: r.unrep }));
+  const rank = s => { const i = SITE_ORDER.indexOf(s); return i < 0 ? 99 : i; };
+  const pm = new Map();
+  data.filter(d => d.phase.toUpperCase() === 'P0').forEach((d, idx) => { const k = d.cust + '|' + d.car; if (!pm.has(k)) pm.set(k, { idx, oem: d.oem, cust: d.cust, car: d.car, items: [], rev: 0, sites: [], unrep: true }); const g = pm.get(k); g.items.push(d.item); g.rev += d.rev; if (d.site) g.sites.push(d.site); if (!d.unrep) g.unrep = false; });
+  const p0 = [...pm.values()].map(x => { x.site = x.sites[0] || '광주'; x.label = x.oem + ' / ' + x.cust; const nm = [...new Set(x.items.map(s => s.replace(/_/g, ' ').trim()))], n = x.items.length; x.itemText = nm.length === 1 ? nm[0] : (n === 2 && nm.length === 2) ? nm.join(', ') : nm[0] + ' 외 ' + (n - 1) + '종'; return x; });
+  const lf = {}; p0.forEach(x => { const k = x.site + '|' + x.label; if (lf[k] == null) lf[k] = x.idx; });
+  p0.sort((a, b) => rank(a.site) - rank(b.site) || (a.site < b.site ? -1 : a.site > b.site ? 1 : 0) || lf[a.site + '|' + a.label] - lf[b.site + '|' + b.label] || a.idx - b.idx);
+  const phases = [...new Set(data.map(d => d.phase))].filter(p => p.toUpperCase() !== 'P0').sort((a, b) => { const sa = /SOP/i.test(a), sb = /SOP/i.test(b); return sa !== sb ? (sa ? 1 : -1) : a.localeCompare(b, undefined, { numeric: true }); });
+  const summary = phases.map(ph => { const rs = data.filter(d => d.phase === ph), cars = new Map();
+    rs.forEach(d => { if (!cars.has(d.car)) cars.set(d.car, { car: d.car, oem: d.oem, cust: d.cust, rev: 0 }); cars.get(d.car).rev += d.rev; });
+    const rep = [...cars.values()].sort((a, b) => b.rev - a.rev)[0], oems = new Set(rs.map(d => d.oem)), custs = new Set(rs.map(d => d.cust));
+    return { phase: /SOP/i.test(ph) ? 'SOP' : ph, label: rep.oem + (oems.size > 1 ? ' 외' : '') + ' / ' + rep.cust + (custs.size > 1 ? ' 외' : ''), car: rep.car + (cars.size > 1 ? ' 외 ' + (cars.size - 1) + '차종' : ''), cnt: rs.length, rev: rs.reduce((s, d) => s + d.rev, 0), sites: [...new Set(rs.map(d => d.siteF))].sort((a, b) => rank(a) - rank(b)).join(',') }; });
+  return { count: data.length, total: data.reduce((s, d) => s + d.rev, 0), p0, summary };
+}
+function dvSummaryView(D) {
+  const r = dvSummary(D);
+  if (!r.count) return `<section class="card"><div class="empty">개발단계가 P0 · P1 · P2 · SOP인 아이템이 없습니다. (완성차 · 고객 · 차종명 · 아이템명 · 개발단계 · 이관 · 매출액 열 확인)</div></section>`;
+  const B = 'border:1px solid #a6a6a6;', TD = B + 'padding:2px 6px;font-size:13px;font-family:Malgun Gothic,sans-serif;height:20px;white-space:nowrap;color:#222;background:#fff;', ed = admin || director ? ' contenteditable="true"' : '';
+  let t = `<table class="dvsum" style="border-collapse:collapse;min-width:1000px;background:#fff">`;
+  t += `<tr><td colspan="4" style="border:0;background:#fff"></td><td colspan="2" style="border:0;text-align:left;padding:0 0 4px;background:#fff"><span style="background:#595959;color:#fff;font-size:12px;font-weight:bold;padding:2px 10px;">Total ${dvEok(r.total).replace('억', '')}억</span></td><td style="border:0;background:#fff"></td></tr>`;
+  t += '<tr>' + ['고객사', '차종', '아이템', '매출액', 'SOP', '생산처', '개발단계'].map(s => `<td style="${TD}background:#d9d9d9;font-weight:bold;text-align:center;">${s}</td>`).join('') + '</tr>';
+  const ss = {}, ls = {}; r.p0.forEach(x => { ss[x.site] = (ss[x.site] || 0) + 1; const k = x.site + '|' + x.label; ls[k] = (ls[k] || 0) + 1; });
+  const seenS = {}, seenL = {};
+  r.p0.forEach((x, i) => { const c = x.unrep ? 'color:#a6a6a6;' : 'color:#0000ff;', k = x.site + '|' + x.label; t += '<tr>';
+    if (!seenL[k]) { seenL[k] = 1; t += `<td rowspan="${ls[k]}" style="${TD}vertical-align:middle;"${ed}>${esc(x.label)}</td>`; }
+    t += `<td style="${TD}${c}"${ed}>${esc(x.car)}</td><td style="${TD}${c}"${ed}>${esc(x.itemText)}</td>`;
+    t += x.unrep ? `<td colspan="2" style="${TD}color:#a6a6a6;font-size:11px;text-align:center;"${ed}>미수주보고</td>` : `<td style="${TD}${c}text-align:right;"${ed}>${dvEok(x.rev)}</td><td style="${TD}${c}text-align:center;"${ed}></td>`;
+    if (!seenS[x.site]) { seenS[x.site] = 1; t += `<td rowspan="${ss[x.site]}" style="${TD}background:${SITE_COLOR[x.site] || '#e7e6e6'};text-align:center;vertical-align:middle;"${ed}>${esc(x.site)}</td>`; }
+    if (!i) t += `<td rowspan="${r.p0.length}" style="${TD}text-align:center;vertical-align:middle;">P0</td>`;
+    t += '</tr>'; });
+  r.summary.forEach((s, i) => { const top = i ? '' : 'border-top:2px solid #404040;';
+    t += `<tr><td style="${TD}${top}"${ed}>${esc(s.label)}</td><td colspan="2" style="${TD}${top}"${ed}><b>${esc(s.car)}</b>(${s.cnt})</td><td style="${TD}${top}text-align:right;"${ed}>${dvEok(s.rev)}</td><td style="${TD}${top}text-align:center;"${ed}></td><td style="${TD}${top}font-size:10px;text-align:center;"${ed}>${esc(s.sites)}</td><td style="${TD}${top}text-align:center;">${esc(s.phase)}</td></tr>`; });
+  t += '</table>';
+  return `<div class="kpis"><div class="kpi"><span class="k">인식된 아이템</span><span class="v">${r.count}<small>개</small></span></div><div class="kpi"><span class="k">P0 차종</span><span class="v">${r.p0.length}<small>개</small></span></div><div class="kpi"><span class="k">Total 매출</span><span class="v">${(Math.round(r.total / 10) / 10).toLocaleString()}<small>억</small></span></div></div>
+  <section class="card"><div class="head"><h2>개발 현황 요약표</h2><span class="spacer"></span><button type="button" class="btn primary" data-act="dv-copy">표 복사 (PPT · 엑셀 붙여넣기용)</button></div>
+  <div class="tw free dvsumw">${t}</div></section>`;
+}
+
+// ---------- 이벤트 ----------
+function dvTrendCur() { if (!S.dev.trend) S.dev.trend = JSON.parse(JSON.stringify(DV_TREND0)); return S.dev.trend; }
+let dvTimer = null;
+function dvTrendSave(now) { clearTimeout(dvTimer); const go = () => put('dev/trend', S.dev.trend); if (now) go(); else dvTimer = setTimeout(go, 600); }
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-act^="dv-"]'); if (!t) return;
+  const a = t.dataset.act;
+  if (a === 'dv-mode') { DV.mode = t.dataset.v; render(); }
+  else if (a === 'dv-paste') { if (!admin) return; openDlg(`<h2>차종시트 붙여넣기</h2><div class="form" style="grid-template-columns:1fr"><label class="field">엑셀 차종시트에서 제목 줄(두 줄 제목도 가능)부터 표 전체를 복사해 붙여넣기<textarea id="dvText" rows="12" style="width:100%;font:12px var(--font-num);border:1px solid var(--line);border-radius:6px;padding:8px" placeholder="여기에 Ctrl+V"></textarea></label><div class="err" id="dvErr"></div><div class="actions"><span class="spacer"></span><button type="button" class="btn" data-act="close">취소</button><button type="button" class="btn primary" data-act="dv-save">가져오기</button></div></div>`, true); setTimeout(() => $('#dvText')?.focus(), 30); }
+  else if (a === 'dv-save') { const btn = t; btn.disabled = true; btn.textContent = '저장 중…';
+    let p; try { p = dvSave($('#dvText').value); } catch (x) { $('#dvErr').textContent = x.message; btn.disabled = false; btn.textContent = '가져오기'; return; }
+    p.then(d => { closeDlg(); render(); toast(`${d.rows.length}행 반영${d.miss.length ? ' · 못 찾은 열: ' + d.miss.join(', ') : ''}`, !!d.miss.length); }).catch(x => { $('#dvErr').textContent = '저장하지 못했습니다: ' + x.message; btn.disabled = false; btn.textContent = '가져오기'; }); }
+  else if (a === 'dv-tedit') { DV.trendEdit = !DV.trendEdit; if (!DV.trendEdit && S.dev.trend) dvTrendSave(true); render(); }
+  else if (a === 'dv-tadd' || a === 'dv-sadd' || a === 'dv-tdel' || a === 'dv-sdel') { if (!admin) return; const T = dvTrendCur();
+    if (a === 'dv-tadd') { T.months.push((T.months.length + 1) + '월'); T.series.forEach(s => s.values.push(null)); }
+    if (a === 'dv-sadd') T.series.push({ name: '새 항목', values: T.months.map(() => null) });
+    if (a === 'dv-tdel') { const j = +t.dataset.j; T.months.splice(j, 1); T.series.forEach(s => s.values.splice(j, 1)); }
+    if (a === 'dv-sdel') T.series.splice(+t.dataset.i, 1);
+    dvTrendSave(true); render(); }
+  else if (a === 'dv-copy') { const tb = document.querySelector('.dvsum'); if (!tb) return; const html = tb.outerHTML.replace(/ contenteditable="true"/g, '');
+    const done = () => toast('복사했습니다 — PPT나 엑셀에 붙여넣으세요');
+    try { navigator.clipboard.write([new ClipboardItem({ 'text/html': new Blob([html], { type: 'text/html' }), 'text/plain': new Blob([tb.innerText], { type: 'text/plain' }) })]).then(done, () => { throw 0; }); }
+    catch { const rg = document.createRange(); rg.selectNode(tb); const s = getSelection(); s.removeAllRanges(); s.addRange(rg); try { document.execCommand('copy'); done(); } catch { toast('표를 드래그해서 직접 복사해 주세요', true); } s.removeAllRanges(); } }
+});
+document.addEventListener('change', e => {
+  const a = e.target.dataset?.act;
+  if (a === 'dv-basis') { DV.basis = e.target.value; render(); }
+  else if (a === 'dv-sort') { DV.sort = e.target.value; render(); }
+});
+document.addEventListener('input', e => {
+  const el = e.target, a = el.dataset?.act;
+  if (a === 'dv-q') { DV.q = el.value; render(); setTimeout(() => { const i = document.querySelector('[data-act="dv-q"]'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }, 0); }
+  else if (a === 'dv-t' && admin) { const T = dvTrendCur(), k = el.dataset.t;
+    if (k === 'm') T.months[+el.dataset.j] = el.value; else if (k === 'n') T.series[+el.dataset.i].name = el.value;
+    else { const s = el.value.replace(/,/g, '').trim(), n = s === '' ? null : Number(s); T.series[+el.dataset.i].values[+el.dataset.j] = n === null || !isFinite(n) ? null : n; }
+    dvTrendSave(); const b = el.closest('.dvbody'); if (b) { const svg = b.querySelector('svg'), lg = b.querySelector('.dvlg'); const tmp = document.createElement('div'); tmp.innerHTML = dvLine(T); if (svg) svg.replaceWith(tmp.querySelector('svg')); if (lg) lg.replaceWith(tmp.querySelector('.dvlg')); } }
+});
+
+// ---------- 숫자 카운트 업 ----------
+const CU = new Map();
+function countUp() {
+  if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const r = route(), seen = {};
+  document.querySelectorAll('#view .kpi .v, #view .cu, #view .ob em').forEach(el => {
+    const tn = [...el.childNodes].find(n => n.nodeType === 3 && /\d/.test(n.nodeValue)); if (!tn) return;
+    const m = tn.nodeValue.match(/^(\D*?)(-?\d[\d,]*(?:\.\d+)?)([\s\S]*)$/); if (!m) return;
+    const to = parseFloat(m[2].replace(/,/g, '')); if (!isFinite(to)) return;
+    const base = r + '|' + (el.closest('.kpi')?.querySelector('.k')?.textContent || el.closest('.card,.dvcard')?.querySelector('h2')?.textContent || '') + '|' + el.tagName;
+    const k = base + '#' + (seen[base] = (seen[base] || 0) + 1);
+    const from = CU.has(k) ? CU.get(k) : 0; CU.set(k, to);
+    if (from === to) return;
+    const dec = (m[2].split('.')[1] || '').length, comma = /,/.test(m[2]) || Math.abs(to) >= 1000, t0 = performance.now(), dur = 700;
+    const f = v => comma ? v.toLocaleString('ko-KR', { minimumFractionDigits: dec, maximumFractionDigits: dec }) : v.toFixed(dec);
+    const step = now => { const p = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - p, 3); tn.nodeValue = m[1] + f(from + (to - from) * e) + m[3]; if (p < 1 && tn.isConnected) requestAnimationFrame(step); };
+    tn.nodeValue = m[1] + f(from) + m[3]; requestAnimationFrame(step);
+  });
+}
+
 // ---------- routing ----------
-const ROUTES = ['people', 'asset', 'education', 'assess', 'accounts'];
+const ROUTES = ['people', 'asset', 'education', 'assess', 'dev', 'accounts'];
 const canSet = () => admin || director || leader || viewAll;   // 기준 정보 보기 · 사진 보기 (팀장 이상)
 const orgPh = () => ui.orgPhoto && canSet();
 const route = () => { let h = location.hash.slice(1);
   if (h === 'dashboard') { ui.assessMode = 'sum'; h = 'assess'; history.replaceState(null, '', '#assess'); }   // 예전 주소
   if (h === 'settings') { ui.assessMode = canSet() ? 'set' : 'sum'; h = 'assess'; history.replaceState(null, '', '#assess'); }
-  return ROUTES.includes(h) && (h !== 'accounts' || admin) ? h : 'people'; };
+  return ROUTES.includes(h) && (h !== 'accounts' || admin) && (h !== 'dev' || canDev()) ? h : 'people'; };
 window.addEventListener('hashchange', () => { render(); window.scrollTo(0, 0); });
 
 // ---------- render ----------
@@ -1584,9 +1900,9 @@ function renderInner() {
   const r = route();
   let html = '';
   if ((leader || scoped) && !S.people.some(p => p.team === myTeam)) html += `<div class="notice bad">${esc(auth.user.role)} 계정의 소속이 '${esc(myTeam || '미지정')}'인데, 인원 명단에 이 소속의 인원이 없어 볼 수 있는(수정할 수 있는) 사람이 없습니다. 관리자에게 계정 소속을 명단의 팀 이름(${esc((S.config.teamOrder || []).join(', '))})과 똑같이 바꿔 달라고 하세요.</div>`;
-  html += ({ assess: vAssess, education: vEdu, people: vPeople, asset: vAsset, accounts: vAccounts })[r]();
+  html += ({ assess: vAssess, education: vEdu, people: vPeople, asset: vAsset, dev: vDev, accounts: vAccounts })[r]();
   v.innerHTML = html;
-  orgFix();
+  orgFix(); countUp();
 }
 
 // ===== 종합 =====
@@ -3023,7 +3339,7 @@ document.addEventListener('submit', e => {
 
 // ---------- export ----------
 function snapshotData() {
-  return { version: 1, exported: new Date().toISOString(), config: (({ id, ...c }) => c)(S.config), parts: S.parts, people: [...S.people, ...S.heads], grades: S.grades, courses: S.courses, edu: S.edu, history: S.history, archive: S.archive, hr: S.hr, asset: S.asset, sw: S.sw, seat: S.seat };
+  return { version: 1, exported: new Date().toISOString(), config: (({ id, ...c }) => c)(S.config), parts: S.parts, people: [...S.people, ...S.heads], grades: S.grades, courses: S.courses, edu: S.edu, history: S.history, archive: S.archive, hr: S.hr, asset: S.asset, sw: S.sw, seat: S.seat, dev: S.dev };
 }
 function saveFile(filename, data) {
   const url = URL.createObjectURL(data instanceof Blob ? data : new Blob([data], { type: 'application/json' }));
@@ -3062,6 +3378,7 @@ function docsFromData(data) {
   for (const [k, r] of Object.entries(data.edu || {})) docs['edu/' + k] = { r };
   for (const h of data.history || []) docs['history/' + h.id] = strip(h);
   for (const h of data.hr || []) docs['hr/' + h.id] = strip(h);
+  for (const [k, v] of Object.entries(data.dev || {})) docs['dev/' + k] = v;
   for (const a of data.asset || []) docs['asset/' + a.id] = strip(a);
   for (const a of data.sw || []) docs['sw/' + a.id] = strip(a);
   if (data.seat) docs['seat/main'] = data.seat;
