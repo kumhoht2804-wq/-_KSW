@@ -589,7 +589,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.17 14:45</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.17 14:46</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -1826,7 +1826,7 @@ function dvSummary(D) {
 function dvSummaryView(D) {
   const r = dvSummary(D);
   if (!r.count) return `<section class="card"><div class="empty">개발단계가 P0 · P1 · P2 · SOP인 아이템이 없습니다. (완성차 · 고객 · 차종명 · 아이템명 · 개발단계 · 이관 · 매출액 열 확인)</div></section>`;
-  const B = 'border:1px solid #a6a6a6;', TD = B + 'padding:2px 6px;font-size:13px;font-family:Malgun Gothic,sans-serif;height:20px;white-space:nowrap;color:#222;background:#fff;', ed = admin ? ' contenteditable="true"' : '';
+  const B = 'border:1px solid #a6a6a6;', TD = B + 'padding:2px 6px;font-size:13px;font-family:'Pretendard Variable',Pretendard,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;height:20px;white-space:nowrap;color:#222;background:#fff;', ed = admin ? ' contenteditable="true"' : '';
   let t = `<table class="dvsum" style="border-collapse:collapse;min-width:1000px;background:#fff">`;
   t += `<tr><td colspan="4" style="border:0;background:#fff"></td><td colspan="2" style="border:0;text-align:left;padding:0 0 4px;background:#fff"><span style="background:#595959;color:#fff;font-size:12px;font-weight:bold;padding:2px 10px;">Total ${dvEok(r.total).replace('억', '')}억</span></td><td style="border:0;background:#fff"></td></tr>`;
   t += '<tr>' + ['고객사', '차종', '아이템', '매출액', 'SOP', '생산처', '개발단계'].map(s => `<td style="${TD}background:#d9d9d9;font-weight:bold;text-align:center;">${s}</td>`).join('') + '</tr>';
