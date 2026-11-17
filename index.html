@@ -592,7 +592,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">금호HT 모듈개발연구소 · v2026.11.17 17:51</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">금호HT 모듈개발연구소 · v2026.11.17 18:10</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -2526,7 +2526,7 @@ function vOrg(seg) {
     ${ecolsU.length ? `<div class="tw free oext"><table class="eqtbl ohc"><thead>
     <tr>${ecolsU.map(g => `<th colspan="${g.xs.length}">${esc(g.u.name)}</th>`).join('')}</tr>
     <tr>${ecolsU.flatMap(g => g.xs).map(x => `<th class="pch pc9">${esc(x.c)}</th>`).join('')}</tr></thead><tbody>${body(ecolsU.flatMap(g => g.xs), false)}</tbody></table></div>` : ''}
-  </div>${(() => { const m = hasH ? hrMiss([...mcols, ...ecols]) : []; return m.length ? `<div class="small muted" style="margin-top:6px">파트를 알 수 없어 팀 합계에만 들어간 인원: ${m.join(' · ')} (인사 기록 수정에서 파트를 정하면 나뉩니다)</div>` : ''; })()}</section>`;
+  </div></section>`;
   return h;
 }
 function orgDialog() {
@@ -2759,7 +2759,7 @@ function vHR(seg) {
     <tr>${teams.map(() => '<th>입사</th><th>퇴사</th>').join('')}<th>입사</th><th>퇴사</th><th>증감</th><th>연말 인원</th></tr></thead><tbody>
     ${ys.map(y => { const I = teams.reduce((a, t) => a + cell(y, t, 'in'), 0), O = teams.reduce((a, t) => a + cell(y, t, 'out'), 0), g = I - O, end = hrActiveAt(y === cur ? today() : y + '-12-31').length;
       return `<tr><td><b>${y}</b>${y === cur ? ' <span class="muted small">진행 중</span>' : ''}</td>${teams.map(t => { const a = cell(y, t, 'in'), b = cell(y, t, 'out'); return `<td class="num${a ? '' : ' muted'}">${a || '–'}</td><td class="num${b ? ' neg' : ' muted'}">${b || '–'}</td>`; }).join('')}<td class="num"><b>${I}</b></td><td class="num${O ? ' neg' : ''}"><b>${O}</b></td><td class="num${g < 0 ? ' neg' : ''}">${g > 0 ? '+' + g : g}</td><td class="num"><b>${end}</b></td></tr>`; }).join('')}
-  </tbody></table></div>${S.hr.some(x => x.moved) ? `<div class="small muted">부서변동 ${S.hr.filter(x => x.moved).length}명은 날짜가 없어 연말 인원에서 빠집니다.</div>` : ''}</section>`;
+  </tbody></table></div>${S.hr.some(x => x.moved) ? `` : ''}</section>`;
   // 명단과 맞춰 보기
   const act = S.hr.filter(x => hrStatus(x) === '재직');
   const noRoster = act.filter(x => !HR_HEADS.includes(x.pos) && !hrLink(x));
@@ -2821,7 +2821,7 @@ function vHRYear(seg) {
       <tr class="hl"><td><b>합계</b></td>${ms.map((m, i) => fut(m) ? '<td class="fut"></td>' : `<td class="num"><b>${act[i].length}</b></td>`).join('')}</tr>
       <tr><td class="muted">입사</td>${ms.map(m => { if (fut(m)) return '<td class="fut"></td>'; const L = ev(m, 'in'); return `<td class="num" title="${esc(L.map(x => `${x.name}(${x.team})`).join(', '))}">${L.length || '<span class="muted">–</span>'}</td>`; }).join('')}</tr>
       <tr><td class="muted">퇴사</td>${ms.map(m => { if (fut(m)) return '<td class="fut"></td>'; const L = ev(m, 'out'); return `<td class="num${L.length ? ' neg' : ''}" title="${esc(L.map(x => `${x.name}(${x.team})`).join(', '))}">${L.length || '<span class="muted">–</span>'}</td>`; }).join('')}</tr>
-    </tbody></table></div><div class="small muted">▲▼는 전월 대비 증감 · 입사·퇴사 숫자에 마우스를 올리면 이름이 보입니다 · 파트는 인원 명단 기준이고, 명단에 없는 사람은 인사 기록 수정에서 파트를 넣으면 나뉩니다</div></section>`;
+    </tbody></table></div></section>`;
   }
   // 연도별 추이 (연말 인원)
   const ys = years.slice(0, 6).reverse(), allT = hrTeams().filter(t => ys.some(y => hrActiveAt(y === cur ? today() : y + '-12-31').some(x => x.team === t)));
@@ -2890,12 +2890,11 @@ function vSeat(seg) {
   };
   const island = (it, bp) => `<div class="isl" style="--c:${Math.max(...it.rows.map(r => r.length), 1)}">${it.rows.map((r, ri) => r.map((v, ci) => seat(v, `${bp}.${ri}.${ci}`, false, ((it.ext || [])[ri] || [])[ci])).join('') + (r.length < Math.max(...it.rows.map(x => x.length)) ? '<div class="st none"></div>'.repeat(Math.max(...it.rows.map(x => x.length)) - r.length) : '')).join('')}${it.hasLead ? seat(it.lead, `${bp}.L`, true, it.leadExt) : ''}</div>`;
   const item = (it, bp) => it.type === 'room' ? `<div class="room${it.tall ? ' tall' : ''}"><span>${esc(it.label)}</span></div>` : island(it, bp);
-  h += `<section class="card"><div class="head"><h2>자리 배치</h2><span class="sub">${ro ? '' : extMode ? '자리마다 내선번호를 입력하세요 · 사람이 바뀌어도 번호는 자리에 남습니다' : '자리에 이름을 바로 입력하세요 (Enter·Tab으로 저장) · 없는 자리는 x'}</span></div><div class="seatw"><div class="seats">${m.blocks.map((b, bi) => b.type === 'stack' ? `<div class="stk">${b.items.map((it, ii) => item(it, `${bi}:${ii}`)).join('')}</div>` : item(b, `${bi}`)).join('')}</div></div>`;
+  h += `<section class="card"><div class="head"><h2>자리 배치</h2></div><div class="seatw"><div class="seats">${m.blocks.map((b, bi) => b.type === 'stack' ? `<div class="stk">${b.items.map((it, ii) => item(it, `${bi}:${ii}`)).join('')}</div>` : item(b, `${bi}`)).join('')}</div></div>`;
   const miss = C.sortComp(S.people).filter(p => !used.has(p.id));
   h += `<datalist id="seatNames">${C.sortComp(S.people).map(p => `<option value="${esc(p.name)}">${esc(p.team)} · ${esc(RSHORT(p.rank))}</option>`).join('')}<option value="공석"></datalist>`;
   h += `<div class="seatlg">${C.teams(S.people).map(t => `<span><i class="${tc(t)}"></i>${esc(t)}</span>`).join('')}</div>`;
   if (ro) { /* 보기 전용 */ } else if (miss.length) h += `<div class="small muted">자리 미지정 ${miss.length}명: ${miss.map(p => esc(p.name)).join(', ')}</div>`;
-  else h += `<div class="small muted">명단의 모든 인원이 자리에 배치되어 있습니다.</div>`;
   h += `</section>`;
   return h;
 }
