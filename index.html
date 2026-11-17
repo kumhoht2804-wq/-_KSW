@@ -557,7 +557,7 @@ body.dense .toolbar{gap:8px}
 @keyframes dvgrow{from{transform:scaleY(0)}to{transform:scaleY(1)}}@keyframes dvfade{from{opacity:0}to{opacity:1}}@keyframes dvdraw{to{stroke-dashoffset:0}}
 @media (prefers-reduced-motion:reduce){.dvbar,.dvarc,.dvln{animation:none;stroke-dashoffset:0}}
 .dvtrend{width:100%;font-size:12px}.dvtrend th,.dvtrend td{padding:4px 6px;text-align:center}.dvtrend td.l{text-align:left;white-space:nowrap}
-.dvtrend.ed input.ci{width:58px;height:26px;text-align:center}.dvdot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:middle}
+.dvtrend.ed input.ci{width:54px;height:26px;text-align:center}.dvtrend .dvcur{background:var(--accent-soft);font-weight:700}.dvdot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:middle}
 .dvtbl td.l{text-align:left}.dvtbl tr.sum td{background:var(--sunk);font-weight:700}
 .dvsumw{background:#fff;padding:14px;border-radius:6px;border:1px solid var(--line);display:flex;justify-content:center}
 .cu,.kpi .v,.ob em,.dvk b,.dvhc b,.dvhv b{font-variant-numeric:tabular-nums}
@@ -589,7 +589,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">금호HT 모듈개발연구소 · v2026.11.17 17:16</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">금호HT 모듈개발연구소 · v2026.11.17 17:20</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -1615,6 +1615,21 @@ const DV_CUS = [
 const DV_C1_ORDER = ['ZKW', '강소일흥', '북경서연이화', 'MAKO', '카펙발레오', '세방', '유러코퍼레이션', '천진지풍', 'BSI', 'MINDA'];
 const DV_GRP = { 'SL국내': '#5B8FF9', 'SL인도': '#E0A800', 'SL중국': '#D9482B', 'SL 기타': '#999' };
 const DV_TREND0 = { months: ['8월', '9월', '10월'], series: [{ name: '26년 PJT수', values: [160, 159, 179] }, { name: '25년 PJT수', values: [144, 119, 122] }, { name: '26년 차종수', values: [32, 31, 37] }] };
+const dvYm = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+function dvMonths() { const d = new Date(), out = []; for (let i = 5; i >= 0; i--) out.push(dvYm(new Date(d.getFullYear(), d.getMonth() - i, 1))); return out; }
+function dvStats(rows) { const r = rows.filter(x => x.car); return { pjt: new Set(r.map((x, i) => x.mg || 'row' + i)).size, car: new Set(r.map(x => dvN(x.car).replace(/[_\-]/g, ''))).size }; }
+function dvTrend2() {
+  if (S.dev.trend2) return S.dev.trend2;
+  const o = {}, now = new Date(), cm = now.getMonth() + 1;
+  [DV_TREND0, S.dev.trend].filter(Boolean).forEach(T => T.months.forEach((lb, j) => { const m = +String(lb).replace(/\D/g, ''); if (!m || m > 12) return; const y = m <= cm ? now.getFullYear() : now.getFullYear() - 1, k = y + '-' + String(m).padStart(2, '0');
+    const v = i => T.series[i] ? T.series[i].values[j] ?? null : null; o[k] = { pjt: v(0), prev: v(1), car: v(2) }; }));
+  return S.dev.trend2 = o;
+}
+function dvTrendT(rows) {
+  const keys = dvMonths(), cur = keys[5], t2 = dvTrend2(), st = dvStats(rows), y = +cur.slice(2, 4);
+  const val = (k, f) => k === cur && f !== 'prev' ? st[f] : ((t2[k] || {})[f] ?? null);
+  return { keys, cur, months: keys.map(k => +k.slice(5) + '월'), series: [{ f: 'pjt', name: y + '년 PJT수' }, { f: 'prev', name: (y - 1) + '년 PJT수' }, { f: 'car', name: y + '년 차종수' }].map(x => ({ ...x, values: keys.map(k => val(k, x.f)) })) };
+}
 const DV_TCOL = ['#16202A', '#9aa0a6', '#2f6fdb', '#e8684a', '#61ddaa', '#9270ca'];
 const SITE_ORDER = ['인도', '광주', '천진', '베트남'];
 const SITE_COLOR = { '인도': '#b7dee8', '광주': '#8db4e2', '천진': '#ff9999', '베트남': '#fac090' };
@@ -1677,6 +1692,8 @@ function dvSave(text) {
   const ops = chunks.map((rows, i) => ({ path: 'dev/c' + i, data: { rows } }));
   for (let i = chunks.length; i < old; i++) ops.push({ path: 'dev/c' + i, data: null });
   ops.push({ path: 'dev/meta', data: meta });
+  const t2 = dvTrend2(), ck = dvYm(new Date()), st = dvStats(d.rows.map(a => ({ mg: a[0], car: a[3] })));
+  t2[ck] = { ...(t2[ck] || {}), pjt: st.pjt, car: st.car }; ops.push({ path: 'dev/trend2', data: t2 });
   return putBatch(ops).then(() => { for (let i = 0; i < Math.max(old, chunks.length); i++) delete S.dev['c' + i]; chunks.forEach((rows, i) => S.dev['c' + i] = { rows }); S.dev.meta = meta; dvCache = null; return d; });
 }
 
@@ -1765,7 +1782,7 @@ function dvCarView(D) {
   c1 = c1.filter(x => Math.round(x.v) || x.n); if (DV.sort === 'sales') c1.sort((a, b) => b.v - a.v);
   const c2 = []; ['SL국내', 'SL인도', 'SL중국'].forEach(g => DV_CUS.filter(d => d.group === g).forEach(d => c2.push({ l: d.chart, v: agg[d.id].sales, c: DV_GRP[g] })));
   sl.filter(a => !DV_CUS.some(d => agg[d.id] === a)).forEach(a => c2.push({ l: a.chart, v: a.sales, c: DV_GRP['SL 기타'] }));
-  const T = (S.dev && S.dev.trend) || DV_TREND0;
+  const T = dvTrendT(rows);
   const card = (t, body, unit, extra, span) => `<section class="card dvcard s${span || 2}"><div class="head"><h2>${t}</h2>${extra || ''}<span class="spacer"></span>${unit ? `<span class="sub">단위: ${unit}</span>` : ''}</div><div class="dvbody">${body}</div></section>`;
   const stg = { P0: new Set(), P1: new Set(), P2: new Set(), 'M/SOP': new Set() };
   rows.forEach((r, i) => { const t = dvN(r.stage), k = /^P0$/.test(t) ? 'P0' : /^P1$/.test(t) ? 'P1' : /^P2$/.test(t) ? 'P2' : /^(M\/?SOP|SOP|M)$/.test(t) ? 'M/SOP' : ''; if (k) stg[k].add(idOf(r, i)); });
@@ -1800,10 +1817,10 @@ function dvCarView(D) {
 }
 function dvTrendTable(T) {
   const dot = i => `<i class="dvdot" style="background:${DV_TCOL[i % DV_TCOL.length]}"></i>`;
-  if (!DV.trendEdit) return `<table class="dvtrend"><thead><tr><th></th>${T.months.map(m => `<th>${esc(m)}</th>`).join('')}</tr></thead><tbody>${T.series.map((s, i) => `<tr><td class="l">${dot(i)}${esc(s.name)}</td>${T.months.map((_, j) => `<td class="num">${s.values[j] == null ? '–' : dvFmt(s.values[j])}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
-  return `<div class="tw free"><table class="dvtrend ed"><thead><tr><th></th>${T.months.map((m, j) => `<th><input class="ci" data-act="dv-t" data-t="m" data-j="${j}" value="${esc(m)}">${T.months.length > 1 ? `<button type="button" class="btn sm" data-act="dv-tdel" data-j="${j}">×</button>` : ''}</th>`).join('')}<th></th></tr></thead><tbody>
-    ${T.series.map((s, i) => `<tr><td>${dot(i)}<input class="ci" data-act="dv-t" data-t="n" data-i="${i}" value="${esc(s.name)}" style="width:96px"></td>${T.months.map((_, j) => `<td><input class="ci onum" data-act="dv-t" data-t="v" data-i="${i}" data-j="${j}" value="${s.values[j] ?? ''}" inputmode="numeric"></td>`).join('')}<td>${T.series.length > 1 ? `<button type="button" class="btn sm" data-act="dv-sdel" data-i="${i}">×</button>` : ''}</td></tr>`).join('')}</tbody></table></div>
-    <div style="display:flex;gap:6px"><button type="button" class="btn sm" data-act="dv-tadd">＋ 월</button><button type="button" class="btn sm" data-act="dv-sadd">＋ 항목</button></div>`;
+  const cell = (s, j) => { const k = T.keys[j], v = s.values[j];
+    if (!DV.trendEdit || (k === T.cur && s.f !== 'prev')) return `<td class="num${k === T.cur ? ' dvcur' : ''}">${v == null ? '–' : dvFmt(v)}</td>`;
+    return `<td><input class="ci onum" data-act="dv-t2" data-k="${k}" data-f="${s.f}" value="${v ?? ''}" inputmode="numeric"></td>`; };
+  return `<table class="dvtrend${DV.trendEdit ? ' ed' : ''}"><thead><tr><th></th>${T.months.map((m, j) => `<th${T.keys[j] === T.cur ? ' class="dvcur"' : ''}>${esc(m)}</th>`).join('')}</tr></thead><tbody>${T.series.map((s, i) => `<tr><td class="l">${dot(i)}${esc(s.name)}</td>${T.months.map((_, j) => cell(s, j)).join('')}</tr>`).join('')}</tbody></table>`;
 }
 
 // ---------- 개발 현황 요약표 ----------
@@ -1851,9 +1868,9 @@ function dvSummaryView(D) {
 }
 
 // ---------- 이벤트 ----------
-function dvTrendCur() { if (!S.dev.trend) S.dev.trend = JSON.parse(JSON.stringify(DV_TREND0)); return S.dev.trend; }
+
 let dvTimer = null;
-function dvTrendSave(now) { clearTimeout(dvTimer); const go = () => put('dev/trend', S.dev.trend); if (now) go(); else dvTimer = setTimeout(go, 600); }
+function dvTrendSave(now) { clearTimeout(dvTimer); const go = () => put('dev/trend2', dvTrend2()); if (now) go(); else dvTimer = setTimeout(go, 600); }
 document.addEventListener('click', e => {
   const t = e.target.closest('[data-act^="dv-"]'); if (!t) return;
   const a = t.dataset.act;
@@ -1862,13 +1879,7 @@ document.addEventListener('click', e => {
   else if (a === 'dv-save') { const btn = t; btn.disabled = true; btn.textContent = '저장 중…';
     let p; try { p = dvSave($('#dvText').value); } catch (x) { $('#dvErr').textContent = x.message; btn.disabled = false; btn.textContent = '가져오기'; return; }
     p.then(d => { closeDlg(); render(); toast(`${d.rows.length}행 반영${d.miss.length ? ' · 못 찾은 열: ' + d.miss.join(', ') : ''}`, !!d.miss.length); }).catch(x => { $('#dvErr').textContent = '저장하지 못했습니다: ' + x.message; btn.disabled = false; btn.textContent = '가져오기'; }); }
-  else if (a === 'dv-tedit') { DV.trendEdit = !DV.trendEdit; if (!DV.trendEdit && S.dev.trend) dvTrendSave(true); render(); }
-  else if (a === 'dv-tadd' || a === 'dv-sadd' || a === 'dv-tdel' || a === 'dv-sdel') { if (!admin) return; const T = dvTrendCur();
-    if (a === 'dv-tadd') { T.months.push((T.months.length + 1) + '월'); T.series.forEach(s => s.values.push(null)); }
-    if (a === 'dv-sadd') T.series.push({ name: '새 항목', values: T.months.map(() => null) });
-    if (a === 'dv-tdel') { const j = +t.dataset.j; T.months.splice(j, 1); T.series.forEach(s => s.values.splice(j, 1)); }
-    if (a === 'dv-sdel') T.series.splice(+t.dataset.i, 1);
-    dvTrendSave(true); render(); }
+  else if (a === 'dv-tedit') { DV.trendEdit = !DV.trendEdit; if (!DV.trendEdit) dvTrendSave(true); render(); }
   else if (a === 'dv-copy') { const tb = document.querySelector('.dvsum'); if (!tb) return; const html = tb.outerHTML.replace(/ contenteditable="true"/g, '');
     const done = () => toast('복사했습니다 — PPT나 엑셀에 붙여넣으세요');
     try { navigator.clipboard.write([new ClipboardItem({ 'text/html': new Blob([html], { type: 'text/html' }), 'text/plain': new Blob([tb.innerText], { type: 'text/plain' }) })]).then(done, () => { throw 0; }); }
@@ -1883,10 +1894,9 @@ document.addEventListener('change', e => {
 document.addEventListener('input', e => {
   const el = e.target, a = el.dataset?.act;
   if (a === 'dv-q') { DV.q = el.value; render(); setTimeout(() => { const i = document.querySelector('[data-act="dv-q"]'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }, 0); }
-  else if (a === 'dv-t' && admin) { const T = dvTrendCur(), k = el.dataset.t;
-    if (k === 'm') T.months[+el.dataset.j] = el.value; else if (k === 'n') T.series[+el.dataset.i].name = el.value;
-    else { const s = el.value.replace(/,/g, '').trim(), n = s === '' ? null : Number(s); T.series[+el.dataset.i].values[+el.dataset.j] = n === null || !isFinite(n) ? null : n; }
-    dvTrendSave(); const ch = el.closest('.dvbody')?.querySelector('.dvch'); if (ch) ch.innerHTML = dvLineSvg(T, Math.floor(ch.clientWidth)); }
+  else if (a === 'dv-t2' && admin) { const t2 = dvTrend2(), k = el.dataset.k, v = el.value.replace(/,/g, '').trim(), n = v === '' ? null : Number(v);
+    t2[k] = { ...(t2[k] || {}), [el.dataset.f]: n === null || !isFinite(n) ? null : Math.round(n) }; dvTrendSave();
+    const D = dvData(), T = dvTrendT(D ? D.rows : []), ch = el.closest('.dvbody')?.querySelector('.dvch'); if (ch) ch.innerHTML = dvLineSvg(T, Math.floor(ch.clientWidth)); }
 });
 
 // ---------- 숫자 카운트 업 ----------
