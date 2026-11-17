@@ -534,9 +534,9 @@ body.dense .toolbar{gap:8px}
 .dvh1{display:flex;flex-direction:column;gap:2px}.dvhk{font-size:13px;font-weight:700;color:var(--muted)}
 .dvhv{display:flex;align-items:baseline;gap:6px}.dvhv b{font:800 40px/1.05 var(--font-num);letter-spacing:-1px;color:var(--ink)}.dvhv em{font-style:normal;font-size:18px;font-weight:700;color:var(--muted)}
 .dvhs{font-size:12px;color:var(--muted)}
-.dvhcs{display:grid;grid-template-columns:repeat(4,minmax(96px,1fr));gap:8px}
+.dvhcs{display:grid;grid-template-columns:repeat(4,minmax(130px,1fr));gap:8px}
 .dvhc{background:var(--sunk);border:1px solid var(--line);border-radius:8px;padding:8px 14px;display:flex;align-items:baseline;gap:5px;flex-wrap:wrap}
-.dvhc span{width:100%;font-size:12px;font-weight:700;color:var(--accent)}.dvhc b{font:700 22px/1.1 var(--font-num);color:var(--ink)}.dvhc em{font-style:normal;font-size:11.5px;color:var(--muted)}
+.dvhc span{width:100%;font-size:12px;font-weight:700;color:var(--accent);display:flex;justify-content:space-between;gap:8px}.dvhc span small{font-weight:500;color:var(--muted);font-size:11px}.dvhc b{font:700 22px/1.1 var(--font-num);color:var(--ink)}.dvhc em{font-style:normal;font-size:11.5px;color:var(--muted)}
 
 .dvsvg{width:100%;height:auto;display:block;overflow:visible}
 .dvch{width:100%}.dvch .dvsvg{width:auto}
@@ -589,7 +589,7 @@ body.dense .toolbar{gap:8px}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.17 14:46</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">연구소 역량·교육 관리 · v2026.11.17 14:47</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -1826,7 +1826,7 @@ function dvSummary(D) {
 function dvSummaryView(D) {
   const r = dvSummary(D);
   if (!r.count) return `<section class="card"><div class="empty">개발단계가 P0 · P1 · P2 · SOP인 아이템이 없습니다. (완성차 · 고객 · 차종명 · 아이템명 · 개발단계 · 이관 · 매출액 열 확인)</div></section>`;
-  const B = 'border:1px solid #a6a6a6;', TD = B + 'padding:2px 6px;font-size:13px;font-family:'Pretendard Variable',Pretendard,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;height:20px;white-space:nowrap;color:#222;background:#fff;', ed = admin ? ' contenteditable="true"' : '';
+  const B = 'border:1px solid #a6a6a6;', TD = B + 'padding:2px 6px;font-size:13px;font-family:Pretendard Variable,Pretendard,Apple SD Gothic Neo,Malgun Gothic,sans-serif;height:20px;white-space:nowrap;color:#222;background:#fff;', ed = admin ? ' contenteditable="true"' : '';
   let t = `<table class="dvsum" style="border-collapse:collapse;min-width:1000px;background:#fff">`;
   t += `<tr><td colspan="4" style="border:0;background:#fff"></td><td colspan="2" style="border:0;text-align:left;padding:0 0 4px;background:#fff"><span style="background:#595959;color:#fff;font-size:12px;font-weight:bold;padding:2px 10px;">Total ${dvEok(r.total).replace('억', '')}억</span></td><td style="border:0;background:#fff"></td></tr>`;
   t += '<tr>' + ['고객사', '차종', '아이템', '매출액', 'SOP', '생산처', '개발단계'].map(s => `<td style="${TD}background:#d9d9d9;font-weight:bold;text-align:center;">${s}</td>`).join('') + '</tr>';
@@ -1845,7 +1845,7 @@ function dvSummaryView(D) {
   const ph = k => r.summary.find(x => x.phase === k);
   const chip = (k, n, u) => `<div class="dvhc"><span>${k}</span><b class="cu">${n}</b><em>${u}</em></div>`;
   return `<section class="dvhero"><div class="dvh1"><span class="dvhk">개발 현황 요약표</span><div class="dvhv"><b class="cu">${Math.round(r.total / 100).toLocaleString()}</b><em>억</em></div><span class="dvhs">P0 · P1 · P2 · SOP 아이템 ${r.count}개 · 연간 매출 합계</span></div>
-    <div class="dvhcs">${chip('P0', r.p0.length, '차종')}${['P1', 'P2', 'SOP'].map(k => chip(k, ph(k) ? ph(k).cnt : 0, '아이템')).join('')}</div></section>
+    <div class="dvhcs">${[['P0', r.p0.reduce((t, x) => t + x.rev, 0), r.p0.reduce((t, x) => t + x.items.length, 0)], ...['P1', 'P2', 'SOP'].map(k => [k, ph(k) ? ph(k).rev : 0, ph(k) ? ph(k).cnt : 0])].map(([k, v, n]) => `<div class="dvhc"><span>${k}<small>${n}개 아이템</small></span><b class="cu">${dvEok(v).replace('억', '')}</b><em>억</em></div>`).join('')}</div></section>
   <section class="card"><div class="head"><h2>요약표</h2><span class="spacer"></span><button type="button" class="btn primary" data-act="dv-copy">표 복사 (PPT · 엑셀 붙여넣기용)</button></div>
   <div class="tw free dvsumw">${t}</div></section>`;
 }
