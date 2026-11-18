@@ -618,7 +618,7 @@ body.nocap input,body.nocap textarea,body.nocap [contenteditable="true"]{-webkit
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">금호HT 모듈개발연구소 · v2026.11.18 11:05</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">금호HT 모듈개발연구소 · v2026.11.18 11:34</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -2482,10 +2482,10 @@ function vPeople() {
   if (ui.peopleMode === 'seat') return vSeat(seg);
   if (ui.peopleMode === 'org') return vOrg(seg);
   if (ui.peopleMode === 'hr') { ui.peopleMode = 'list'; ui.rosterSt = '퇴사'; }
-  let h = `<div class="toolbar">${seg}<label class="field"><span>검색</span><input class="ci" data-act="f-q" value="${esc(ui.q)}" placeholder="이름·소속"></label>${admin ? `<div class="seg" role="group" aria-label="상태">${[['재직', '재직'], ['퇴사', '퇴사·부서변동'], ['전체', '전체']].map(([x, lb]) => `<button type="button" data-act="rst" data-v="${x}" aria-pressed="${(ui.rosterSt || '재직') === x}">${lb}</button>`).join('')}</div>` : ''}<span class="spacer"></span>${admin ? '<button type="button" class="btn" data-act="hr-paste">인사 기록 붙여넣기</button><button type="button" class="btn" data-act="pinfo-paste">기초정보 붙여넣기</button><button type="button" class="btn primary" data-act="person-edit">인원 추가</button>' : ''}</div>`;
+  let h = `<div class="toolbar">${seg}<label class="field"><span>검색</span><input class="ci" data-act="f-q" value="${esc(ui.q)}" placeholder="이름·소속·부서·직급"></label>${admin ? `<div class="seg" role="group" aria-label="상태">${[['재직', '재직'], ['퇴사', '퇴사·부서변동'], ['전체', '전체']].map(([x, lb]) => `<button type="button" data-act="rst" data-v="${x}" aria-pressed="${(ui.rosterSt || '재직') === x}">${lb}</button>`).join('')}</div>` : ''}<span class="spacer"></span>${admin ? '<button type="button" class="btn" data-act="hr-paste">인사 기록 붙여넣기</button><button type="button" class="btn" data-act="pinfo-paste">기초정보 붙여넣기</button><button type="button" class="btn primary" data-act="person-edit">인원 추가</button>' : ''}</div>`;
   const mm = admin && (ui.rosterSt || '재직') !== '퇴사' ? eduMismatch() : [];
   if (mm.length) h += `<div class="notice warn">평가 파트와 교육 상세부서가 맞지 않는 인원 ${mm.length}명: ${mm.map(p => `<b>${esc(p.name)}</b> (평가 ${esc(p.cat)} → 교육 ${esc(p.eduDept)})`).join(', ')}${admin ? ` <button type="button" class="btn sm primary" data-act="fix-edudept">평가 파트에 맞추기</button>` : ''}</div>`;
-  const rows = C.sortComp(S.people).filter(p => !ui.q || p.name.includes(ui.q) || p.team.includes(ui.q));
+  const rows = C.sortComp(S.people).filter(p => !ui.q || [p.name, p.team, p.cat, p.eduDept, p.rank].some(v => String(v || '').includes(ui.q.trim())));
   const anyNote = rows.some(p => p.note), anyIssue = admin && rows.some(p => personIssues(p).length);
   const hrOf = new Map(); if (admin) for (const x of S.hr) if (hrStatus(x) === '재직') { const p = hrLink(x); if (p && !hrOf.has(p.id)) hrOf.set(p.id, x); }
   const leads = new Set(C.teams(S.people).map(t => orgLeader(t, S.people.filter(p => p.team === t))?.id).filter(Boolean));
@@ -2513,7 +2513,7 @@ function vPeople() {
   </tbody></table></div></section>`;
   }
   if (admin && RST !== '재직') {
-    const q = ui.q.trim(), L = S.hr.filter(x => hrStatus(x) !== '재직' && !(hrLink(x) && S.hr.some(a => a !== x && hrStatus(a) === '재직' && hrLink(a) === hrLink(x)))).filter(x => !q || [x.name, x.team, x.school, x.major].some(v => String(v || '').includes(q)))
+    const q = ui.q.trim(), L = S.hr.filter(x => hrStatus(x) !== '재직' && !(hrLink(x) && S.hr.some(a => a !== x && hrStatus(a) === '재직' && hrLink(a) === hrLink(x)))).filter(x => !q || [x.name, x.team, x.school, x.major, hrPart(x), x.pos, x.moveTo].some(v => String(v || '').includes(q)))
       .sort((a, b) => String(b.leave || '').localeCompare(String(a.leave || '')) || a.name.localeCompare(b.name));
     h += `<section class="card"><div class="head"><h2>퇴사 · 부서변동</h2><span class="sub">${L.length}명</span></div><div class="tw"><table><thead><tr><th class="c">No</th><th>성명</th><th>생년월일</th><th>전담여부</th><th>직위</th><th>부서</th><th>파트</th><th>학교</th><th>전공</th><th>학위</th><th>입사일</th><th>퇴사·이동일</th><th>근속</th><th>상태</th><th></th></tr></thead><tbody>
       ${L.map((x, i) => { const d2 = v => v ? esc(v) : '<span class="muted">–</span>', st = hrStatus(x); return `<tr><td class="c num muted">${i + 1}</td><td><b>${esc(x.name)}</b></td><td class="num">${d2(x.birth)}</td><td>${d2(x.kind)}</td><td>${d2(x.pos)}</td><td>${d2(x.team)}</td><td>${d2(hrPart(x))}</td><td class="l">${d2(x.school)}</td><td class="l">${d2(x.major)}</td><td>${d2(x.degree)}</td><td class="num">${d2(x.join)}</td><td class="num">${d2(x.leave)}</td><td class="num">${x.leave ? hrYrs(x.join, x.leave) : '–'}</td><td><span class="tag ${st === '퇴사' ? 'bad' : 'warn'}">${st}${x.moved && x.moveTo ? ' → ' + esc(x.moveTo) : ''}</span></td><td><button type="button" class="btn sm" data-act="hr-edit" data-id="${x.id}">수정</button></td></tr>`; }).join('') || `<tr><td colspan="15" class="empty">퇴사·부서변동 인원이 없습니다.</td></tr>`}
@@ -2545,7 +2545,7 @@ const isLeave = p => p.status === '휴직' || /휴직|공가/.test(p.note || '')
 const isNew = p => String(p.join || '').slice(0, 4) === String(new Date().getFullYear());
 const extMembers = u => String(u.members || '').split(/\n|,/).map(x => x.trim()).filter(Boolean).map(x => { const m = x.split(/\s+/); return { name: m[0], rank: m.slice(1).join(' ') }; });
 function avatar(p) {
-  const canUp = admin && p.id;
+  const canUp = false;
   const inner = p.photo ? `<img src="${esc(p.photo)}" alt="">` : canUp ? '<b class="plus">+</b>' : '<svg viewBox="0 0 24 32" aria-hidden="true"><circle cx="12" cy="11" r="5"/><path d="M3 30c0-6 4-10 9-10s9 4 9 10z"/></svg>';
   return canUp ? `<span class="av"><button type="button" class="avb${p.photo ? '' : ' empty'}" data-act="photo-pick" data-id="${p.id}" title="${esc(p.name)} 사진 ${p.photo ? '바꾸기' : '넣기'} · 마우스를 올리고 Ctrl+V로 바로 붙여넣기 가능">${inner}</button></span>`
     : `<span class="av"><span class="avb${p.photo ? '' : ' empty'}">${inner}</span></span>`;
@@ -2577,8 +2577,8 @@ function setPhoto(id, url) {
 }
 // 상자 안 사진 (책임자·팀장)
 function boxAvatar(id, src) {
-  const inner = src ? `<img src="${esc(src)}" alt="">` : admin ? '<b class="plus">+</b>' : '<svg viewBox="0 0 24 32" aria-hidden="true"><circle cx="12" cy="11" r="5"/><path d="M3 30c0-6 4-10 9-10s9 4 9 10z"/></svg>';
-  return admin ? `<button type="button" class="avb bav${src ? '' : ' empty'}" data-act="photo-pick" data-id="${esc(id)}" title="${esc(photoName(id))} 사진 · 마우스를 올리고 Ctrl+V로 붙여넣기 가능">${inner}</button>`
+  const inner = src ? `<img src="${esc(src)}" alt="">` : '<svg viewBox="0 0 24 32" aria-hidden="true"><circle cx="12" cy="11" r="5"/><path d="M3 30c0-6 4-10 9-10s9 4 9 10z"/></svg>';
+  return false ? `<button type="button" class="avb bav${src ? '' : ' empty'}" data-act="photo-pick" data-id="${esc(id)}" title="${esc(photoName(id))} 사진 · 마우스를 올리고 Ctrl+V로 붙여넣기 가능">${inner}</button>`
     : `<span class="avb bav${src ? '' : ' empty'}">${inner}</span>`;
 }
 function rosterAv(id, src) { return `<button type="button" class="avb rav${src ? '' : ' empty'}" data-act="photo-pick" data-id="${esc(id)}" title="${esc(photoName(id))} 사진 · 마우스를 올리고 Ctrl+V로 붙여넣기 가능">${src ? `<img src="${esc(src)}" alt="">` : '<b class="plus">+</b>'}</button>`; }
@@ -2898,7 +2898,7 @@ function headDialog(k) {
   openDlg(`<form class="form pcard" data-form="head" data-k="${k}">
     <div class="pc-top">
       <div class="pc-ph">${img ? `<img src="${esc(img)}" alt="">` : '<div class="pc-noph"><svg viewBox="0 0 24 32" aria-hidden="true"><circle cx="12" cy="11" r="5"/><path d="M3 30c0-6 4-10 9-10s9 4 9 10z"/></svg></div>'}
-        <div class="pc-phb"><button type="button" class="btn sm" data-act="photo-pick" data-id="org:${k}">${img ? '사진 바꾸기' : '사진 올리기'}</button></div></div>
+        <div class="pc-phb"><button type="button" class="btn sm" data-act="photo-pick" data-id="org:${k}">${img ? '사진 바꾸기' : '사진 올리기'}</button>${img ? `<button type="button" class="btn sm danger" data-act="photo-del" data-id="org:${k}">지우기</button>` : ''}</div></div>
       <div class="pc-head">
         <div class="pc-name" style="border:0">${esc(r.name)}</div>
         <div class="pc-sub">모듈개발연구소 · ${esc(r.role)}${r.rank ? ' · ' + esc(r.rank) : ''}${x.join ? ` · 입사 ${esc(x.join)}` : ''}${x.birth ? ` · ${esc(x.birth)} (만 ${hrAge(x.birth)}세)` : ''}</div>
@@ -3155,19 +3155,22 @@ function hrParse(text) {
     return { name: g('name').replace(/\s{2,}/g, ' '), kind: g('kind'), pos: g('pos'), team: g('team'), school: g('school'), major: g('major'), degree: g('degree'), birth: bday(g('birth')), join: day(g('join')), leave: day(lv), moved: !!lv && !day(lv) && /변동|전출|이동/.test(lv) }; })
     .filter(r => r.name);
 }
-const PI_COLS = { name: ['이름', '성명'], ext: ['내선번호', '내선'], iris: ['IRISID', 'IRIS'], rno: ['국가연구자번호', '연구자번호'] };
+const PI_COLS = { name: ['이름', '성명'], ext: ['내선번호', '내선'], iris: ['IRISID', 'IRIS'], rno: ['국가연구자번호', '연구자번호'], birth: ['생년월일', '생일', '출생일'], kind: ['전담여부', '구분'], school: ['최종학교명', '최종학교', '학교'], major: ['전공'], degree: ['최종학위', '학위'], join: ['입사일', '발령일'] };
+const PI_HR = ['birth', 'kind', 'school', 'major', 'degree'];
 function pinfoParse(t) {
   const lines = String(t || '').replace(/\r/g, '').split('\n').filter(l => l.trim()); if (!lines.length) return { cols: [], rows: [] };
   const hd = lines[0].split('\t').map(x => x.replace(/\s+/g, '').toUpperCase());
   const idx = {}; for (const k in PI_COLS) idx[k] = hd.findIndex(x => PI_COLS[k].some(n => x === n.toUpperCase()));
   if (idx.name < 0) throw new Error('제목 줄에 "이름" 칸이 있어야 합니다.');
-  const cols = Object.keys(idx).filter(k => k !== 'name' && idx[k] >= 0); if (!cols.length) throw new Error('내선번호 · IRIS ID · 국가연구자번호 중 하나 이상의 칸이 있어야 합니다.');
-  const rows = lines.slice(1).map(l => { const c = l.split('\t'), r = { name: String(c[idx.name] || '').trim() }; for (const k of cols) { const x = String(c[idx[k]] || '').trim(); r[k] = x === '-' ? '' : x; } return r; }).filter(r => r.name);
+  const cols = Object.keys(idx).filter(k => k !== 'name' && idx[k] >= 0); if (!cols.length) throw new Error('이름 말고 넣을 칸(생년월일 · 내선번호 · 학교 등)이 하나 이상 있어야 합니다.');
+  const rows = lines.slice(1).map(l => { const c = l.split('\t'), r = { name: String(c[idx.name] || '').trim() }; for (const k of cols) { const x = String(c[idx[k]] || '').trim(); if (x === '-') { r[k] = ''; r['_clr_' + k] = true; } else r[k] = x; } return r; }).filter(r => r.name);
+  const day = v => { v = String(v || '').trim().replace(/[./]/g, '-'); let m = v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/); if (m) return `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`; m = v.replace(/\D/g, '').match(/^(\d{2})(\d{2})(\d{2})$/); return m ? `${+m[1] > (new Date().getFullYear() % 100) ? '19' : '20'}${m[1]}-${m[2]}-${m[3]}` : v; };
+  for (const r of rows) for (const k of ['birth', 'join']) if (r[k]) r[k] = day(r[k]);
   return { cols, rows };
 }
 function pinfoDialog() {
   openDlg(`<h2>기초정보 붙여넣기</h2><form class="form" data-form="pinfo" style="grid-template-columns:1fr">
-    <label class="field">엑셀에서 제목 줄(이름 · 내선번호 · IRIS ID · 국가연구자번호)부터 복사해 붙여넣기<textarea name="t" rows="12" style="width:100%;font:12px var(--font-num);border:1px solid var(--line);border-radius:6px;padding:8px" placeholder="여기에 Ctrl+V" required></textarea></label>
+    <label class="field">엑셀에서 이름과 넣을 칸만 제목 줄부터 복사해 붙여넣기 (생년월일 · 내선번호 · IRIS ID · 국가연구자번호 · 전담여부 · 학교 · 전공 · 학위 · 입사일)<textarea name="t" rows="12" style="width:100%;font:12px var(--font-num);border:1px solid var(--line);border-radius:6px;padding:8px" placeholder="여기에 Ctrl+V" required></textarea></label>
     <div class="err" id="pierr"></div>
     <div class="actions"><span class="spacer"></span><button type="button" class="btn" data-act="close">취소</button><button class="btn primary" type="submit">가져오기</button></div></form>`, true);
 }
@@ -3384,7 +3387,9 @@ document.addEventListener('click', e => {
     case 'photo-pick': if (!need()) break; photoDialog(d.id); break;
     case 'photo-file': if (!need()) break; pickPhoto(d.id); break;
     case 'photo-clip': if (!need()) break; (async () => { try { for (const ci of await navigator.clipboard.read()) { const ty = ci.types.find(x => x.startsWith('image/')); if (ty) { const bl = await ci.getType(ty); applyPhoto(d.id, new File([bl], 'p', { type: ty })); return; } } toast('클립보드에 복사된 그림이 없습니다', true); } catch { toast('클립보드를 읽지 못했습니다. Ctrl+V로 붙여넣어 주세요', true); } })(); break;
-    case 'photo-del': if (!need()) break; if (!orgKey(d.id)) { if (ui.photoHQ) delete ui.photoHQ[d.id]; put('photos/' + d.id, null); } setPhoto(d.id, null); if ($('#dlgBody [data-photo]')) closeDlg(); else personDialog(d.id); toast('사진을 지웠습니다'); break;
+    case 'photo-del': if (!need()) break; { const ok = orgKey(d.id), r = (ok === 'head' || ok === 'dev') ? headRows().find(x => x.k === ok) : null, pid = ok ? (r ? (r.inP || r.rec || {}).id : null) : d.id;
+      if (pid) { if (ui.photoHQ) delete ui.photoHQ[pid]; put('photos/' + pid, null); } setPhoto(d.id, null);
+      if ($('#dlgBody [data-photo]')) closeDlg(); else if (r) headDialog(ok); else personDialog(d.id); toast('사진을 지웠습니다'); break; }
     case 'org-edit': if (!need()) break; orgDialog(); break;
     case 'person-edu': personEdu(d.id); break;
     case 'toggle-rec': if (!canP(pById(d.p))) { toast('우리 팀 인원만 수정할 수 있습니다', true); break; } {
@@ -3587,14 +3592,17 @@ document.addEventListener('submit', e => {
     if (!d.rows.length) { $('#pierr').textContent = '읽을 수 있는 줄이 없습니다.'; return; }
     const pm = new Map(S.people.map(p => [nkey(p.name), p])), miss = [], ops = [], upd = [];
     const hx = new Map(headRows().filter(x => !x.inP).map(x => [nkey(x.name), x]));
+    const pc = d.cols.filter(k => !PI_HR.includes(k)), hc = d.cols.filter(k => PI_HR.includes(k) || k === 'join'), hrUp = [];
+    const hrPatch = (hx, base, r) => { const cur = hx ? (({ id: _, ...q }) => q)(hx) : base; let ch = false; for (const k of hc) { if (r[k] === undefined || (r[k] === '' && !r['_clr_' + k])) continue; cur[k] = r[k]; ch = true; } if (!ch) return; const id = hx ? hx.id : uid('h') + hrUp.length; hrUp.push([hx, id, cur]); ops.push({ path: 'hr/' + id, data: cur }); };
     for (const r of d.rows) { const p = pm.get(nkey(r.name));
-      if (!p && hx.has(nkey(r.name))) { const e = {}; for (const k of d.cols) e[k] = r[k] || ''; ops.push(headSave(hx.get(nkey(r.name)), e)); upd.push(null); continue; }
+      if (!p && hx.has(nkey(r.name))) { const H = hx.get(nkey(r.name)), e = {}; let any = false; for (const k of pc.filter(k => k !== 'join')) if (r[k] || r['_clr_' + k]) { e[k] = r[k] || ''; any = true; } if (any) ops.push(headSave(H, e)); hrPatch(H.hr, { name: H.name, pos: H.role, team: '모듈개발연구소', leave: '', moved: false }, r); upd.push(null); continue; }
       if (!p) { miss.push(r.name.replace(/\s+/g, '')); continue; }
-      const doc = { ...p }; delete doc.id; for (const k of d.cols) { if (r[k]) doc[k] = r[k]; else delete doc[k]; }
-      upd.push([p, doc]); ops.push({ path: 'people/' + p.id, data: doc }); }
+      const doc = { ...p }; delete doc.id; let ch = false; for (const k of pc) { if (r[k]) { doc[k] = r[k]; ch = true; } else if (r['_clr_' + k]) { delete doc[k]; ch = true; } }
+      if (ch) { upd.push([p, doc]); ops.push({ path: 'people/' + p.id, data: doc }); } else upd.push(null);
+      hrPatch(hrOfP(p), hrDocFor(p, {}, null), r); }
     if (!ops.length) { $('#pierr').textContent = '명단과 이름이 맞는 사람이 없습니다.'; return; }
     const btn = f.querySelector('button[type=submit]'); btn.disabled = true; btn.textContent = '저장 중…';
-    putBatch(ops).then(() => { for (const [p, doc] of upd.filter(Boolean)) { for (const k of d.cols) delete p[k]; Object.assign(p, doc); } closeDlg(); render(); toast(`${upd.length}명 반영${miss.length ? ` · 명단에 없는 ${miss.length}명 제외` : ''}`); if (miss.length) openDlg(`<h2>명단에 없어 제외한 이름 · ${miss.length}명</h2><div class="small" style="line-height:1.9">${miss.map(esc).join(', ')}</div><div class="actions"><span class="spacer"></span><button type="button" class="btn primary" data-act="close">확인</button></div>`); })
+    putBatch(ops).then(() => { for (const [p, doc] of upd.filter(Boolean)) { for (const k of pc) delete p[k]; Object.assign(p, doc); } for (const [hx, id, cur] of hrUp) { if (hx) Object.assign(hx, cur); else S.hr.push({ id, ...cur }); } hrSync(); rebuild(); closeDlg(); render(); toast(`${upd.length}명 반영${miss.length ? ` · 명단에 없는 ${miss.length}명 제외` : ''}`); if (miss.length) openDlg(`<h2>명단에 없어 제외한 이름 · ${miss.length}명</h2><div class="small" style="line-height:1.9">${miss.map(esc).join(', ')}</div><div class="actions"><span class="spacer"></span><button type="button" class="btn primary" data-act="close">확인</button></div>`); })
       .catch(x => { btn.disabled = false; btn.textContent = '가져오기'; $('#pierr').textContent = '저장하지 못했습니다: ' + x.message; });
   } else if (f.dataset.form === 'hrpaste') {
     let rows; try { rows = hrParse(v.t); } catch (x) { $('#hperr').textContent = x.message; return; }
