@@ -602,6 +602,11 @@ body.nocap input,body.nocap textarea,body.nocap [contenteditable="true"]{-webkit
 .hc-tb dt{background:var(--sunk);color:var(--muted);font-size:12.5px;font-weight:600;white-space:nowrap}
 .hc-tb dd{color:var(--ink);font-weight:600;overflow-wrap:anywhere;gap:6px}.hc-tb dd.w{grid-column:span 3}
 .hc-sub{font-size:12px;font-weight:500;color:var(--muted)}.hc-tb dt:empty{background:none}
+td.mcl{cursor:pointer}td.mcl:hover{background:var(--accent-soft)}
+.mlist{display:flex;flex-direction:column;gap:14px;width:100%;min-width:min(720px,88vw)}
+.ml-hd{display:flex;align-items:baseline;gap:10px}.ml-hd h3{margin:0;font-size:20px;font-weight:800;color:var(--ink)}.ml-n{font-size:15px;font-weight:700;color:var(--accent)}
+.ml-chg{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--sunk)}.ml-chg div{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:13.5px}.ml-chg i{color:var(--muted);font-style:normal}
+.mltbl{width:100%}.mltbl th,.mltbl td{text-align:center}
 .hcard .actions{margin-top:-4px}
 @media(max-width:700px){.hc-top{grid-template-columns:1fr}.hc-tb{grid-template-columns:88px 1fr}.hc-tb dd.w{grid-column:auto}}
 .nmb{border:0;background:none;padding:0;font:inherit;font-weight:700;color:var(--ink);cursor:pointer}.nmb:hover{color:var(--accent);text-decoration:underline;text-underline-offset:3px}
@@ -636,7 +641,7 @@ body.nocap input,body.nocap textarea,body.nocap [contenteditable="true"]{-webkit
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">금호HT 모듈개발연구소 · v2026.11.18 11:58</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">금호HT 모듈개발연구소 · v2026.11.19 15:43</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -2911,6 +2916,17 @@ function headSave(r, ext) {
 }
 const bdNorm = v => { const t = String(v || '').trim(); if (!t) return ''; const d = t.replace(/\D/g, ''); let m = t.match(/^(\d{4})\D+(\d{1,2})\D+(\d{1,2})/); if (m) return `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`; m = d.match(/^(\d{4})(\d{2})(\d{2})$/); if (m) return `${m[1]}-${m[2]}-${m[3]}`; m = d.match(/^(\d{2})(\d{2})(\d{2})$/); return m ? `${+m[1] > (new Date().getFullYear() % 100) ? '19' : '20'}${m[1]}-${m[2]}-${m[3]}` : t; };
 const bdShow = v => String(v || '').replace(/^(\d{4})-(\d{2})-(\d{2})$/, '$1.$2.$3');
+function mListDialog(i) {
+  const o = (ui.mL || [])[i]; if (!o) return;
+  const ord = [...HR_HEADS, ...S.config.rankOrder], to = hrTeams();
+  const srt = L => [...L].sort((a, b) => (to.indexOf(a.team) - to.indexOf(b.team)) || (S.config.partOrder.indexOf(hrPart(a)) + 1 || 99) - (S.config.partOrder.indexOf(hrPart(b)) + 1 || 99) || (ord.indexOf(a.pos) + 1 || 99) - (ord.indexOf(b.pos) + 1 || 99) || String(a.join).localeCompare(String(b.join)));
+  const nm = x => { const p = hrLink(x); return p ? `<button type="button" class="nmb" data-act="card-view" data-id="${p.id}">${esc(x.name)}</button>` : `<b>${esc(x.name)}</b>`; };
+  const d = v => v ? esc(bdShow(v)) : '<span class="muted">–</span>';
+  const ids = L => new Set(L.map(x => x.id)), addL = o.pv ? o.L.filter(x => !ids(o.pv).has(x.id)) : [], outL = o.pv ? o.pv.filter(x => !ids(o.L).has(x.id)) : [];
+  const tbl = (L, last) => `<div class="tw free"><table class="mltbl"><thead><tr><th class="c">No</th><th>이름</th><th>소속</th><th>파트</th><th>직위</th><th>입사일</th>${last ? `<th>${last}</th>` : ''}</tr></thead><tbody>${srt(L).map((x, j) => `<tr><td class="c num muted">${j + 1}</td><td>${nm(x)}</td><td>${esc(x.team || '')}</td><td>${esc(hrPart(x) || '–')}</td><td>${esc(x.pos || '')}</td><td class="num">${d(x.join)}</td>${last ? `<td class="num">${d(x.leave)}${x.moved && x.moveTo ? ` <span class="hc-sub">→ ${esc(x.moveTo)}</span>` : ''}</td>` : ''}</tr>`).join('')}</tbody></table></div>`;
+  const chg = (addL.length || outL.length) ? `<div class="ml-chg">${addL.length ? `<div><span class="tag ok">+${addL.length}</span>${addL.map(nm).join('<i>·</i>')}</div>` : ''}${outL.length ? `<div><span class="tag bad">−${outL.length}</span>${outL.map(nm).join('<i>·</i>')}</div>` : ''}</div>` : '';
+  openDlg(`<div class="mlist"><div class="ml-hd"><h3>${esc(o.t)}</h3><span class="ml-n">${o.L.length}명</span></div>${chg}${o.L.length ? tbl(o.L, o.kind === 'out' ? '퇴사·변동일' : '') : '<div class="empty">인원이 없습니다</div>'}<div class="actions"><span class="spacer"></span><button type="button" class="btn" data-act="close">닫기</button></div></div>`, true);
+}
 function cardView(id, k) {
   const r = k ? headRows().find(x => x.k === k) : null, p = r ? (r.rec || {}) : S.people.find(x => x.id === id); if (!p || (k && !r)) return;
   const x = admin ? (r ? r.hr || {} : hrOfP(p) || {}) : {}, pid = r ? p.id : id, small = r ? (orgCfg().photos || {})[k] : p.photo, img = (pid && (ui.photoHQ || {})[pid]) || small;
@@ -3043,13 +3059,15 @@ function vHRYear(seg) {
     const mt = hrTeams().filter(t => act.some(L => L && L.some(x => x.team === t)));
     const ev = (m, f) => S.hr.filter(x => String(f === 'in' ? x.join : x.leave || '').slice(0, 7) === `${Y}-${String(m).padStart(2, '0')}`);
     const fut = m => m > nowM;
+    ui.mL = []; const reg = (t, L, pv, kind) => { ui.mL.push({ t, L, pv, kind }); return ui.mL.length - 1; };
+    const mcell = (cls, i, inner) => `<td class="num mcl${cls}" data-act="mlist" data-i="${i}">${inner}</td>`;
     h += `<section class="card"><div class="head"><h2>${Y}년 월별 현황</h2><span class="sub">각 월 말일 기준 인원${Y === cur ? ` · 이번 달은 오늘 기준` : ''}</span></div><div class="tw free"><table class="eqtbl ohc mtbl"><thead><tr><th>부서</th>${ms.map(m => `<th${fut(m) ? ' class="muted"' : ''}>${m}월</th>`).join('')}</tr></thead><tbody>
-      ${mt.map(t => { const row = (label, f, cls) => `<tr class="${cls}"><td class="l">${label}</td>${ms.map((m, i) => { if (fut(m)) return '<td class="fut"></td>'; const n = act[i].filter(f).length, pv = i ? act[i - 1].filter(f).length : P.filter(f).length; return `<td class="num">${n || '<span class="muted">–</span>'}${n !== pv ? `<span class="dm ${n > pv ? 'up' : 'dn'}">${n > pv ? '▲' : '▼'}${Math.abs(n - pv)}</span>` : ''}</td>`; }).join('')}</tr>`;
+      ${mt.map(t => { const row = (label, f, cls, nm) => `<tr class="${cls}"><td class="l">${label}</td>${ms.map((m, i) => { if (fut(m)) return '<td class="fut"></td>'; const L = act[i].filter(f), PL = i ? act[i - 1].filter(f) : P.filter(f), n = L.length, pv = PL.length; return mcell('', reg(`${nm} · ${m}월`, L, PL), `${n || '<span class="muted">–</span>'}${n !== pv ? `<span class="dm ${n > pv ? 'up' : 'dn'}">${n > pv ? '▲' : '▼'}${Math.abs(n - pv)}</span>` : ''}`); }).join('')}</tr>`;
         const inT = x => x.team === t, parts = [...new Set(act.filter(Boolean).flatMap(L => L.filter(inT).map(hrPart)))].sort((a, b) => (a === '' ? 1 : 0) - (b === '' ? 1 : 0) || (S.config.partOrder.indexOf(a) + 1 || 99) - (S.config.partOrder.indexOf(b) + 1 || 99));
-        return row(`<b>${esc(t)}</b>`, inT, 'tm') + (parts.length > 1 || (parts.length === 1 && parts[0] !== '') ? parts.map(c => row(`<span class="pt">└ ${c ? esc(c) : '파트 정보 없음'}</span>`, x => inT(x) && hrPart(x) === c, 'pr')).join('') : ''); }).join('')}
-      <tr class="hl"><td><b>합계</b></td>${ms.map((m, i) => fut(m) ? '<td class="fut"></td>' : `<td class="num"><b>${act[i].length}</b></td>`).join('')}</tr>
-      <tr><td class="muted">입사</td>${ms.map(m => { if (fut(m)) return '<td class="fut"></td>'; const L = ev(m, 'in'); return `<td class="num" title="${esc(L.map(x => `${x.name}(${x.team})`).join(', '))}">${L.length || '<span class="muted">–</span>'}</td>`; }).join('')}</tr>
-      <tr><td class="muted">퇴사</td>${ms.map(m => { if (fut(m)) return '<td class="fut"></td>'; const L = ev(m, 'out'); return `<td class="num${L.length ? ' neg' : ''}" title="${esc(L.map(x => `${x.name}(${x.team})`).join(', '))}">${L.length || '<span class="muted">–</span>'}</td>`; }).join('')}</tr>
+        return row(`<b>${esc(t)}</b>`, inT, 'tm', t) + (parts.length > 1 || (parts.length === 1 && parts[0] !== '') ? parts.map(c => row(`<span class="pt">└ ${c ? esc(c) : '파트 정보 없음'}</span>`, x => inT(x) && hrPart(x) === c, 'pr', `${t} ${c || '파트 정보 없음'}`)).join('') : ''); }).join('')}
+      <tr class="hl"><td><b>합계</b></td>${ms.map((m, i) => fut(m) ? '<td class="fut"></td>' : mcell('', reg(`전체 · ${m}월`, act[i], i ? act[i - 1] : P), `<b>${act[i].length}</b>`)).join('')}</tr>
+      <tr><td class="muted">입사</td>${ms.map(m => { if (fut(m)) return '<td class="fut"></td>'; const L = ev(m, 'in'); return L.length ? mcell('', reg(`${m}월 입사`, L, null, 'in'), L.length) : '<td class="num"><span class="muted">–</span></td>'; }).join('')}</tr>
+      <tr><td class="muted">퇴사</td>${ms.map(m => { if (fut(m)) return '<td class="fut"></td>'; const L = ev(m, 'out'); return L.length ? mcell(' neg', reg(`${m}월 퇴사·부서변동`, L, null, 'out'), L.length) : '<td class="num"><span class="muted">–</span></td>'; }).join('')}</tr>
     </tbody></table></div></section>`;
   }
   // 연도별 추이 (연말 인원)
@@ -3454,6 +3472,7 @@ document.addEventListener('click', e => {
       }); break; }
     case 'person-edit': if (!need()) break; personDialog(d.id); break;
     case 'card-view': cardView(d.id, d.k); break;
+    case 'mlist': mListDialog(+d.i); break;
     case 'person-del': { const p = S.people.find(x => x.id === d.id);
       confirmDlg(`${esc(p?.name)} 님을 명단에서 삭제할까요? 역량평가 등급과 교육 이수 기록도 함께 삭제됩니다.`, '삭제', () => {
         S.people = S.people.filter(x => x.id !== d.id); delete S.grades[d.id]; delete S.edu[d.id];
