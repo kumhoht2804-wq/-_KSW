@@ -645,7 +645,7 @@ td.mcl{cursor:pointer}td.mcl:hover{background:var(--accent-soft)}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">금호HT 모듈개발연구소 · v2026.11.20 14:38</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">금호HT 모듈개발연구소 · v2026.11.20 15:27</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -1602,11 +1602,12 @@ function lockDialog() {
 async function acctCall(action, payload, msg) { try { const d = await api(action, payload); ui.users = d.users; whoUI(); render(); toast(msg); } catch (e) { toast(e.message, true); } }
 let usersLoaded = false;
 function seenTxt(u) {
-  const d = Date.now() - (u.seen || 0);
-  if (u.seen && d < 180000) return '<span class="onu sm"><i></i>접속 중</span>';
-  if (u.seen && d < 3600000) return `<span class="muted">${Math.round(d / 60000)}분 전</span>`;
-  if (u.seen && d < 21600000) return `<span class="muted">${Math.round(d / 3600000)}시간 전</span>`;
-  return `<span class="muted">${esc(u.lastLogin || '–')}</span>`;
+  const t = Math.abs(u.seen || 0), d = Date.now() - t, on = u.seen > 0 && d < 180000;
+  if (on) return '<span class="onu sm"><i></i>접속 중</span>';
+  if (t && d < 3600000) return `<span class="muted">${Math.max(1, Math.round(d / 60000))}분 전</span>`;
+  if (t && d < 21600000) return `<span class="muted">${Math.round(d / 3600000)}시간 전</span>`;
+  const L = new Date(u.lastLogin), p = n => String(n).padStart(2, '0');
+  return `<span class="muted">${u.lastLogin && !isNaN(L) ? `${L.getFullYear()}.${p(L.getMonth() + 1)}.${p(L.getDate())} ${p(L.getHours())}:${p(L.getMinutes())}` : esc(u.lastLogin || '–')}</span>`;
 }
 async function loadUsers(quiet) { try { const d = await api('users'); ui.users = d.users; ui.lockSet = d.lockSet; usersLoaded = true; whoUI(); if (!quiet || route() === 'accounts') schedule(); } catch (e) { if (!quiet) toast(e.message, true); } }
 // 가입자가 인원 명단의 누구와 맞는지 (이름·부서·직급 비교)
@@ -1628,7 +1629,7 @@ function vAccounts() {
       <td><select class="ci" id="role-${esc(u.id)}">${Object.keys(ROLE_DESC).map(r => `<option${r === '보기' ? ' selected' : ''}>${r}</option>`).join('')}</select></td>
       <td class="r"><button type="button" class="btn sm primary" data-act="acct-approve" data-id="${esc(u.id)}">승인</button> <button type="button" class="btn sm danger" data-act="acct-reject" data-id="${esc(u.id)}">거절</button></td></tr>`).join('')}
     </tbody></table></div>${teamList()}<p class="muted small">팀장·파트장·보기는 소속을 인원 명단의 팀 이름과 똑같이 맞춰 주세요.</p>` : '<p class="muted small">대기 중인 가입 신청이 없습니다.</p>'}</section>`;
-  const on = act.filter(u => u.active && Date.now() - (u.seen || 0) < 180000);
+  const on = act.filter(u => u.active && u.seen > 0 && Date.now() - u.seen < 180000);
   h += `<section class="card"><div class="head"><h2>지금 접속 중</h2><span class="ml-n">${on.length}명</span></div>${on.length ? `<div class="onl">${on.map(u => `<span class="onu"><i></i><b>${esc(u.name)}</b><small>${esc(u.team || '')}${u.role ? ' · ' + esc(u.role) : ''}</small></span>`).join('')}</div>` : ''}</section>`;
   h += `<section class="card"><div class="head"><h2>계정 관리</h2><span class="sub">관리자 ${cnt('관리자')} · 연구소장 ${cnt('연구소장')} · 개발실장 ${cnt('개발실장') + cnt('편집')} · 팀장 ${cnt('팀장')} · 파트장 ${cnt('파트장')} · 보기 ${cnt('보기')}</span><span class="spacer"></span><button type="button" class="btn primary" data-act="acct-edit">계정 직접 추가</button></div>
     <div class="chk">${Object.entries(ROLE_DESC).map(([r, d]) => `<span class="tag">${r} · ${d}</span>`).join('')}</div>
