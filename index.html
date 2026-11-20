@@ -644,7 +644,7 @@ td.mcl{cursor:pointer}td.mcl:hover{background:var(--accent-soft)}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">금호HT 모듈개발연구소 · v2026.11.20 14:12</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">금호HT 모듈개발연구소 · v2026.11.20 14:13</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -1510,7 +1510,7 @@ function vLogin() {
     <form class="form one" data-form="signup">
       <label class="field">아이디 (영문·숫자 2자 이상)<input name="id" autocomplete="username" required></label>
       <label class="field">이름<input name="name" required></label>
-      <div class="form two"><label class="field">부서${ui.opts?.teams?.length ? `<select name="team" required><option value="">선택</option>${ui.opts.teams.map(t => `<option>${esc(t)}</option>`).join('')}</select>` : '<input name="team" required placeholder="예: 개발지원팀">'}</label>
+      <div class="form two"><label class="field">부서${ui.opts?.teams?.length ? `<select name="team" required><option value="">선택</option>${[...new Set(['모듈개발연구소', ...ui.opts.teams])].map(t => `<option>${esc(t)}</option>`).join('')}</select>` : '<input name="team" required placeholder="예: 개발지원팀">'}</label>
         <label class="field">직급${ui.opts?.ranks?.length ? `<select name="rank" required><option value="">선택</option>${[...new Set([...HR_HEADS, ...ui.opts.ranks])].map(t => `<option>${esc(t)}</option>`).join('')}</select>` : '<input name="rank" required placeholder="예: 연구원">'}</label></div>
       <label class="field">비밀번호 (6자 이상)<input name="pw" type="password" autocomplete="new-password" required></label>
       <label class="field">비밀번호 확인<input name="pw2" type="password" autocomplete="new-password" required></label>
@@ -1577,13 +1577,13 @@ function pwDialog() {
     <div class="err"></div><div class="actions"><button type="button" class="btn" data-act="close">취소</button><button class="btn primary" type="submit">변경</button></div></form>`);
 }
 const ROLE_DESC = { '관리자': '모든 화면 수정 · 계정 관리 · 엑셀/백업 받기', '연구소장': '부서 전체 역량평가 등급·교육 이수 수정', '전체보기': '부서 전체 조회 · 자리 배치 보기 (수정 불가)', '개발실장': '부서 전체 역량평가 등급·교육 이수 수정', '팀장': '우리 팀 역량평가 등급·교육 이수 수정', '파트장': '우리 팀만 보기 · 우리 팀 역량평가·교육 이수 수정', '보기': '우리 팀만 조회 (기준 정보 제외)' };
-const teamList = () => `<datalist id="teamlist">${(S.config?.teamOrder || []).map(t => `<option value="${esc(t)}">`).join('')}</datalist>`;
+const teamList = () => `<datalist id="teamlist">${[...new Set(['모듈개발연구소', ...(S.config?.teamOrder || [])])].map(t => `<option value="${esc(t)}">`).join('')}</datalist>`;
 function acctDialog(id) {
   const u = ui.users.find(x => x.id === id) || { id: '', name: '', role: '보기' };
   openDlg(`<h2>${id ? '계정 수정' : '계정 추가'}</h2><form class="form" data-form="acct" data-id="${esc(id || '')}" style="grid-template-columns:1fr 1fr">
     <label class="field">아이디 (영문·숫자)<input name="id" value="${esc(u.id)}" ${id ? 'readonly' : ''} required></label>
     <label class="field">이름<input name="name" value="${esc(u.name)}" required></label>
-    <label class="field">부서<select name="team"><option value="">(없음)</option>${[...new Set([...(S.config?.teamOrder || []), u.team].filter(Boolean))].map(t => `<option${t === u.team ? ' selected' : ''}>${esc(t)}</option>`).join('')}</select></label>
+    <label class="field">부서<select name="team"><option value="">(없음)</option>${[...new Set(['모듈개발연구소', ...(S.config?.teamOrder || []), u.team].filter(Boolean))].map(t => `<option${t === u.team ? ' selected' : ''}>${esc(t)}</option>`).join('')}</select></label>
     <label class="field">직급<input name="rank" list="ranklist" value="${esc(u.rank || '')}"><datalist id="ranklist">${[...new Set([...HR_HEADS, ...(S.config?.rankOrder || [])])].map(r => `<option value="${esc(r)}">`).join('')}</datalist></label>
     <label class="field" style="grid-column:1/-1">역할<select name="role">${Object.entries(ROLE_DESC).map(([r, dsc]) => `<option value="${r}"${r === u.role ? ' selected' : ''}>${r} — ${dsc}</option>`).join('')}</select></label>
     <label class="field" style="grid-column:1/-1">${id ? '새 비밀번호 (바꿀 때만 입력)' : '처음 비밀번호 (6자 이상, 본인에게 전달 후 변경 안내)'}<input name="pw" type="text" autocomplete="off" ${id ? '' : 'required'}></label>
