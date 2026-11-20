@@ -605,6 +605,7 @@ body.nocap input,body.nocap textarea,body.nocap [contenteditable="true"]{-webkit
 .onames li[data-act],.ob[data-act]{cursor:pointer}.onames li[data-act]:hover .tx{color:var(--accent)}.ob[data-act]:hover{box-shadow:0 0 0 2px var(--accent-soft)}
 .hc-lv{font-size:12.5px;font-weight:800;padding:2px 10px;border-radius:999px}
 .hc-edu{display:flex;align-items:center;gap:8px;border:0;background:none;padding:0;font:inherit;cursor:pointer}.hc-edu .meter{width:110px!important;flex:none}.hc-edu:hover .num{color:var(--accent)}
+.onl{display:flex;flex-wrap:wrap;gap:8px}.onu{display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border:1px solid var(--line);border-radius:999px;background:var(--surface,#fff);font-size:13px}.onu i{width:8px;height:8px;border-radius:50%;background:#22a05b;box-shadow:0 0 0 3px #22a05b22}.onu small{color:var(--muted);font-size:12px}.onu.sm{padding:0;border:0;background:none;font-weight:600;color:#1d7f4a}
 td.mcl{cursor:pointer}td.mcl:hover{background:var(--accent-soft)}
 .mlist{display:flex;flex-direction:column;gap:14px;width:100%;min-width:min(720px,88vw)}
 .ml-hd{display:flex;align-items:baseline;gap:10px}.ml-hd h3{margin:0;font-size:20px;font-weight:800;color:var(--ink)}.ml-n{font-size:15px;font-weight:700;color:var(--accent)}
@@ -644,7 +645,7 @@ td.mcl{cursor:pointer}td.mcl:hover{background:var(--accent-soft)}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">금호HT 모듈개발연구소 · v2026.11.20 14:13</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">금호HT 모듈개발연구소 · v2026.11.20 14:32</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -1362,7 +1363,7 @@ async function reload(manual) {
   catch (e) { if (!e.auth) { offline = true; toast('서버에서 데이터를 받지 못했습니다: ' + e.message, true); } }
   loading = false; syncUI(); schedule();
 }
-setInterval(() => { if (document.visibilityState === 'visible') reload(); }, 60000);
+setInterval(() => { if (document.visibilityState === 'visible') { reload(); if (admin && route() === 'accounts') loadUsers(true); } }, 60000);
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') reload(); });
 
 // ---------- write queue (문서별로 한 번에 하나, 마지막 값 우선) ----------
@@ -1496,6 +1497,7 @@ function whoUI() { capUI();
   const acc = document.querySelector('#tabs a[data-route="accounts"]');
   if (acc) { acc.hidden = !admin; const n = ui.users.filter(x => x.role === '대기').length; acc.innerHTML = '계정 관리' + (n ? ` <span class="badge" title="승인 대기">${n}</span>` : ''); }
   $('#expMenu').hidden = !admin;
+  const ast = document.querySelector('#tabs a[data-route="asset"]'); if (ast) ast.hidden = !admin;
   const dvt = document.querySelector('#tabs a[data-route="dev"]'); if (dvt) dvt.hidden = !canDev();
   const st = document.querySelector('#tabs a[data-route="settings"]'); if (st) st.hidden = !(admin || director || leader || viewAll);
 }
@@ -1595,6 +1597,13 @@ function lockDialog() {
 }
 async function acctCall(action, payload, msg) { try { const d = await api(action, payload); ui.users = d.users; whoUI(); render(); toast(msg); } catch (e) { toast(e.message, true); } }
 let usersLoaded = false;
+function seenTxt(u) {
+  const d = Date.now() - (u.seen || 0);
+  if (u.seen && d < 180000) return '<span class="onu sm"><i></i>접속 중</span>';
+  if (u.seen && d < 3600000) return `<span class="muted">${Math.round(d / 60000)}분 전</span>`;
+  if (u.seen && d < 21600000) return `<span class="muted">${Math.round(d / 3600000)}시간 전</span>`;
+  return `<span class="muted">${esc(u.lastLogin || '–')}</span>`;
+}
 async function loadUsers(quiet) { try { const d = await api('users'); ui.users = d.users; ui.lockSet = d.lockSet; usersLoaded = true; whoUI(); if (!quiet || route() === 'accounts') schedule(); } catch (e) { if (!quiet) toast(e.message, true); } }
 // 가입자가 인원 명단의 누구와 맞는지 (이름·부서·직급 비교)
 function rosterTag(u) {
@@ -1615,10 +1624,12 @@ function vAccounts() {
       <td><select class="ci" id="role-${esc(u.id)}">${Object.keys(ROLE_DESC).map(r => `<option${r === '보기' ? ' selected' : ''}>${r}</option>`).join('')}</select></td>
       <td class="r"><button type="button" class="btn sm primary" data-act="acct-approve" data-id="${esc(u.id)}">승인</button> <button type="button" class="btn sm danger" data-act="acct-reject" data-id="${esc(u.id)}">거절</button></td></tr>`).join('')}
     </tbody></table></div>${teamList()}<p class="muted small">팀장·파트장·보기는 소속을 인원 명단의 팀 이름과 똑같이 맞춰 주세요.</p>` : '<p class="muted small">대기 중인 가입 신청이 없습니다.</p>'}</section>`;
+  const on = act.filter(u => u.active && Date.now() - (u.seen || 0) < 180000);
+  h += `<section class="card"><div class="head"><h2>지금 접속 중</h2><span class="ml-n">${on.length}명</span></div>${on.length ? `<div class="onl">${on.map(u => `<span class="onu"><i></i><b>${esc(u.name)}</b><small>${esc(u.team || '')}${u.role ? ' · ' + esc(u.role) : ''}</small></span>`).join('')}</div>` : ''}</section>`;
   h += `<section class="card"><div class="head"><h2>계정 관리</h2><span class="sub">관리자 ${cnt('관리자')} · 연구소장 ${cnt('연구소장')} · 개발실장 ${cnt('개발실장') + cnt('편집')} · 팀장 ${cnt('팀장')} · 파트장 ${cnt('파트장')} · 보기 ${cnt('보기')}</span><span class="spacer"></span><button type="button" class="btn primary" data-act="acct-edit">계정 직접 추가</button></div>
     <div class="chk">${Object.entries(ROLE_DESC).map(([r, d]) => `<span class="tag">${r} · ${d}</span>`).join('')}</div>
-    <div class="tw free"><table><thead><tr><th>아이디</th><th>이름</th><th>부서</th><th>직급</th><th>역할</th><th>개발 현황</th><th>상태</th><th>가입일</th><th>마지막 로그인</th><th style="width:190px"></th></tr></thead><tbody>
-    ${act.map(u => `<tr><td class="num">${esc(u.id)}${u.id === auth.user.id ? ' <span class="tag">나</span>' : ''}</td><td><b>${esc(u.name)}</b></td><td>${esc(u.team || '–')}${['팀장', '파트장', '보기'].includes(u.role) && !(S.config?.teamOrder || []).includes(u.team) ? ' <span class="tag bad" title="인원 명단의 팀 이름과 달라 수정 권한이 작동하지 않습니다">명단과 다름</span>' : ''}</td><td>${esc(u.rank || '–')}</td><td><span class="tag ${u.role === '관리자' ? 'ok' : ''}">${esc(u.role)}</span></td><td class="c"><input type="checkbox" data-act="acct-dev" data-id="${esc(u.id)}"${u.role === '관리자' || u.dev ? ' checked' : ''}${u.role === '관리자' ? ' disabled title="관리자는 항상 볼 수 있습니다"' : ''}></td><td>${u.active ? '<span class="tag ok">사용</span>' : '<span class="tag bad">중지</span>'}</td><td class="num muted">${esc(String(u.created).slice(0, 10))}</td><td class="num muted">${esc(u.lastLogin || '–')}</td>
+    <div class="tw free"><table><thead><tr><th>아이디</th><th>이름</th><th>부서</th><th>직급</th><th>역할</th><th>개발 현황</th><th>상태</th><th>가입일</th><th>접속</th><th style="width:190px"></th></tr></thead><tbody>
+    ${act.map(u => `<tr><td class="num">${esc(u.id)}${u.id === auth.user.id ? ' <span class="tag">나</span>' : ''}</td><td><b>${esc(u.name)}</b></td><td>${esc(u.team || '–')}${['팀장', '파트장', '보기'].includes(u.role) && !(S.config?.teamOrder || []).includes(u.team) ? ' <span class="tag bad" title="인원 명단의 팀 이름과 달라 수정 권한이 작동하지 않습니다">명단과 다름</span>' : ''}</td><td>${esc(u.rank || '–')}</td><td><span class="tag ${u.role === '관리자' ? 'ok' : ''}">${esc(u.role)}</span></td><td class="c"><input type="checkbox" data-act="acct-dev" data-id="${esc(u.id)}"${u.role === '관리자' || u.dev ? ' checked' : ''}${u.role === '관리자' ? ' disabled title="관리자는 항상 볼 수 있습니다"' : ''}></td><td>${u.active ? '<span class="tag ok">사용</span>' : '<span class="tag bad">중지</span>'}</td><td class="num muted">${esc(String(u.created).slice(0, 10))}</td><td class="num">${seenTxt(u)}</td>
       <td class="r">${u.id === auth.user.id ? '' : `<button type="button" class="btn sm" data-act="acct-edit" data-id="${esc(u.id)}">수정</button> <button type="button" class="btn sm" data-act="acct-toggle" data-id="${esc(u.id)}">${u.active ? '중지' : '사용'}</button> <button type="button" class="btn sm danger" data-act="acct-del" data-id="${esc(u.id)}">삭제</button>`}</td></tr>`).join('')}
     </tbody></table></div></section>
     <section class="card"><div class="head"><h2>엑셀 잠금 비밀번호</h2><span class="tag ${ui.lockSet ? 'ok' : 'bad'}">${ui.lockSet ? '설정됨' : '미설정 · 잠금 없이 내보내짐'}</span><span class="spacer"></span><button type="button" class="btn" data-act="lockpw">${ui.lockSet ? '변경' : '설정'}</button></div>
@@ -2100,7 +2111,7 @@ const orgPh = () => ui.orgPhoto && canSet();
 const route = () => { let h = location.hash.slice(1);
   if (h === 'dashboard') { ui.assessMode = 'sum'; h = 'assess'; history.replaceState(null, '', '#assess'); }   // 예전 주소
   if (h === 'settings') { ui.assessMode = canSet() ? 'set' : 'sum'; h = 'assess'; history.replaceState(null, '', '#assess'); }
-  return ROUTES.includes(h) && (h !== 'accounts' || admin) && (h !== 'dev' || canDev()) ? h : 'people'; };
+  return ROUTES.includes(h) && (h !== 'accounts' || admin) && (h !== 'asset' || admin) && (h !== 'dev' || canDev()) ? h : 'people'; };
 window.addEventListener('hashchange', () => { render(); window.scrollTo(0, 0); });
 
 // ---------- render ----------
