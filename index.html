@@ -666,7 +666,7 @@ td.mcl{cursor:pointer}td.mcl:hover{background:var(--accent-soft)}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">금호HT 모듈개발연구소 · v2026.11.23 13:39</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">금호HT 모듈개발연구소 · v2026.11.23 13:45</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -2200,10 +2200,10 @@ function plParseOpt(text, base) {
   if (!out.length) throw new Error('붙여넣은 내용에서 항목을 찾지 못했습니다');
   return out;
 }
-const plTrF = r => !PL.tr || (PL.tr === '광학' ? r.tr === '광학' : r.tr !== '광학');
+const plView = (all, opt) => { if (!opt) return all.filter(r => r.tr !== '광학'); const o = all.filter(r => r.tr === '광학'), on = new Set(o.map(r => r.no)); return all.filter(r => r.tr === '광학' || !on.has(r.no)); };
 const plDepts = s => String(s || '').split(/[\/,]/).map(x => x.replace(/\(.*?\)/g, '').trim()).filter(x => x && x !== '-');
 
-const plTrSeg = () => `<div class="seg" role="group" aria-label="구분">${[['', '전체'], ['기본', '기본'], ['광학', '광학']].map(([v, t]) => `<button type="button" data-act="pl-tr" data-v="${v}" aria-pressed="${PL.tr === v}">${t}</button>`).join('')}</div>`;
+const plTrSeg = () => `<div class="seg" role="group" aria-label="구분">${[['', '기본'], ['광학', '광학']].map(([v, t]) => `<button type="button" data-act="pl-tr" data-v="${v}" aria-pressed="${PL.tr === v}">${t}</button>`).join('')}</div>`;
 function vPlm() {
   if (!canPlm()) return `<section class="card"><div class="empty">권한이 없습니다.</div></section>`;
   const rows = plRows(), m = S.plm && S.plm.meta;
@@ -2214,10 +2214,11 @@ function vPlm() {
   const body = !rows.length ? `<section class="card"><div class="empty">${admin ? '엑셀 WBS 표를 No 줄부터 복사해 <b>WBS 붙여넣기</b>로 넣어 주세요.' : '아직 등록된 WBS가 없습니다.'}</div></section>` : PL.mode === 'sch' ? plSchView(rows) : plWbsView(rows);
   return `<div class="dvwrap">${side}<div class="dvmain">${body}</div></div>`;
 }
-function plWbsView(all) {
+function plWbsView(src) {
+  const all = plView(src, PL.tr === '광학');
   const l1s = [...new Set(all.map(r => r.l1))], depts = [...new Set(all.flatMap(r => plDepts(r.dk)))].sort((a, b) => a.localeCompare(b, 'ko'));
   const q = PL.q.trim().toLowerCase();
-  let rows = all.filter(r => plTrF(r) && (!PL.l1 || r.l1 === PL.l1) && (!PL.dept || plDepts(r.dk).includes(PL.dept)) && (!PL.gate || plBase(r.base).gate === PL.gate)
+  let rows = all.filter(r => (!PL.l1 || r.l1 === PL.l1) && (!PL.dept || plDepts(r.dk).includes(PL.dept)) && (!PL.gate || plBase(r.base).gate === PL.gate)
     && (!q || [r.l2, r.path, r.folder, r.inp, r.out, r.dk, r.df].some(v => String(v || '').toLowerCase().includes(q))));
   if (PL.sort === 'base') rows = [...rows].sort((a, b) => { const x = plBase(a.base), y = plBase(b.base); return ((PL_GATES.indexOf(x.gate) + 1 || 9) - (PL_GATES.indexOf(y.gate) + 1 || 9)) || x.off - y.off || plSort(a, b); });
   const sumD = L => L.reduce((t, r) => t + (r.days || 0), 0);
@@ -2268,7 +2269,7 @@ function plMatch(form, all, opt) {
   return res;
 }
 function plFormRows(p) {
-  const form = ((S.plm.form || {}).rows) || [], all = plRows(), M = plMatch(form, all, !!p.opt), out = [];
+  const form = ((S.plm.form || {}).rows) || [], all = plView(plRows(), !!p.opt), M = plMatch(form, all, !!p.opt), out = [];
   form.forEach(f => { if (!f.pid) return; const r = M.get(f.id), c = r ? plCalc(r, p.g) : {}; out.push({ f, r, s: c.start || c.end || null, e: c.end || null, d: r && c.end ? r.days : null }); });
   return form.map(f => { if (f.pid) return out.find(x => x.f === f); const K = out.filter(x => x.f.pid === f.id && x.e); if (!K.length) return { f, s: null, e: null, d: null, ph: 1 }; const s0 = new Date(Math.min(...K.map(x => +x.s))), e0 = new Date(Math.max(...K.map(x => +x.e))); return { f, s: s0, e: e0, d: plBiz(s0, e0), ph: 1 }; });
 }
@@ -2285,16 +2286,16 @@ function plFormView(p) {
     ${miss.length ? `<div class="notice warn">WBS에서 못 찾은 태스크 ${miss.length}개: ${miss.map(x => `<b>${esc(x.f.name)}</b>`).join(', ')}</div>` : ''}${nod.length ? `<div class="notice warn">기준시점 날짜가 없어 비는 태스크 ${nod.length}개</div>` : ''}</section>`;
 }
 function plPjSave(p) { const { id, ...doc } = p; S.plm['pj_' + id] = doc; put('plm/pj_' + id, doc); }
-function plSchView(all) {
+function plSchView(src) {
   const pjs = plProjects(); if (!pjs.find(p => p.id === PL.pj)) PL.pj = (pjs[pjs.length - 1] || {}).id || '';
   const p = pjs.find(x => x.id === PL.pj), dis = admin ? '' : ' disabled';
   const head = `<section class="card"><div class="head"><h2>프로젝트</h2>${pjs.length ? `<select class="ci" data-act="pl-pj" style="min-width:220px">${pjs.map(x => `<option value="${x.id}"${x.id === PL.pj ? ' selected' : ''}>${esc(x.name)}</option>`).join('')}</select>` : ''}<span class="spacer"></span>${p && admin ? `<label class="pc-chk"><input type="checkbox" data-act="pl-pj-opt"${p.opt ? ' checked' : ''}> 광학 프로젝트</label>` : p && p.opt ? '<span class="pltr">광학</span>' : ''}${admin ? `<button type="button" class="btn primary" data-act="pl-pj-new">새 프로젝트</button>${p ? '<button type="button" class="btn" data-act="pl-pj-ren">이름 변경</button><button type="button" class="btn danger" data-act="pl-pj-del">삭제</button>' : ''}` : ''}</div>
     ${p ? `<div class="plgates">${PL_GATES.map(g => `<label class="plgate g${g}"><span>${g}</span><input data-act="pl-gd" data-g="${g}" value="${esc(bdShow((p.g || {})[g] || ''))}" placeholder="YYYY.MM.DD" inputmode="numeric" maxlength="10" data-bd${dis}></label>`).join('')}</div>` : `<div class="empty">${admin ? '<b>새 프로젝트</b>를 만들고 P0 · P1 · P2 · SOP 날짜를 넣으면 태스크 일정이 자동으로 계산됩니다.' : '등록된 프로젝트가 없습니다.'}</div>`}</section>`;
   if (!p) return head;
-  const formCard = plFormView(p);
+  const all = plView(src, !!p.opt), formCard = plFormView(p);
   const sel = new Set((p.sel || []).map(String)), g = p.g || {};
   const l1s = [...new Set(all.map(r => r.l1))], depts = [...new Set(all.flatMap(r => plDepts(r.dk)))].sort((a, b) => a.localeCompare(b, 'ko'));
-  let rows = all.filter(r => plTrF(r) && (!PL.l1 || r.l1 === PL.l1) && (!PL.dept || plDepts(r.dk).includes(PL.dept)) && (!PL.only || sel.has(plK(r))));
+  let rows = all.filter(r => (!PL.l1 || r.l1 === PL.l1) && (!PL.dept || plDepts(r.dk).includes(PL.dept)) && (!PL.only || sel.has(plK(r))));
   const C = new Map(all.map(r => [plK(r), plCalc(r, g)]));
   if (PL.ssort === 'base') rows = [...rows].sort((a, b) => { const x = C.get(plK(a)), y = C.get(plK(b)); return ((x.end ? +x.end : 9e15) - (y.end ? +y.end : 9e15)) || plSort(a, b); });
   const picked = all.filter(r => sel.has(plK(r))), ends = picked.map(r => C.get(plK(r)).end).filter(Boolean), starts = picked.map(r => C.get(plK(r)).start || C.get(plK(r)).end).filter(Boolean);
@@ -2303,7 +2304,7 @@ function plSchView(all) {
   const span = ends.length ? `${plFmt(new Date(Math.min(...starts)))} ~ ${plFmt(new Date(Math.max(...ends)))}` : '–';
   const chips = `<div class="plchips"><button type="button" class="pchip" data-act="pl-l1" data-v="" aria-pressed="${!PL.l1}">전체<span class="c">${all.filter(r => sel.has(plK(r))).length}/${all.length}</span></button>${l1s.map(l => { const L = all.filter(r => r.l1 === l); return `<button type="button" class="pchip" data-act="pl-l1" data-v="${esc(l)}" aria-pressed="${PL.l1 === l}">${esc(l)}<span class="c">${L.filter(r => sel.has(plK(r))).length}/${L.length}</span></button>`; }).join('')}</div>`;
   const tools = `<div class="toolbar pltools"><label class="field"><span>수행부서</span><select class="ci" data-act="pl-dept"><option value="">전체</option>${depts.map(d => `<option${PL.dept === d ? ' selected' : ''}>${esc(d)}</option>`).join('')}</select></label>
-    ${plTrSeg()}<div class="seg" role="group" aria-label="보기"><button type="button" data-act="pl-only" data-v="0" aria-pressed="${!PL.only}">전체 태스크</button><button type="button" data-act="pl-only" data-v="1" aria-pressed="${PL.only}">선택한 것만</button></div>
+    <div class="seg" role="group" aria-label="보기"><button type="button" data-act="pl-only" data-v="0" aria-pressed="${!PL.only}">전체 태스크</button><button type="button" data-act="pl-only" data-v="1" aria-pressed="${PL.only}">선택한 것만</button></div>
     <div class="seg" role="group" aria-label="정렬"><button type="button" data-act="pl-ssort" data-v="base" aria-pressed="${PL.ssort === 'base'}">일정순</button><button type="button" data-act="pl-ssort" data-v="no" aria-pressed="${PL.ssort === 'no'}">번호순</button></div>
     <span class="spacer"></span>${admin ? `<button type="button" class="btn" data-act="pl-selall" data-v="1">보이는 항목 모두 선택</button><button type="button" class="btn" data-act="pl-selall" data-v="0">선택 해제</button><button type="button" class="btn" data-act="pl-xlsx">엑셀 내보내기</button>` : ''}</div>`;
   const ddTxt = c => !c.end ? '<span class="muted">–</span>' : c.dd < 0 ? `<span class="pldd over">D+${-c.dd}</span>` : c.dd === 0 ? '<span class="pldd soon">D-DAY</span>' : `<span class="pldd${c.dd <= 14 ? ' soon' : ''}">D-${c.dd}</span>`;
@@ -2391,7 +2392,7 @@ document.addEventListener('change', e => {
   else if (a === 'pl-pj-opt' && admin) { const p = plProjects().find(x => x.id === PL.pj); if (p) { p.opt = e.target.checked; plPjSave(p); render(); } }
   else if ((a === 'pl-sel' || a === 'pl-selgrp' || a === 'pl-gd') && admin) { const p = plProjects().find(x => x.id === PL.pj); if (!p) return;
     if (a === 'pl-gd') { const raw = e.target.value.trim(), v = raw ? plDateIn(raw) : ''; if (raw && !v) { toast('날짜를 YYYY.MM.DD 또는 숫자 8자리로 입력해 주세요', true); e.target.value = bdShow((p.g || {})[e.target.dataset.g] || ''); return; } p.g = { ...(p.g || {}), [e.target.dataset.g]: v }; }
-    else { const s2 = new Set((p.sel || []).map(String)), ks = a === 'pl-sel' ? [e.target.dataset.k] : plRows().filter(r => r.l1 === e.target.dataset.v && plTrF(r)).map(plK); ks.forEach(n => e.target.checked ? s2.add(n) : s2.delete(n)); p.sel = [...s2]; }
+    else { const s2 = new Set((p.sel || []).map(String)), ks = a === 'pl-sel' ? [e.target.dataset.k] : plView(plRows(), !!p.opt).filter(r => r.l1 === e.target.dataset.v).map(plK); ks.forEach(n => e.target.checked ? s2.add(n) : s2.delete(n)); p.sel = [...s2]; }
     plPjSave(p); render(); }
   else if (a === 'pl-gate') { PL.gate = e.target.value; render(); }
 });
