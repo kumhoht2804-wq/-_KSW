@@ -670,7 +670,7 @@ td.mcl{cursor:pointer}td.mcl:hover{background:var(--accent-soft)}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">금호HT 모듈개발연구소 · v2026.11.23 14:56</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">금호HT 모듈개발연구소 · v2026.11.23 14:57</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -2289,8 +2289,8 @@ function plFormRows(p) {
   form.forEach(f => { if (!f.pid) return; const r = M.get(f.id), c = r ? plCalc(r, p.g) : {}; out.push({ f, r, s: c.start || c.end || null, e: c.end || null, d: r && c.end ? r.days : null }); });
   return form.map(f => { if (f.pid) return out.find(x => x.f === f); const K = out.filter(x => x.f.pid === f.id && x.e); if (!K.length) return { f, s: null, e: null, d: null, ph: 1 }; const s0 = new Date(Math.min(...K.map(x => +x.s))), e0 = new Date(Math.max(...K.map(x => +x.e))); return { f, s: s0, e: e0, d: plBiz(s0, e0), ph: 1 }; });
 }
-function plCopy(text, n) {
-  const ok = () => toast(`${n}줄을 복사했습니다 · 계획시작일 칸 첫 줄에 붙여넣으세요`);
+function plCopy(text, n, col) {
+  const ok = () => toast(`${n}줄을 복사했습니다 · ${col || '계획시작일'} 칸 첫 줄에 붙여넣으세요`);
   const fb = () => { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); ok(); } catch { toast('복사하지 못했습니다', true); } ta.remove(); };
   try { navigator.clipboard.writeText(text).then(ok, fb); } catch { fb(); }
 }
@@ -2322,7 +2322,7 @@ function plSchView(src) {
   const tools = `<div class="toolbar pltools"><label class="field"><span>검색</span><input class="ci" data-act="pl-q" value="${esc(PL.q)}" placeholder="산출물·부서"></label><label class="field"><span>수행부서</span><select class="ci" data-act="pl-dept"><option value="">전체</option>${depts.map(d => `<option${PL.dept === d ? ' selected' : ''}>${esc(d)}</option>`).join('')}</select></label>
     <div class="seg" role="group" aria-label="보기"><button type="button" data-act="pl-only" data-v="0" aria-pressed="${!PL.only}">전체 태스크</button><button type="button" data-act="pl-only" data-v="1" aria-pressed="${PL.only}">선택한 것만</button></div>
     <div class="seg" role="group" aria-label="정렬"><button type="button" data-act="pl-ssort" data-v="base" aria-pressed="${PL.ssort === 'base'}">일정순</button><button type="button" data-act="pl-ssort" data-v="no" aria-pressed="${PL.ssort === 'no'}">번호순</button></div>
-    <span class="spacer"></span><button type="button" class="btn primary" data-act="pl-copy">일정 복사</button>${plEd() ? `<button type="button" class="btn" data-act="pl-selall" data-v="1">보이는 항목 모두 선택</button><button type="button" class="btn" data-act="pl-selall" data-v="0">선택 해제</button>` : ''}${admin ? '<button type="button" class="btn" data-act="pl-xlsx">엑셀 내보내기</button>' : ''}</div>`;
+    <span class="spacer"></span><button type="button" class="btn primary" data-act="pl-copy">일정 복사</button><button type="button" class="btn primary" data-act="pl-copy-role">ROLE 복사</button>${plEd() ? `<button type="button" class="btn" data-act="pl-selall" data-v="1">보이는 항목 모두 선택</button><button type="button" class="btn" data-act="pl-selall" data-v="0">선택 해제</button>` : ''}${admin ? '<button type="button" class="btn" data-act="pl-xlsx">엑셀 내보내기</button>' : ''}</div>`;
   const ddTxt = c => !c.end ? '<span class="muted">–</span>' : c.dd < 0 ? `<span class="pldd over">D+${-c.dd}</span>` : c.dd === 0 ? '<span class="pldd soon">D-DAY</span>' : `<span class="pldd${c.dd <= 14 ? ' soon' : ''}">D-${c.dd}</span>`;
   const tr = r => { const c = C.get(plK(r)), on = sel.has(plK(r));
     return `<tr class="${on ? 'plon' : 'ploff'}"><td class="c"><input type="checkbox" data-act="pl-sel" data-k="${plK(r)}"${on ? ' checked' : ''}${dis}></td><td class="c num muted">${plNoTxt(r.no)}</td>${PL.ssort === 'base' ? `<td class="l plsm">${esc(r.l1)}</td>` : ''}<td class="l"><b>${esc(r.l2)}</b>${plOpt(r)}</td><td>${esc(r.dk || '–')}</td><td><span class="plg g${esc(c.b.gate)}">${esc(c.b.txt || '–')}</span></td><td class="num">${r.days ?? '–'}</td><td class="num">${c.start ? plFmt(c.start) : '<span class="muted">–</span>'}</td><td class="num"><b>${c.end ? plFmt(c.end) : '<span class="muted">–</span>'}</b></td><td>${on ? ddTxt(c) : ''}</td></tr>`; };
@@ -2393,6 +2393,7 @@ document.addEventListener('click', e => {
   else if (a === 'pl-form' && admin) openDlg(`<h2>일정 복사 양식</h2><form class="form" data-form="pl-form" style="grid-template-columns:1fr">
     <label class="field">일정 관리 프로그램의 태스크 목록을 제목 줄부터 복사해 붙여넣기 (ID · PID · 태스크 명)<textarea name="t" rows="12" required style="font:12px/1.5 var(--font-num)"></textarea></label>
     <div class="actions"><span class="spacer"></span><button type="button" class="btn" data-act="close">취소</button><button class="btn primary" type="submit">저장</button></div></form>`);
+  else if (a === 'pl-copy-role') { const p = plProjects().find(x => x.id === PL.pj); if (!p) return; const R = plFormRows(p); plCopy(R.map(x => x.r && x.f.pid ? (x.r.dk || '').replace(/\t|\n/g, ' ') : '').join('\n'), R.length, 'ROLE'); }
   else if (a === 'pl-copy' || a === 'pl-form-view') { const p = plProjects().find(x => x.id === PL.pj); if (!p) return; const R = plFormRows(p);
     if (a === 'pl-copy') { plCopy(R.map(x => [plIso(x.s), plIso(x.e), x.d ?? ''].join('\t')).join('\n'), R.length); return; }
     openDlg(`<h2>일정 복사 미리보기</h2><div class="tw free" style="max-height:62vh"><table class="pltbl"><thead><tr><th>ID</th><th>태스크 명</th><th>WBS</th><th>계획시작일</th><th>계획종료일</th><th>기간(업무일)</th></tr></thead><tbody>${R.map(x => `<tr${x.ph ? ' class="plgrp"' : ''}><td class="num">${esc(x.f.id)}</td><td class="l">${x.ph ? `<b>${esc(x.f.name)}</b>` : esc(x.f.name)}</td><td class="l plsm">${x.r ? `${plNoTxt(x.r.no)} ${esc(x.r.l2)}${plOpt(x.r)}` : x.ph ? '' : '<span class="pldd over">못 찾음</span>'}</td><td class="num">${plIso(x.s)}</td><td class="num">${plIso(x.e)}</td><td class="num">${x.d ?? ''}</td></tr>`).join('')}</tbody></table></div><div class="actions"><span class="spacer"></span><button type="button" class="btn" data-act="close">닫기</button><button type="button" class="btn primary" data-act="pl-copy">일정 복사</button></div>`, true); }
