@@ -670,7 +670,7 @@ td.mcl{cursor:pointer}td.mcl:hover{background:var(--accent-soft)}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">금호HT 모듈개발연구소 · v2026.11.23 14:57</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">금호HT 모듈개발연구소 · v2026.11.27 14:39</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -2879,7 +2879,7 @@ function vPeople() {
   const H = admin && hrOf.size, hv = (p, k) => { let v = hrOf.get(p.id)?.[k]; if (k === 'birth') v = bdShow(v); return v ? esc(v) : '<span class="muted">–</span>'; };
   const HD = scoped || ui.q ? [] : headRows(), HX = HD.filter(r => !r.inP), roleOf = new Map(HD.filter(r => r.inP).map(r => [r.inP.id, r.role]));
   const dash = '<span class="muted">–</span>', hh = (r, f) => r.hr && r.hr[f] ? esc(f === 'birth' ? bdShow(r.hr[f]) : r.hr[f]) : dash, hp = (r, f) => r.rec && r.rec[f] ? esc(r.rec[f]) : dash;
-  const headTr = HX.map(r => `<tr><td class="c num muted">–</td>${admin ? `<td class="c">${rosterAv('org:' + r.k, (orgCfg().photos || {})[r.k])}</td>` : ''}<td>모듈개발연구소</td><td><button type="button" class="nmb" data-act="card-view" data-k="${r.k}">${esc(r.name)}</button></td>${H ? `<td class="num">${hh(r, 'birth')}</td><td>${hh(r, 'kind')}</td>` : ''}<td>${esc(r.rank || '–')}</td><td><b>${esc(r.role)}</b></td><td>–</td><td class="num">${hp(r, 'ext')}</td>${H ? `<td class="l">${hh(r, 'school')}</td><td class="l">${hh(r, 'major')}</td><td>${hh(r, 'degree')}</td>` : ''}${admin ? `<td class="num">${hh(r, 'join')}</td><td class="num">${hp(r, 'iris')}</td><td class="num">${hp(r, 'rno')}</td>` : ''}${anyNote ? '<td></td>' : ''}${anyIssue ? '<td></td>' : ''}${admin ? `<td><button type="button" class="btn sm" data-act="head-edit" data-k="${r.k}">수정</button></td>` : ''}</tr>`).join('');
+  const headTr = HX.map(r => `<tr><td class="c num muted">–</td>${admin ? `<td class="c">${rosterAv('org:' + r.k, (orgCfg().photos || {})[r.k])}</td>` : ''}<td>모듈개발연구소</td><td><button type="button" class="nmb" data-act="card-view" data-k="${r.k}">${esc(r.name)}</button></td>${H ? `<td class="num">${hh(r, 'birth')}</td><td>${hh(r, 'kind')}</td>` : ''}<td>${esc(r.rank || '–')}</td><td><b>${esc(r.role)}</b></td><td>–</td><td class="num">${hp(r, 'ext')}</td>${H ? `<td class="l">${hh(r, 'school')}</td><td class="l">${hh(r, 'major')}</td><td>${hh(r, 'degree')}</td>` : ''}${admin ? `<td class="num">${hp(r, 'empno')}</td><td class="num">${hh(r, 'join')}</td><td class="num">${hp(r, 'iris')}</td><td class="num">${hp(r, 'rno')}</td>` : ''}${anyNote ? '<td></td>' : ''}${anyIssue ? '<td></td>' : ''}${admin ? `<td><button type="button" class="btn sm" data-act="head-edit" data-k="${r.k}">수정</button></td>` : ''}</tr>`).join('');
   const RST = admin ? (ui.rosterSt || '재직') : '재직';
   if (admin && RST !== '퇴사') {
     const act = S.hr.filter(x => hrStatus(x) === '재직');
@@ -2895,8 +2895,8 @@ function vPeople() {
     if (iss.length) h += `<div class="notice warn" style="flex-direction:column;align-items:flex-start;gap:6px">${iss.map(x => `<div>${x}</div>`).join('')}</div>`;
   }
   if (RST !== '퇴사') {
-  h += `<section class="card"><div class="head"><h2>연구소 인원</h2><span class="sub">${S.people.length + HX.length}명</span></div><div class="tw"><table><thead><tr><th class="c">No</th>${admin ? '<th>사진</th>' : ''}<th>소속</th><th>성명</th>${H ? '<th>생년월일</th><th>전담여부</th>' : ''}<th>직급</th><th>직위</th><th>부서</th><th>내선</th>${H ? '<th>학교</th><th>전공</th><th>학위</th>' : ''}${admin ? '<th>입사일</th><th>IRIS ID</th><th>국가연구자번호</th>' : ''}${anyNote ? '<th>비고</th>' : ''}${anyIssue ? '<th>점검</th>' : ''}${admin ? '<th></th>' : ''}</tr></thead><tbody>
-  ${headTr}${rows.map((p, i) => `<tr><td class="c num muted">${i + 1}</td>${admin ? `<td class="c">${rosterAv(p.id, p.photo)}</td>` : ''}<td>${esc(p.team)}</td><td><button type="button" class="nmb" data-act="card-view" data-id="${p.id}">${esc(p.name)}</button></td>${H ? `<td class="num">${hv(p, 'birth')}</td><td>${hv(p, 'kind')}</td>` : ''}<td>${esc(p.rank)}</td><td>${roleOf.has(p.id) ? `<b>${roleOf.get(p.id)}</b>` : leads.has(p.id) ? '<b>팀장</b>' : '팀원'}</td><td>${esc(p.cat)}</td><td class="num">${p.ext ? esc(p.ext) : '<span class="muted">–</span>'}</td>${H ? `<td class="l">${hv(p, 'school')}</td><td class="l">${hv(p, 'major')}</td><td>${hv(p, 'degree')}</td>` : ''}${admin ? `<td class="num">${p.join ? esc(p.join) : '<span class="muted">–</span>'}</td><td class="num">${p.iris ? esc(p.iris) : '<span class="muted">–</span>'}</td><td class="num">${p.rno ? esc(p.rno) : '<span class="muted">–</span>'}</td>` : ''}${anyNote ? `<td class="muted l">${esc(p.note)}</td>` : ''}${anyIssue ? `<td>${personIssues(p).map(([c, t]) => `<span class="tag ${c}">${t}</span>`).join(' ')}</td>` : ''}${admin ? `<td><button type="button" class="btn sm" data-act="person-edit" data-id="${p.id}">수정</button></td>` : ''}</tr>`).join('')}
+  h += `<section class="card"><div class="head"><h2>연구소 인원</h2><span class="sub">${S.people.length + HX.length}명</span></div><div class="tw"><table><thead><tr><th class="c">No</th>${admin ? '<th>사진</th>' : ''}<th>소속</th><th>성명</th>${H ? '<th>생년월일</th><th>전담여부</th>' : ''}<th>직급</th><th>직위</th><th>부서</th><th>내선</th>${H ? '<th>학교</th><th>전공</th><th>학위</th>' : ''}${admin ? '<th>사번</th><th>입사일</th><th>IRIS ID</th><th>국가연구자번호</th>' : ''}${anyNote ? '<th>비고</th>' : ''}${anyIssue ? '<th>점검</th>' : ''}${admin ? '<th></th>' : ''}</tr></thead><tbody>
+  ${headTr}${rows.map((p, i) => `<tr><td class="c num muted">${i + 1}</td>${admin ? `<td class="c">${rosterAv(p.id, p.photo)}</td>` : ''}<td>${esc(p.team)}</td><td><button type="button" class="nmb" data-act="card-view" data-id="${p.id}">${esc(p.name)}</button></td>${H ? `<td class="num">${hv(p, 'birth')}</td><td>${hv(p, 'kind')}</td>` : ''}<td>${esc(p.rank)}</td><td>${roleOf.has(p.id) ? `<b>${roleOf.get(p.id)}</b>` : leads.has(p.id) ? '<b>팀장</b>' : '팀원'}</td><td>${esc(p.cat)}</td><td class="num">${p.ext ? esc(p.ext) : '<span class="muted">–</span>'}</td>${H ? `<td class="l">${hv(p, 'school')}</td><td class="l">${hv(p, 'major')}</td><td>${hv(p, 'degree')}</td>` : ''}${admin ? `<td class="num">${p.empno ? esc(p.empno) : '<span class="muted">–</span>'}</td><td class="num">${p.join ? esc(p.join) : '<span class="muted">–</span>'}</td><td class="num">${p.iris ? esc(p.iris) : '<span class="muted">–</span>'}</td><td class="num">${p.rno ? esc(p.rno) : '<span class="muted">–</span>'}</td>` : ''}${anyNote ? `<td class="muted l">${esc(p.note)}</td>` : ''}${anyIssue ? `<td>${personIssues(p).map(([c, t]) => `<span class="tag ${c}">${t}</span>`).join(' ')}</td>` : ''}${admin ? `<td><button type="button" class="btn sm" data-act="person-edit" data-id="${p.id}">수정</button></td>` : ''}</tr>`).join('')}
   </tbody></table></div></section>`;
   }
   if (admin && RST !== '재직') {
@@ -3274,7 +3274,7 @@ function headRows() {
 }
 function headSave(r, ext) {
   const id = r.rec ? r.rec.id : 'hd' + r.k, doc = { head: r.role, name: r.name, rank: r.rank, team: '' };
-  for (const k of ['ext', 'iris', 'rno']) { const x = String(ext[k] ?? (r.rec || {})[k] ?? '').trim(); if (x) doc[k] = x; }
+  for (const k of ['ext', 'iris', 'rno', 'empno']) { const x = String(ext[k] ?? (r.rec || {})[k] ?? '').trim(); if (x) doc[k] = x; }
   const cur = S.heads.find(h => h.id === id); if (cur) { for (const k of Object.keys(cur)) if (k !== 'id') delete cur[k]; Object.assign(cur, doc); } else S.heads.push({ id, ...doc });
   return { path: 'people/' + id, data: doc };
 }
@@ -3296,7 +3296,7 @@ function cardView(id, k) {
   const x = admin ? (r ? r.hr || {} : hrOfP(p) || {}) : (p.hi || {}), hiOK = admin || !!p.hi || ['연구소장', '개발실장', '팀장'].includes(auth?.user?.role), pid = r ? p.id : id, small = r ? (orgCfg().photos || {})[k] : p.photo, img = scoped ? '' : (pid && (ui.photoHQ || {})[pid]) || small;
   const name = r ? r.name : p.name, team = r ? '모듈개발연구소' : p.team, rank = r ? r.rank : p.rank, join = r ? x.join : p.join;
   const role = r ? r.role : (headRows().find(h => h.inP && h.inP.id === id) || {}).role || (orgLeader(p.team, S.people.filter(q => q.team === p.team))?.id === id ? '팀장' : '팀원');
-  const yrs = d => { const n = (new Date(today()) - new Date(d)) / 31557600000; return n >= 0 ? Math.floor(n) : null; };
+  const yrs = d => { const a = plD(d), t = new Date(); if (!a || a > t) return null; let m = (t.getFullYear() - a.getFullYear()) * 12 + t.getMonth() - a.getMonth() - (t.getDate() < a.getDate() ? 1 : 0); m = Math.max(0, m); const y = Math.floor(m / 12), mm = m % 12; return y ? `${y}년 ${mm}개월` : `${mm}개월`; };
   const c = (lb, t, wide) => `<dt>${lb}</dt><dd${wide ? ' class="w"' : ''}>${t ? t : '<span class="muted">–</span>'}</dd>`, e = v => v ? esc(v) : '';
   const tb = (title, cells) => { const n = (cells.match(/<dd(?! class="w")/g) || []).length + 2 * (cells.match(/<dd class="w"/g) || []).length; return `<section class="hc-sec">${title ? `<h4>${title}</h4>` : ''}<dl class="hc-tb">${cells}${n % 2 ? '<dt></dt><dd></dd>' : ''}</dl></section>`; };
   openDlg(`<div class="hcard">
@@ -3305,7 +3305,7 @@ function cardView(id, k) {
       <div class="hc-main">
         <div class="hc-id"><h3>${esc(name)}</h3><span class="hc-role">${esc(role)}</span></div>
         <div class="hc-org">${esc(team || '')}${rank ? `<i></i>${esc(rank)}` : ''}</div>
-        ${tb('', c('소속', e(team)) + c('직급', e(rank)) + c('직책', e(role)) + (r ? c('내선번호', e(p.ext)) : c('평가 파트', e(p.cat)) + c('상세부서', e(p.eduDept)) + c('내선번호', e(p.ext))) + (admin ? c('입사일', join ? `${esc(bdShow(join))}${yrs(join) != null ? ` <span class="hc-sub">${yrs(join)}년차</span>` : ''}` : '') : '') + (!r && p.status ? c('근무 상태', e(p.status)) : ''))}
+        ${tb('', c('소속', e(team)) + c('직급', e(rank)) + c('직책', e(role)) + (hiOK ? c('사번', e(p.empno)) : '') + (r ? c('내선번호', e(p.ext)) : c('평가 파트', e(p.cat)) + c('상세부서', e(p.eduDept)) + c('내선번호', e(p.ext))) + (admin ? c('입사일', join ? `${esc(bdShow(join))}${yrs(join) != null ? ` <span class="hc-sub">${yrs(join)}차</span>` : ''}` : '') : '') + (!r && p.status ? c('근무 상태', e(p.status)) : ''))}
       </div>
     </div>
     ${r ? '' : (() => { const cp = C.comp(p), ev = eduActive(p) ? C.edu(p) : null; if (!cp.target && !ev) return '';
@@ -3334,7 +3334,7 @@ function headDialog(k) {
     <h3 class="pc-sec">인사 정보</h3>
     <div class="pc-grid c5">${f('생년월일', `<input name="birth" value="${esc(bdShow(x.birth))}" inputmode="numeric" maxlength="10" data-bd>`)}${f('전담여부', `<input name="kind" list="dlKind3" value="${esc(x.kind || '기업부설연구기관장')}">${dl('dlKind3', ['기업부설연구기관장', '전담연구원', ...S.hr.map(q => q.kind)])}`)}${f('최종학교', `<input name="school" value="${esc(x.school || '')}">`)}${f('전공', `<input name="major" value="${esc(x.major || '')}">`)}${f('최종학위', `<input name="degree" list="dlDeg3" value="${esc(x.degree || '')}">${dl('dlDeg3', ['학사', '석사', '박사'])}`)}</div>
     <h3 class="pc-sec">연락 · 기타</h3>
-    <div class="pc-grid c4">${f('내선번호', `<input name="ext" value="${esc(p.ext || '')}" inputmode="numeric">`)}${f('IRIS ID', `<input name="iris" value="${esc(p.iris || '')}">`)}${f('국가연구자번호', `<input name="rno" value="${esc(p.rno || '')}" inputmode="numeric">`)}</div>
+    <div class="pc-grid c5">${f('사번', `<input name="empno" value="${esc(p.empno || '')}">`)}${f('내선번호', `<input name="ext" value="${esc(p.ext || '')}" inputmode="numeric">`)}${f('IRIS ID', `<input name="iris" value="${esc(p.iris || '')}">`)}${f('국가연구자번호', `<input name="rno" value="${esc(p.rno || '')}" inputmode="numeric">`)}</div>
     <div class="actions"><span class="spacer"></span><button type="button" class="btn" data-act="close">취소</button><button class="btn primary" type="submit">저장</button></div></form>`, true);
   if (!ui.photoHQ) api('photos').then(d => { ui.photoHQ = d.photos || {}; if (pid && ui.photoHQ[pid] && $('#dlgBody [data-form=head]')) { const im = $('#dlgBody .pc-ph img'); if (im) im.src = ui.photoHQ[pid]; } }).catch(() => { ui.photoHQ = {}; });
 }
@@ -3583,7 +3583,7 @@ function hrParse(text) {
     return { name: g('name').replace(/\s{2,}/g, ' '), kind: g('kind'), pos: g('pos'), team: g('team'), school: g('school'), major: g('major'), degree: g('degree'), birth: bdNorm(g('birth')), join: day(g('join')), leave: day(lv), moved: !!lv && !day(lv) && /변동|전출|이동/.test(lv) }; })
     .filter(r => r.name);
 }
-const PI_COLS = { name: ['이름', '성명'], ext: ['내선번호', '내선'], iris: ['IRISID', 'IRIS'], rno: ['국가연구자번호', '연구자번호'], birth: ['생년월일', '생일', '출생일'], kind: ['전담여부', '구분'], school: ['최종학교명', '최종학교', '학교'], major: ['전공'], degree: ['최종학위', '학위'], join: ['입사일', '발령일'] };
+const PI_COLS = { name: ['이름', '성명'], empno: ['사번', '사원번호'], ext: ['내선번호', '내선'], iris: ['IRISID', 'IRIS'], rno: ['국가연구자번호', '연구자번호'], birth: ['생년월일', '생일', '출생일'], kind: ['전담여부', '구분'], school: ['최종학교명', '최종학교', '학교'], major: ['전공'], degree: ['최종학위', '학위'], join: ['입사일', '발령일'] };
 const PI_HR = ['birth', 'kind', 'school', 'major', 'degree'];
 function pinfoParse(t) {
   const lines = String(t || '').replace(/\r/g, '').split('\n').filter(l => l.trim()); if (!lines.length) return { cols: [], rows: [] };
@@ -3598,7 +3598,7 @@ function pinfoParse(t) {
 }
 function pinfoDialog() {
   openDlg(`<h2>기초정보 붙여넣기</h2><form class="form" data-form="pinfo" style="grid-template-columns:1fr">
-    <label class="field">엑셀에서 이름과 넣을 칸만 제목 줄부터 복사해 붙여넣기 (생년월일 · 내선번호 · IRIS ID · 국가연구자번호 · 전담여부 · 학교 · 전공 · 학위 · 입사일)<textarea name="t" rows="12" style="width:100%;font:12px var(--font-num);border:1px solid var(--line);border-radius:6px;padding:8px" placeholder="여기에 Ctrl+V" required></textarea></label>
+    <label class="field">엑셀에서 이름과 넣을 칸만 제목 줄부터 복사해 붙여넣기 (사번 · 생년월일 · 내선번호 · IRIS ID · 국가연구자번호 · 전담여부 · 학교 · 전공 · 학위 · 입사일)<textarea name="t" rows="12" style="width:100%;font:12px var(--font-num);border:1px solid var(--line);border-radius:6px;padding:8px" placeholder="여기에 Ctrl+V" required></textarea></label>
     <div class="err" id="pierr"></div>
     <div class="actions"><span class="spacer"></span><button type="button" class="btn" data-act="close">취소</button><button class="btn primary" type="submit">가져오기</button></div></form>`, true);
 }
@@ -3633,7 +3633,7 @@ function personDialog(id) {
     <h3 class="pc-sec">인사 정보</h3>
     <div class="pc-grid c5">${f('생년월일', `<input name="birth" value="${esc(bdShow(x.birth))}" inputmode="numeric" maxlength="10" data-bd>`)}${f('전담여부', `<input name="kind" list="dlKind2" value="${esc(x.kind || '전담연구원')}">${dl('dlKind2', ['전담연구원', '연구보조원', ...S.hr.map(r => r.kind)])}`)}${f('최종학교', `<input name="school" value="${esc(x.school || '')}">`)}${f('전공', `<input name="major" value="${esc(x.major || '')}">`)}${f('최종학위', `<input name="degree" list="dlDeg2" value="${esc(x.degree || '')}">${dl('dlDeg2', ['전문학사', '학사', '석사', '박사', '졸업예정'])}`)}</div>
     <h3 class="pc-sec">연락 · 기타</h3>
-    <div class="pc-grid c4">${f('내선번호', `<input name="ext" value="${esc(p.ext || '')}" inputmode="numeric">`)}${f('IRIS ID', `<input name="iris" value="${esc(p.iris || '')}">`)}${f('국가연구자번호', `<input name="rno" value="${esc(p.rno || '')}" inputmode="numeric">`)}${f('비고', `<input name="note" value="${esc(p.note)}">`)}</div>
+    <div class="pc-grid c5">${f('사번', `<input name="empno" value="${esc(p.empno || '')}">`)}${f('내선번호', `<input name="ext" value="${esc(p.ext || '')}" inputmode="numeric">`)}${f('IRIS ID', `<input name="iris" value="${esc(p.iris || '')}">`)}${f('국가연구자번호', `<input name="rno" value="${esc(p.rno || '')}" inputmode="numeric">`)}${f('비고', `<input name="note" value="${esc(p.note)}">`)}</div>
     ${id ? `<h3 class="pc-sec">퇴사 · 부서변동</h3>
     <div class="pc-grid c4">${f('상태', `<select name="hst"><option>재직</option><option>퇴사</option><option>부서변동</option></select>`)}${f('날짜', `<input type="date" name="leave">`)}${f('이동 부서 (부서변동일 때)', `<input name="moveTo" list="dlTeam2">${dl('dlTeam2', S.hr.map(r => r.team))}`, 2)}</div>` : ''}
     <div class="err" id="perr"></div>
@@ -3956,7 +3956,7 @@ document.addEventListener('submit', e => {
     const old = S.people.find(p => p.id === id);
     const doc = { team: v.team, name, rank: v.rank, cat: v.cat, eduDept: v.eduDept, edu: !!v.edu, join: v.join || '', note: v.note || '', status: v.status || '', order: old ? old.order : Math.max(0, ...S.people.map(p => p.order || 0)) + 1 };
     if (!doc.status) delete doc.status;
-    for (const k of ['ext', 'iris', 'rno']) { const x = String(v[k] || '').trim(); if (x) doc[k] = x; }
+    for (const k of ['ext', 'iris', 'rno', 'empno']) { const x = String(v[k] || '').trim(); if (x) doc[k] = x; }
     if (old && old.photo) doc.photo = old.photo;
     const P = { id, ...doc }, hx = old ? hrOfP(old) : null, hid = hx ? hx.id : uid('h'), hst = v.hst || '재직', ex = { birth: bdNorm(v.birth), kind: (v.kind || '').trim(), school: (v.school || '').trim(), major: (v.major || '').trim(), degree: (v.degree || '').trim(), leave: hst === '재직' ? '' : (v.leave || ''), moved: hst === '부서변동', moveTo: hst === '부서변동' ? (v.moveTo || '').trim() : '' };
     const hd = hrDocFor(P, ex, hx ? (({ id: _, ...r }) => r)(hx) : null), syncHr = () => { if (hx) Object.assign(hx, hd); else S.hr.push({ id: hid, ...hd }); put('hr/' + hid, hd); hrSync(); };
@@ -4015,7 +4015,7 @@ document.addEventListener('submit', e => {
     put('hr/' + id, doc); closeDlg(); hrSync(); render(); toast('인사 기록을 저장했습니다');
   } else if (f.dataset.form === 'head') {
     const r = headRows().find(x => x.k === f.dataset.k); if (!r) return;
-    const op = headSave(r, { ext: v.ext, iris: v.iris, rno: v.rno }); put(op.path, op.data);
+    const op = headSave(r, { ext: v.ext, iris: v.iris, rno: v.rno, empno: v.empno }); put(op.path, op.data);
     const hx = r.hr, hid = hx ? hx.id : uid('h'), hd = { ...(hx ? (({ id: _, ...q }) => q)(hx) : { team: '모듈개발연구소', leave: '', moved: false }), name: r.name, pos: r.role, kind: (v.kind || '').trim(), school: (v.school || '').trim(), major: (v.major || '').trim(), degree: (v.degree || '').trim(), birth: bdNorm(v.birth), join: v.join || (hx || {}).join || '' };
     if (hx) Object.assign(hx, hd); else S.hr.push({ id: hid, ...hd }); put('hr/' + hid, hd); hrSync(); closeDlg(); render(); toast('저장했습니다');
   } else if (f.dataset.form === 'pinfo') {
