@@ -671,7 +671,7 @@ td.mcl{cursor:pointer}td.mcl:hover{background:var(--accent-soft)}
   </div>
 </header>
 <main id="view"></main>
-<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">금호HT 모듈개발연구소 · v2026.11.27 19:19</span></footer>
+<footer class="foot">© <span id="cy">2026</span> <b>KSW</b>. All rights reserved. · 본 사이트의 내용을 무단으로 복제·배포할 수 없습니다.<span class="fv">금호HT 모듈개발연구소 · v2026.11.27 19:24</span></footer>
 <div class="toast" id="toast" aria-live="polite"></div>
 <dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
 <script>
@@ -3398,13 +3398,18 @@ function vHR(seg) {
 }
 // ===== 연도별 팀·직급 현황 (관리자) =====
 function vHRYear(seg) {
+  const keep = S.hr, opt = S.hr.some(x => /광학/.test(x.team || ''));
+  if (opt && ui.yrOpt === 'ex') S.hr = S.hr.filter(x => !/광학/.test(x.team || ''));
+  try { return vHRYear0(seg, opt); } finally { S.hr = keep; }
+}
+function vHRYear0(seg, opt) {
   const cur = new Date().getFullYear();
   let h = `<div class="toolbar">${seg}`;
   if (!S.hr.length) return h + `</div><section class="card"><div class="empty">인사 기록이 있어야 연도별 현황을 볼 수 있습니다. <b>인사 기록</b>에서 먼저 붙여넣어 주세요.</div></section>`;
   const y0 = Math.max(2000, Math.min(...S.hr.map(x => +String(x.join || '').slice(0, 4)).filter(Boolean)));
   const years = []; for (let y = cur; y >= y0; y--) years.push(y);
   const Y = +(ui.yrYear || cur), at = Y === cur ? today() : Y + '-12-31', prevAt = (Y - 1) + '-12-31';
-  h += `<label class="field"><span>연도</span><select class="ci" data-act="f-yryear">${years.map(y => `<option value="${y}"${y === Y ? ' selected' : ''}>${y}년${y === cur ? ' (현재)' : ' 말'}</option>`).join('')}</select></label></div>`;
+  h += `<label class="field"><span>연도</span><select class="ci" data-act="f-yryear">${years.map(y => `<option value="${y}"${y === Y ? ' selected' : ''}>${y}년${y === cur ? ' (현재)' : ' 말'}</option>`).join('')}</select></label>${opt ? `<div class="seg" role="group" aria-label="광학설계팀"><button type="button" data-act="yr-opt" data-v="" aria-pressed="${ui.yrOpt !== 'ex'}">광학설계팀 포함</button><button type="button" data-act="yr-opt" data-v="ex" aria-pressed="${ui.yrOpt === 'ex'}">광학설계팀 제외</button></div>` : ''}</div>`;
   const A = hrActiveAt(at), P = hrActiveAt(prevAt), teams = hrTeams().filter(t => A.some(x => x.team === t) || P.some(x => x.team === t));
   const order = [...HR_HEADS, ...S.config.rankOrder], ranks = [...new Set(A.map(x => x.pos))].sort((a, b) => (order.indexOf(a) + 1 || 99) - (order.indexOf(b) + 1 || 99));
   const st = hrCalc()[String(Y)] || {};
@@ -3855,6 +3860,7 @@ document.addEventListener('click', e => {
       }); break; }
     case 'person-edit': if (!need()) break; personDialog(d.id); break;
     case 'card-view': cardView(d.id, d.k); break;
+    case 'yr-opt': ui.yrOpt = d.v; render(); break;
     case 'mlist': mListDialog(+d.i); break;
     case 'person-del': { const p = S.people.find(x => x.id === d.id);
       confirmDlg(`${esc(p?.name)} 님을 명단에서 삭제할까요? 역량평가 등급과 교육 이수 기록도 함께 삭제됩니다.`, '삭제', () => {
